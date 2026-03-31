@@ -1,0 +1,22 @@
+# 環境変数（APIキー含む）- 絶対にpushしない
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# 子供のプロファイルデータ（個人情報）
+src/memory/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
