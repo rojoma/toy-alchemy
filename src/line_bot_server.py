@@ -29,8 +29,8 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
-from conversation_store import ConversationStore
-from agent_core import run_tutoring_session, load_child_profile, save_child_profile
+from src.conversation_store import ConversationStore
+from src.agent_core import run_tutoring_session, load_child_profile, save_child_profile
 
 # ---------------------------------------------------------------------------
 # 設定
