@@ -27,10 +27,12 @@ from linebot.v3.messaging import (
     ReplyMessageRequest,
     TextMessage,
 )
-from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.messaging import MessagingApiBlob
+from linebot.v3.webhooks import MessageEvent, TextMessageContent, ImageMessageContent
 
 from src.conversation_store import ConversationStore, SUBJECT_MENU, SUBJECT_MENU_TEXT
 from src.agent_core import run_tutoring_session, load_child_profile, save_child_profile, detect_subject
+from src.vision import analyze_homework_image
 
 # ---------------------------------------------------------------------------
 # 設定
@@ -94,18 +96,89 @@ async def webhook(request: Request):
     for event in events:
         if not isinstance(event, MessageEvent):
             continue
-        if not isinstance(event.message, TextMessageContent):
-            # テキスト以外（画像・スタンプ等）は Phase3 以降で対応
+
+        if isinstance(event.message, TextMessageContent):
+            await _handle_text_message(event)
+        elif isinstance(event.message, ImageMessageContent):
+            await _handle_image_message(event)
+        else:
             await _reply_text(
                 event.reply_token,
-                "ごめんね、今はテキストメッセージだけ対応しているよ！"
-                "文字で質問を送ってみてね 🦉",
+                "ごめんね、テキストか写真で送ってね 🦉",
             )
-            continue
-
-        await _handle_text_message(event)
 
     return {"status": "ok"}
+
+
+# ---------------------------------------------------------------------------
+# 画像メッセージ処理
+# ---------------------------------------------------------------------------
+
+async def _handle_image_message(event: MessageEvent):
+    """画像メッセージを受信 → Vision APIで解析 → CrewAIで返答。"""
+    user_id = event.source.user_id
+    message_id = event.message.id
+
+    logger.info(f"[{user_id}] 画像受信: message_id={message_id}")
+
+    # 「読み取り中」の即時返答
+    await _reply_text(
+        event.reply_token,
+        "写真を受け取ったよ！\n読み取り中... 🦉",
+    )
+
+    try:
+        # LINE から画像をダウンロード
+        with ApiClient(api_config) as client:
+            blob_api = MessagingApiBlob(client)
+            image_bytes = blob_api.get_message_content(message_id)
+
+        # Vision API で解析
+        ocr_result = analyze_homework_image(image_bytes)
+        logger.info(f"[{user_id}] OCR結果: {ocr_result[:100]}...")
+
+        # 教科を自動検出
+        detected = detect_subject(ocr_result)
+        if detected:
+            conversation_store.set_selected_subject(user_id, detected)
+
+        # OCR結果を子供のメッセージとして会話履歴に追加
+        conversation_store.add_child_message(
+            user_id, f"【宿題の写真を送りました】\n{ocr_result}"
+        )
+        history = conversation_store.get_history(user_id)
+
+        current_subject = conversation_store.get_selected_subject(user_id)
+
+        # CrewAI で返答生成
+        result = run_tutoring_session(
+            child_id=user_id,
+            child_message=f"子供が宿題の写真を送りました。以下がその内容です:\n{ocr_result}",
+            conversation_history=history,
+            subject_override=current_subject,
+        )
+        tutor_response = _format_for_line(result["tutor_response"])
+
+    except Exception as e:
+        logger.error(f"[{user_id}] 画像処理エラー: {e}", exc_info=True)
+        tutor_response = (
+            "ごめんね、写真がうまく読み取れなかったよ。\n"
+            "もう一度明るいところで撮り直してみてね！\n"
+            "それか、文字で問題を教えてくれてもOKだよ 🦉"
+        )
+
+    conversation_store.add_tutor_response(user_id, tutor_response)
+
+    # Push API で送信（reply_tokenは既に使用済みなので）
+    with ApiClient(api_config) as client:
+        api = MessagingApi(client)
+        from linebot.v3.messaging import PushMessageRequest
+        api.push_message(
+            PushMessageRequest(
+                to=user_id,
+                messages=[TextMessage(text=tutor_response)],
+            )
+        )
 
 
 # ---------------------------------------------------------------------------
