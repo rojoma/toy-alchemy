@@ -29,8 +29,8 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
-from src.conversation_store import ConversationStore
-from src.agent_core import run_tutoring_session, load_child_profile, save_child_profile
+from src.conversation_store import ConversationStore, SUBJECT_MENU, SUBJECT_MENU_TEXT
+from src.agent_core import run_tutoring_session, load_child_profile, save_child_profile, detect_subject
 
 # ---------------------------------------------------------------------------
 # 設定
@@ -119,22 +119,30 @@ async def _handle_text_message(event: MessageEvent):
 
     logger.info(f"[{user_id}] 受信: {user_text}")
 
-    # 特殊コマンド
+    # --- 特殊コマンド ---
+
     if user_text in ("/reset", "リセット"):
         conversation_store.clear_session(user_id)
         await _reply_text(
             event.reply_token,
-            "会話をリセットしたよ！新しい質問をどうぞ 🦉",
+            "会話をリセットしたよ！\n新しい質問をどうぞ 🦉",
         )
+        return
+
+    if user_text in ("/subject", "教科変更"):
+        conversation_store.start_subject_selection(user_id)
+        await _reply_text(event.reply_token, SUBJECT_MENU_TEXT)
         return
 
     if user_text in ("/profile", "プロフィール"):
         profile = load_child_profile(user_id)
+        subject = conversation_store.get_selected_subject(user_id)
         if profile.get("display_name"):
             await _reply_text(
                 event.reply_token,
                 f"名前: {profile['display_name']}\n"
                 f"学年: {profile.get('grade', '未設定')}\n"
+                f"教科: {subject or '未選択'}\n"
                 f"好きな学び方: {', '.join(profile.get('learning_preferences', []))}",
             )
         else:
@@ -145,15 +153,62 @@ async def _handle_text_message(event: MessageEvent):
             )
         return
 
-    # プロフィール設定の簡易パース
+    # --- 教科選択中の処理 ---
+
+    if conversation_store.is_selecting_subject(user_id):
+        selected = SUBJECT_MENU.get(user_text)
+        if selected:
+            conversation_store.set_selected_subject(user_id, selected)
+            conversation_store.finish_subject_selection(user_id)
+            await _reply_text(
+                event.reply_token,
+                f"{selected}だね！\n\nわからないところを教えてね 🦉",
+            )
+        else:
+            await _reply_text(
+                event.reply_token,
+                "番号（1〜5）で選んでね！\n\n" + SUBJECT_MENU_TEXT,
+            )
+        return
+
+    # --- プロフィール設定の簡易パース ---
+
     profile_updated = _try_update_profile(user_id, user_text)
     if profile_updated:
         await _reply_text(event.reply_token, profile_updated)
         return
 
+    # --- 教科未選択なら選択を促す ---
+
+    current_subject = conversation_store.get_selected_subject(user_id)
+    if current_subject is None:
+        # メッセージから教科を推定してみる
+        detected = detect_subject(user_text)
+        if detected:
+            # 推定できた場合はそのまま使う
+            conversation_store.set_selected_subject(user_id, detected)
+            current_subject = detected
+            logger.info(f"[{user_id}] 教科を自動検出: {detected}")
+        else:
+            # 推定できなければ選択メニューを表示
+            conversation_store.start_subject_selection(user_id)
+            await _reply_text(
+                event.reply_token,
+                "こんにちは！フクロウ先生だよ 🦉\n\n"
+                "まずは教科を教えてね！\n\n" + SUBJECT_MENU_TEXT,
+            )
+            return
+
+    # --- メッセージの教科が選択中と違う場合、確認する ---
+
+    detected_now = detect_subject(user_text)
+    if detected_now and detected_now != current_subject:
+        conversation_store.set_selected_subject(user_id, detected_now)
+        current_subject = detected_now
+        logger.info(f"[{user_id}] 教科を切り替え: {detected_now}")
+
     # --- メイン処理: CrewAI で返答生成 ---
 
-    # 会話履歴に子供のメッセージを追加
     conversation_store.add_child_message(user_id, user_text)
     history = conversation_store.get_history(user_id)
 
@@ -162,12 +217,13 @@ async def _handle_text_message(event: MessageEvent):
             child_id=user_id,
             child_message=user_text,
             conversation_history=history,
+            subject_override=current_subject,
         )
-        tutor_response = result["tutor_response"]
+        tutor_response = _format_for_line(result["tutor_response"])
     except Exception as e:
         logger.error(f"[{user_id}] CrewAI エラー: {e}", exc_info=True)
         tutor_response = (
-            "ごめんね、フクロウ先生がちょっと考え中だよ。"
+            "ごめんね、フクロウ先生がちょっと考え中だよ。\n"
             "もう一回メッセージを送ってみてね！"
         )
 
@@ -177,6 +233,24 @@ async def _handle_text_message(event: MessageEvent):
     logger.info(f"[{user_id}] 返信: {tutor_response}")
 
     await _reply_text(event.reply_token, tutor_response)
+
+
+# ---------------------------------------------------------------------------
+# テキスト整形（LINE向け）
+# ---------------------------------------------------------------------------
+
+def _format_for_line(text: str) -> str:
+    """Tutorの返答をLINEで読みやすいように整形する。"""
+    import re
+
+    # 既に改行が適切に入っている場合はそのまま
+    if text.count("\n") >= 2:
+        return text.strip()
+
+    # 文末（。！？）の後にスペースや文字が続いている場合、改行を挿入
+    text = re.sub(r"([。！？])\s*(?=[^\s\n」）)])", r"\1\n\n", text)
+
+    return text.strip()
 
 
 # ---------------------------------------------------------------------------

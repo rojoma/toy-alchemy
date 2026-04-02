@@ -22,6 +22,8 @@ class Session:
     messages: list[Message] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     last_active: datetime = field(default_factory=datetime.now)
+    selected_subject: str | None = None  # 選択された教科
+    selecting_subject: bool = False  # 教科選択中フラグ
 
     def is_expired(self, timeout_minutes: int = 30) -> bool:
         return datetime.now() - self.last_active > timedelta(minutes=timeout_minutes)
@@ -40,6 +42,26 @@ class Session:
             speaker = "子供" if msg.role == "child" else "フクロウ先生"
             lines.append(f"{speaker}: {msg.text}")
         return "\n".join(lines)
+
+
+# 利用可能な教科メニュー
+SUBJECT_MENU = {
+    "1": "算数",
+    "2": "国語",
+    "3": "理科",
+    "4": "社会",
+    "5": "その他",
+}
+
+SUBJECT_MENU_TEXT = (
+    "どの教科をお手伝いしようかな？\n"
+    "番号で教えてね！\n\n"
+    "1️⃣ 算数\n"
+    "2️⃣ 国語\n"
+    "3️⃣ 理科\n"
+    "4️⃣ 社会\n"
+    "5️⃣ その他"
+)
 
 
 class ConversationStore:
@@ -74,6 +96,26 @@ class ConversationStore:
         """CrewAIに渡すための会話履歴文字列を返す。"""
         session = self.get_session(user_id)
         return session.format_history(max_turns)
+
+    def get_selected_subject(self, user_id: str) -> str | None:
+        session = self.get_session(user_id)
+        return session.selected_subject
+
+    def set_selected_subject(self, user_id: str, subject: str) -> None:
+        session = self.get_session(user_id)
+        session.selected_subject = subject
+
+    def is_selecting_subject(self, user_id: str) -> bool:
+        session = self.get_session(user_id)
+        return session.selecting_subject
+
+    def start_subject_selection(self, user_id: str) -> None:
+        session = self.get_session(user_id)
+        session.selecting_subject = True
+
+    def finish_subject_selection(self, user_id: str) -> None:
+        session = self.get_session(user_id)
+        session.selecting_subject = False
 
     def clear_session(self, user_id: str) -> None:
         self._sessions.pop(user_id, None)
