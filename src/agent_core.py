@@ -507,6 +507,9 @@ def run_tutoring_session(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+
     print("=" * 60)
     print("  Toy Alchemy v2 - Agent Pool + Explain-to-Learn")
     print("=" * 60)
