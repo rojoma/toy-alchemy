@@ -280,10 +280,14 @@ async def _handle_text_message(event: MessageEvent):
         current_subject = detected_now
         logger.info(f"[{user_id}] 教科を切り替え: {detected_now}")
 
-    # --- メイン処理: CrewAI で返答生成 ---
+    # --- メイン処理: CrewAI v2 で返答生成 ---
 
     conversation_store.add_child_message(user_id, user_text)
     history = conversation_store.get_history(user_id)
+
+    # 現在のフェーズ・ペルソナを取得
+    current_phase = conversation_store.get_phase(user_id)
+    current_persona = conversation_store.get_persona(user_id)
 
     try:
         result = run_tutoring_session(
@@ -291,8 +295,18 @@ async def _handle_text_message(event: MessageEvent):
             child_message=user_text,
             conversation_history=history,
             subject_override=current_subject,
+            current_phase=current_phase,
+            current_persona=current_persona,
         )
         tutor_response = _format_for_line(result["tutor_response"])
+
+        # フェーズ・ペルソナを更新
+        conversation_store.set_phase(user_id, result["phase"])
+        conversation_store.set_persona(user_id, result["persona_used"])
+
+        persona_name = result["persona_used"]
+        logger.info(f"[{user_id}] Phase={result['phase']} Persona={persona_name}")
+
     except Exception as e:
         logger.error(f"[{user_id}] CrewAI エラー: {e}", exc_info=True)
         tutor_response = (

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Toy Alchemy - 子供学習プロファイル",
-  "description": "LINE Botユーザーごとの学習状態・特性を管理するスキーマ。CrewAIセッションに注入して個別最適化を実現する。",
+  "title": "Toy Alchemy - 子供学習プロファイル v2",
+  "description": "Agent Pool + Explain-to-Learn対応。ペルソナ効果とフェーズ状態を記録。",
   "type": "object",
   "required": ["child_id"],
   "properties": {
@@ -11,30 +11,36 @@
     },
     "display_name": {
       "type": "string",
-      "description": "子供の表示名（フクロウ先生が呼びかけに使う）"
+      "description": "子供の表示名"
     },
     "grade": {
       "type": ["string", "null"],
-      "description": "学年（例: '小学3年生'）",
-      "examples": ["小学1年生", "小学4年生", "中学1年生"]
+      "description": "学年（例: '小学3年生'）"
     },
     "age": {
       "type": ["integer", "null"],
-      "description": "年齢（学年から推定も可）",
       "minimum": 4,
       "maximum": 18
     },
     "learning_preferences": {
       "type": "array",
-      "description": "子供が好む・効果的な学習アプローチのリスト",
-      "items": {
-        "type": "string"
-      },
+      "description": "子供が好む学習アプローチ。ペルソナ選択の参考にする。",
+      "items": { "type": "string" },
       "examples": [
-        ["ゲームの例えが好き", "図を使った説明が好き"],
-        ["ストーリー仕立てが好き", "手を動かして確かめたい"],
-        ["クイズ形式が好き", "動物に例えると理解しやすい"]
+        ["ゲームの例えが好き", "RPGっぽくすると集中する"],
+        ["図を使った説明が好き", "ピザに例えると理解しやすい"],
+        ["論理的な手順が好き", "パズルとして考えるのが得意"]
       ]
+    },
+    "persona_effectiveness": {
+      "type": "object",
+      "description": "各ペルソナの効果スコア。正の値=効果的、負の値=効果なし。ペルソナ選択のフィードバックに使用。",
+      "properties": {
+        "standard": { "type": "integer", "default": 0 },
+        "gamemaster": { "type": "integer", "default": 0 },
+        "artist": { "type": "integer", "default": 0 },
+        "logic": { "type": "integer", "default": 0 }
+      }
     },
     "error_patterns": {
       "type": "array",
@@ -43,70 +49,37 @@
         "type": "object",
         "required": ["subject", "description"],
         "properties": {
-          "subject": {
-            "type": "string",
-            "description": "教科・分野",
-            "examples": ["算数", "国語", "理科", "社会", "英語"]
-          },
-          "topic": {
-            "type": "string",
-            "description": "具体的な単元名",
-            "examples": ["繰り上がりのある足し算", "分数の通分", "漢字の部首"]
-          },
-          "description": {
-            "type": "string",
-            "description": "間違え方の具体的な説明"
-          },
+          "subject": { "type": "string" },
+          "topic": { "type": "string" },
+          "description": { "type": "string" },
           "frequency": {
             "type": "string",
-            "enum": ["once", "occasional", "frequent"],
-            "description": "発生頻度（once=1回だけ, occasional=時々, frequent=頻繁）"
+            "enum": ["once", "occasional", "frequent"]
           },
-          "last_seen": {
-            "type": "string",
-            "format": "date",
-            "description": "最後に確認された日付（ISO 8601）"
-          },
-          "resolved": {
-            "type": "boolean",
-            "default": false,
-            "description": "この間違いパターンが克服されたかどうか"
-          }
+          "last_seen": { "type": "string", "format": "date" },
+          "resolved": { "type": "boolean", "default": false }
         }
       }
     },
     "strengths": {
       "type": "array",
-      "description": "得意なこと・褒めポイント",
-      "items": {
-        "type": "string"
-      },
-      "examples": [
-        ["かけ算九九は完璧", "図形の名前をよく覚えている"],
-        ["読解力が高い", "実験の観察が丁寧"]
-      ]
+      "items": { "type": "string" }
     },
     "emotional_notes": {
       "type": "object",
-      "description": "感情面・モチベーションに関する特記事項",
       "properties": {
         "sensitivity_level": {
           "type": "string",
           "enum": ["low", "medium", "high"],
-          "default": "medium",
-          "description": "間違いに対する感受性（highなら特に優しく励ます）"
+          "default": "medium"
         },
         "motivation_triggers": {
           "type": "array",
-          "items": { "type": "string" },
-          "description": "やる気が出るきっかけ",
-          "examples": [["ポイントが貯まる", "キャラが褒めてくれる", "タイムアタック"]]
+          "items": { "type": "string" }
         },
         "frustration_signs": {
           "type": "array",
-          "items": { "type": "string" },
-          "description": "イライラ・諦めのサイン（検知したらペースを緩める）",
-          "examples": [["『もういい』と言う", "返答が極端に短くなる", "同じ答えを繰り返す"]]
+          "items": { "type": "string" }
         }
       }
     },
@@ -117,83 +90,73 @@
         "type": "object",
         "required": ["session_id", "timestamp"],
         "properties": {
-          "session_id": {
-            "type": "string",
-            "description": "セッション識別子"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "description": "セッション開始日時（ISO 8601）"
-          },
-          "subject": {
-            "type": "string",
-            "description": "教科"
-          },
-          "topic": {
-            "type": "string",
-            "description": "取り組んだ単元・問題"
-          },
+          "session_id": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "subject": { "type": "string" },
+          "topic": { "type": "string" },
           "outcome": {
             "type": "string",
-            "enum": ["understood", "partial", "struggled", "gave_up"],
-            "description": "理解度（understood=理解, partial=部分的, struggled=苦戦, gave_up=諦めた）"
+            "enum": ["understood", "partial", "struggled", "gave_up"]
           },
-          "approach_used": {
+          "turns": { "type": "integer", "minimum": 1 },
+          "current_phase": {
             "type": "string",
-            "description": "効果的だった教授法",
-            "examples": ["お菓子に例えた", "図を描いて説明", "クイズ形式"]
+            "enum": ["questioning", "explaining", "resolved"],
+            "description": "セッション終了時のフェーズ（Explain-to-Learnの状態）"
           },
-          "turns": {
+          "tutor_persona_used": {
+            "type": "string",
+            "enum": ["standard", "gamemaster", "artist", "logic"],
+            "description": "セッションで主に使われたTutorペルソナ"
+          },
+          "persona_switches": {
+            "type": "array",
+            "description": "セッション中のペルソナ切り替え履歴",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": { "type": "string" },
+                "to": { "type": "string" },
+                "reason": { "type": "string" },
+                "turn": { "type": "integer" }
+              }
+            }
+          },
+          "explain_to_learn_attempts": {
             "type": "integer",
-            "description": "やり取りの往復回数",
-            "minimum": 1
+            "description": "子供が自己説明を試みた回数",
+            "minimum": 0
           },
-          "notes": {
-            "type": "string",
-            "description": "セッションの特記事項"
-          }
+          "explanation_quality_score": {
+            "type": "number",
+            "description": "子供の説明の質スコア（0-5）。Refereeが評価。",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "approach_used": { "type": "string" },
+          "notes": { "type": "string" }
         }
       }
     },
     "parent_settings": {
       "type": "object",
-      "description": "保護者の設定・要望",
       "properties": {
-        "focus_subjects": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "重点的に取り組みたい教科"
-        },
-        "session_time_limit_minutes": {
-          "type": "integer",
-          "description": "1セッションの時間制限（分）",
-          "default": 30,
-          "minimum": 5,
-          "maximum": 120
-        },
+        "focus_subjects": { "type": "array", "items": { "type": "string" } },
+        "session_time_limit_minutes": { "type": "integer", "default": 30 },
         "difficulty_preference": {
           "type": "string",
           "enum": ["easier", "grade_level", "challenging"],
-          "default": "grade_level",
-          "description": "難易度設定"
+          "default": "grade_level"
         },
-        "notification_email": {
-          "type": "string",
-          "format": "email",
-          "description": "学習レポート送信先メールアドレス"
-        }
+        "preferred_persona": {
+          "type": ["string", "null"],
+          "enum": ["standard", "gamemaster", "artist", "logic", null],
+          "description": "保護者が指定するペルソナ（nullなら自動選択）"
+        },
+        "notification_email": { "type": "string", "format": "email" }
       }
     },
-    "created_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "プロファイル作成日時"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "プロファイル最終更新日時"
-    }
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
   }
 }
