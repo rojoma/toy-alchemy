@@ -298,6 +298,10 @@ def create_referee_task(
               crutch: PASS | CRUTCH_DETECTED
               directive_to_tutor: [具体的な指示（日本語）]
               context_carryover: [前のターンから引き継ぐべき情報]
+              prev_persona_signal: POSITIVE | NEGATIVE | NEUTRAL
+              # ↑ 直前のペルソナ「{PERSONAS.get(current_persona, {}).get('name', current_persona)}」が
+              # 子供に効いていたか判定（理解進展あり=POSITIVE、混乱や無反応=NEGATIVE、
+              # 初回や判断不能=NEUTRAL）。これは将来のペルソナ選択に蓄積されます。
             }}
         """),
         expected_output="DIRECTOR_VERDICT形式の構造化ディレクティブ",
@@ -372,7 +376,15 @@ def parse_referee_verdict(verdict_text: str) -> dict:
         "phase": PHASE_QUESTIONING,
         "selected_persona": DEFAULT_PERSONA,
         "emotion": "NONE",
+        "prev_persona_signal": "NEUTRAL",
     }
+
+    signal_match = re.search(
+        r"prev_persona_signal:\s*(POSITIVE|NEGATIVE|NEUTRAL)",
+        verdict_text, re.IGNORECASE,
+    )
+    if signal_match:
+        result["prev_persona_signal"] = signal_match.group(1).upper()
 
     # フェーズ抽出
     phase_match = re.search(r"phase:\s*(questioning|explaining|resolved)", verdict_text, re.IGNORECASE)
@@ -472,12 +484,21 @@ def run_tutoring_session(
     tutor_result = tutor_crew.kickoff()
     tutor_output = tutor_result.tasks_output[0].raw
 
+    # --- Step 3: 直前のペルソナへのフィードバックを永続化 ---
+    prev_signal = verdict.get("prev_persona_signal", "NEUTRAL")
+    if conversation_history and prev_signal in ("POSITIVE", "NEGATIVE"):
+        delta = 1 if prev_signal == "POSITIVE" else -1
+        eff = profile.setdefault("persona_effectiveness", {})
+        eff[current_persona] = eff.get(current_persona, 0) + delta
+        save_child_profile(profile)
+
     return {
         "tutor_response": tutor_output,
         "referee_directive": referee_output,
         "phase": new_phase,
         "persona_used": selected_persona,
         "emotion": verdict.get("emotion", "NONE"),
+        "prev_persona_signal": prev_signal,
     }
 
 

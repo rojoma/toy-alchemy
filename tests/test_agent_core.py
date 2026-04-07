@@ -44,12 +44,24 @@ def test_parse_full_verdict():
       phase: explaining
       selected_persona: gamemaster
       emotion: GENTLE_ENCOURAGEMENT
+      prev_persona_signal: POSITIVE
     }
     """
     v = parse_referee_verdict(text)
     assert v["phase"] == "explaining"
     assert v["selected_persona"] == "gamemaster"
     assert v["emotion"] == "GENTLE_ENCOURAGEMENT"
+    assert v["prev_persona_signal"] == "POSITIVE"
+
+
+def test_parse_verdict_signal_negative():
+    v = parse_referee_verdict("prev_persona_signal: NEGATIVE")
+    assert v["prev_persona_signal"] == "NEGATIVE"
+
+
+def test_parse_verdict_signal_default_neutral():
+    v = parse_referee_verdict("phase: questioning")
+    assert v["prev_persona_signal"] == "NEUTRAL"
 
 
 def test_parse_verdict_defaults_when_missing():
