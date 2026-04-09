@@ -60,7 +60,7 @@ for tid in t001 ext_tanaka ext_rivera; do
     \"depth\": \"quick\",
     \"run_pre_test\": false,
     \"run_post_test\": false,
-    \"lang\": \"ja\"
+    \"lang\": \"en\"
   }"
 done
 snapshot "after_exp1"
@@ -74,9 +74,9 @@ for tid in ext_warm_v1 ext_cool_v1; do
       \"student_id\": \"$sid\",
       \"topic\": $EXP2_TOPIC,
       \"depth\": \"quick\",
-      \"run_pre_test\": true,
-      \"run_post_test\": true,
-      \"lang\": \"ja\"
+      \"run_pre_test\": false,
+      \"run_post_test\": false,
+      \"lang\": \"en\"
     }"
   done
 done
@@ -92,7 +92,7 @@ for d in quick standard deep; do
     \"depth\": \"$d\",
     \"run_pre_test\": false,
     \"run_post_test\": false,
-    \"lang\": \"ja\"
+    \"lang\": \"en\"
   }"
 done
 snapshot "after_exp3"
