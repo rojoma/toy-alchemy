@@ -418,7 +418,7 @@ async def run_session(body: dict):
     for phase in phases:
         for turn_num in range(1, phase["turns"] + 1):
             current_prof = student.proficiency_model.topic_proficiencies.get(config.topic, student.proficiency_model.proficiency)
-            tr = await teacher.get_response(topic=config.topic, phase=phase["name"], phase_goal=phase["goal"], student_name=student.name_ja(), student_proficiency=current_prof, student_emotional=student.emotional_state.__dict__, student_last_response=last_student_text, grade=config.grade, subject=config.subject, turn_number=turn_num)
+            tr = await teacher.get_response(topic=config.topic, phase=phase["name"], phase_goal=phase["goal"], student_name=student.name, student_proficiency=current_prof, student_emotional=student.emotional_state.__dict__, student_last_response=last_student_text, grade=config.grade, subject=config.subject, turn_number=turn_num)
             sr = await student.get_response(teacher_message=tr["text"], topic=config.topic, phase=phase["name"])
             ev = await principal.evaluate_turn(teacher_text=tr["text"], student_text=sr["text"], topic=config.topic, phase=phase["name"], student_proficiency=current_prof, grade=config.grade, subject=config.subject)
             turn_evaluations.append(ev)
@@ -537,7 +537,8 @@ async def run_session_stream(
                     topic, student.proficiency_model.proficiency)
                 tr = await teacher.get_response(
                     topic=topic, phase=phase["name"], phase_goal=phase["goal"],
-                    student_name=student.name_ja(), student_proficiency=current_prof,
+                    student_name=student.name if lang == "en" else student.name_ja(),
+                    student_proficiency=current_prof,
                     student_emotional=student.emotional_state.__dict__,
                     student_last_response=last_student_text,
                     grade=config.grade, subject=config.subject, turn_number=turn_num,

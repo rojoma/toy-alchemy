@@ -53,14 +53,40 @@ class StudentAgent:
         prof = self.proficiency_model.topic_proficiencies.get(
             topic, self.proficiency_model.proficiency
         )
-        prof_desc = (
-            "基礎概念が不安定" if prof < 40
-            else "計算ミスが多い" if prof < 55
-            else "応用問題が苦手" if prof < 70
-            else "ほぼ理解できている"
-        )
+        if lang == "en":
+            prof_desc = (
+                "shaky on basic concepts" if prof < 40
+                else "frequent calculation errors" if prof < 55
+                else "struggles with applied problems" if prof < 70
+                else "mostly understands"
+            )
+            display_name = self.name
+            system = f"""You are {display_name}, a grade {self.grade} elementary school student.
+Your proficiency on the unit "{topic}" is {prof:.0f}/100 ({prof_desc}).
+Current phase: {phase}
 
-        system = f"""あなたは小学{self.grade}年生の{self.name_ja()}です。
+Personality:
+- curiosity: {self.personality['curiosity']:.1f}/1.0
+- patience: {self.personality['patience']:.1f}/1.0
+- confidence: {self.personality['confidence']:.1f}/1.0
+- verbosity: {self.personality['verbosity']:.1f}/1.0
+- traits: {self.personality['description']}
+
+Emotional state: {self.emotional_state.to_prompt_description()}
+
+For this question, {'answer correctly (but in a natural, kid-like way as if you figured it out yourself)' if is_correct else f'make a mistake (typical kid errors: {", ".join(self.error_patterns[:2])})'}.
+
+Reply in 2-4 sentences in English with realistic grade-{self.grade} language. Stay in character as {display_name}."""
+            user_msg = f'The teacher said: "{teacher_message}"'
+        else:
+            prof_desc = (
+                "基礎概念が不安定" if prof < 40
+                else "計算ミスが多い" if prof < 55
+                else "応用問題が苦手" if prof < 70
+                else "ほぼ理解できている"
+            )
+            display_name = self.name_ja()
+            system = f"""あなたは小学{self.grade}年生の{display_name}です。
 単元「{topic}」の習熟度は{prof:.0f}/100（{prof_desc}）です。
 現在のフェーズ: {phase}
 
@@ -75,13 +101,13 @@ class StudentAgent:
 
 この問いに対して{'正しく答えてください（ただし自分で考えたように自然に）' if is_correct else f'間違えてください（典型的な小学生のミス: {", ".join(self.error_patterns[:2])}）'}。
 
-返答は2〜4文、{"英語" if lang == "en" else "日本語"}で。{self.grade}年生らしいリアルな言葉遣いで。
-LANGUAGE: Reply in {"English" if lang == "en" else "Japanese"}."""
+返答は2〜4文、日本語で。{self.grade}年生らしいリアルな言葉遣いで。"""
+            user_msg = f'先生が言いました: "{teacher_message}"'
 
         response = self.client.chat.completions.create(
             model="gpt-4o",
             max_tokens=300,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": f'先生が言いました: "{teacher_message}"'}]
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user_msg}]
         )
         text = response.choices[0].message.content
 
