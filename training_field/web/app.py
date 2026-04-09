@@ -53,6 +53,20 @@ def require_field_key(x_field_key: str | None = Header(default=None)):
 async def health():
     return {"status": "ok", "service": "training-field", "agent_api": bool(os.environ.get("FIELD_API_KEY"))}
 
+@app.get("/skill.md")
+async def serve_skill_md(request: Request):
+    """Serve SKILL.md so external agents can fetch it directly via the deploy URL.
+    Substitutes {{FIELD_BASE_URL}} with the actual host. {{FIELD_API_KEY}} is left
+    intact — the operator distributes the key out-of-band."""
+    skill_path = Path(__file__).parent.parent / "SKILL.md"
+    if not skill_path.exists():
+        return JSONResponse({"error": "SKILL.md not found"}, status_code=404)
+    body = skill_path.read_text(encoding="utf-8")
+    base_url = str(request.base_url).rstrip("/")
+    body = body.replace("{{FIELD_BASE_URL}}", base_url)
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(body, media_type="text/markdown; charset=utf-8")
+
 STUDENTS = {
     "s001": {"name":"Emma","nickname":"エマ","prof_baseline":32,"personality":"Anxious, withdrawn","color":"#3b82f6"},
     "s002": {"name":"Jake","nickname":"ジェイク","prof_baseline":40,"personality":"Impulsive, trial-and-error","color":"#f59e0b"},
