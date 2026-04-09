@@ -1,131 +1,19 @@
-■ leaderboard snapshot: before
-▶ exp1/t001_emma
-  body: {
-    "teacher_id": "t001",
-    "student_id": "s001",
-    "topic": "分数のかけ算とわり算",
-    "depth": "quick",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "en"
-  }
-  ✓ 60s | "session_id":"sess_b8af1407" | "learning_gain":0.0 | "avg_zpd":0.725
-▶ exp3/t001_priya_deep
-  body: {
-    "teacher_id": "t001",
-    "student_id": "s003",
-    "topic": "対称な図形",
-    "depth": "deep",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "ja"
-  }
-  ✓ 39s | "session_id":"sess_5c3c1a89" | "learning_gain":0.0 | "avg_zpd":0.688
-▶ exp1/ext_tanaka_emma
-  body: {
-    "teacher_id": "ext_tanaka",
-    "student_id": "s001",
-    "topic": "分数のかけ算とわり算",
-    "depth": "quick",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "en"
-  }
-  ✓ 114s | "session_id":"sess_9dcfec14" | "learning_gain":0.0 | "avg_zpd":0.775
-■ leaderboard snapshot: after_exp3
+■ snapshot before
+▶ EXP1: Tournament (3 parallel)
+  ✓ exp1/ext_tanaka_emma 46s | "session_id":"sess_8c95ca64" | "avg_zpd":0.763 | "final_proficiency":37.1
+  ✓ exp1/t001_emma 92s | "session_id":"sess_5a70a69d" | "avg_zpd":0.688 | "final_proficiency":37.1
+  ✓ exp1/ext_rivera_emma 141s | "session_id":"sess_c4bc8697" | "avg_zpd":0.688 | "final_proficiency":35.9
+■ snapshot after_exp1
+▶ EXP2: Warmth x Confidence (4 parallel)
+  ✓ exp2/ext_warm_v1_s001 50s | "session_id":"sess_d0790c62" | "avg_zpd":0.662 | "final_proficiency":37.1
+  ✓ exp2/ext_warm_v1_s006 100s | "session_id":"sess_a9b2e207" | "avg_zpd":0.725 | "final_proficiency":80.9
+  ✓ exp2/ext_cool_v1_s001 152s | "session_id":"sess_6aad6e97" | "avg_zpd":0.713 | "final_proficiency":38.6
+  ✓ exp2/ext_cool_v1_s006 203s | "session_id":"sess_4ea956c3" | "avg_zpd":0.775 | "final_proficiency":79.3
+■ snapshot after_exp2
+▶ EXP3: Depth ROI (3 parallel)
+  ✓ exp3/t001_priya_quick 46s | "session_id":"sess_d8dc574c" | "avg_zpd":0.725 | "final_proficiency":54.8
+  ✓ exp3/t001_priya_standard 113s | "session_id":"sess_c2974f2e" | "avg_zpd":0.658 | "final_proficiency":57.9
+  ✓ exp3/t001_priya_deep 202s |  |  | 
+■ snapshot after_exp3
 
-  ✓ 115s | "session_id":"sess_14b32cdf" | "learning_gain":0.0 | "avg_zpd":0.662
-All done. Results in training_field/experiments/hw7/results
-▶ exp1/ext_rivera_emma
-  body: {
-    "teacher_id": "ext_rivera",
-    "student_id": "s001",
-    "topic": "分数のかけ算とわり算",
-    "depth": "quick",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "en"
-  }
-  ✓ 43s | "session_id":"sess_c8664858" | "learning_gain":0.0 | "avg_zpd":0.7
-■ leaderboard snapshot: after_exp1
-▶ exp2/ext_warm_v1_s001
-  body: {
-      "teacher_id": "ext_warm_v1",
-      "student_id": "s001",
-      "topic": "円の面積",
-      "depth": "quick",
-      "run_pre_test": false,
-      "run_post_test": false,
-      "lang": "en"
-    }
-  ✓ 51s | "session_id":"sess_1d2ccaa9" | "learning_gain":0.0 | "avg_zpd":0.725
-▶ exp2/ext_warm_v1_s006
-  body: {
-      "teacher_id": "ext_warm_v1",
-      "student_id": "s006",
-      "topic": "円の面積",
-      "depth": "quick",
-      "run_pre_test": false,
-      "run_post_test": false,
-      "lang": "en"
-    }
-  ✓ 39s | "session_id":"sess_de3997eb" | "learning_gain":0.0 | "avg_zpd":0.738
-▶ exp2/ext_cool_v1_s001
-  body: {
-      "teacher_id": "ext_cool_v1",
-      "student_id": "s001",
-      "topic": "円の面積",
-      "depth": "quick",
-      "run_pre_test": false,
-      "run_post_test": false,
-      "lang": "en"
-    }
-  ✓ 39s | "session_id":"sess_f5083f94" | "learning_gain":0.0 | "avg_zpd":0.662
-▶ exp2/ext_cool_v1_s006
-  body: {
-      "teacher_id": "ext_cool_v1",
-      "student_id": "s006",
-      "topic": "円の面積",
-      "depth": "quick",
-      "run_pre_test": false,
-      "run_post_test": false,
-      "lang": "en"
-    }
-  ✓ 36s | "session_id":"sess_098c2d89" | "learning_gain":0.0 | "avg_zpd":0.7
-■ leaderboard snapshot: after_exp2
-▶ exp3/t001_priya_quick
-  body: {
-    "teacher_id": "t001",
-    "student_id": "s003",
-    "topic": "対称な図形",
-    "depth": "quick",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "en"
-  }
-  ✓ 43s | "session_id":"sess_614ce821" | "learning_gain":0.0 | "avg_zpd":0.787
-▶ exp3/t001_priya_standard
-  body: {
-    "teacher_id": "t001",
-    "student_id": "s003",
-    "topic": "対称な図形",
-    "depth": "standard",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "en"
-  }
-  ✓ 59s | "session_id":"sess_9dca6a6d" | "learning_gain":0.0 | "avg_zpd":0.75
-▶ exp3/t001_priya_deep
-  body: {
-    "teacher_id": "t001",
-    "student_id": "s003",
-    "topic": "対称な図形",
-    "depth": "deep",
-    "run_pre_test": false,
-    "run_post_test": false,
-    "lang": "en"
-  }
-  ✓ 75s | "session_id":"sess_7746f7f1" | "learning_gain":0.0 | "avg_zpd":0.756
-■ leaderboard snapshot: after_exp3
-
-All done. Results in training_field/experiments/hw7/results
+All done.
