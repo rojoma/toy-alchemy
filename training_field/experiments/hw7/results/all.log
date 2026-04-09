@@ -1,0 +1,116 @@
+■ leaderboard snapshot: before
+▶ exp1/t001_emma
+  body: {
+    "teacher_id": "t001",
+    "student_id": "s001",
+    "topic": "分数のかけ算とわり算",
+    "depth": "quick",
+    "run_pre_test": true,
+    "run_post_test": true,
+    "lang": "ja"
+  }
+  ✓ 11s |  |  | 
+▶ exp1/ext_tanaka_emma
+  body: {
+    "teacher_id": "ext_tanaka",
+    "student_id": "s001",
+    "topic": "分数のかけ算とわり算",
+    "depth": "quick",
+    "run_pre_test": true,
+    "run_post_test": true,
+    "lang": "ja"
+  }
+  ✓ 0s |  |  | 
+▶ exp1/ext_rivera_emma
+  body: {
+    "teacher_id": "ext_rivera",
+    "student_id": "s001",
+    "topic": "分数のかけ算とわり算",
+    "depth": "quick",
+    "run_pre_test": true,
+    "run_post_test": true,
+    "lang": "ja"
+  }
+  ✓ 0s |  |  | 
+■ leaderboard snapshot: after_exp1
+▶ exp2/ext_warm_v1_s001
+  body: {
+      "teacher_id": "ext_warm_v1",
+      "student_id": "s001",
+      "topic": "円の面積",
+      "depth": "quick",
+      "run_pre_test": true,
+      "run_post_test": true,
+      "lang": "ja"
+    }
+  ✓ 10s |  |  | 
+▶ exp2/ext_warm_v1_s006
+  body: {
+      "teacher_id": "ext_warm_v1",
+      "student_id": "s006",
+      "topic": "円の面積",
+      "depth": "quick",
+      "run_pre_test": true,
+      "run_post_test": true,
+      "lang": "ja"
+    }
+  ✓ 1s |  |  | 
+▶ exp2/ext_cool_v1_s001
+  body: {
+      "teacher_id": "ext_cool_v1",
+      "student_id": "s001",
+      "topic": "円の面積",
+      "depth": "quick",
+      "run_pre_test": true,
+      "run_post_test": true,
+      "lang": "ja"
+    }
+  ✓ 1s |  |  | 
+▶ exp2/ext_cool_v1_s006
+  body: {
+      "teacher_id": "ext_cool_v1",
+      "student_id": "s006",
+      "topic": "円の面積",
+      "depth": "quick",
+      "run_pre_test": true,
+      "run_post_test": true,
+      "lang": "ja"
+    }
+  ✓ 1s |  |  | 
+■ leaderboard snapshot: after_exp2
+▶ exp3/t001_priya_quick
+  body: {
+    "teacher_id": "t001",
+    "student_id": "s003",
+    "topic": "対称な図形",
+    "depth": "quick",
+    "run_pre_test": true,
+    "run_post_test": true,
+    "lang": "ja"
+  }
+  ✓ 11s |  |  | 
+▶ exp3/t001_priya_standard
+  body: {
+    "teacher_id": "t001",
+    "student_id": "s003",
+    "topic": "対称な図形",
+    "depth": "standard",
+    "run_pre_test": true,
+    "run_post_test": true,
+    "lang": "ja"
+  }
+  ✓ 0s |  |  | 
+▶ exp3/t001_priya_deep
+  body: {
+    "teacher_id": "t001",
+    "student_id": "s003",
+    "topic": "対称な図形",
+    "depth": "deep",
+    "run_pre_test": true,
+    "run_post_test": true,
+    "lang": "ja"
+  }
+  ✓ 0s |  |  | 
+■ leaderboard snapshot: after_exp3
+
+All done. Results in ./results

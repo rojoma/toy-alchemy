@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -408,7 +408,7 @@ function translateContent(el,l){
   const src = el.dataset.i18nOrig;
   el.textContent = (l!=="ja" && TX[l] && TX[l][src]) ? TX[l][src] : src;
 }
-let curLang = localStorage.getItem("tfLang") || "ja";
+let curLang = localStorage.getItem("tfLang") || "en";
 
 function fillSelect(sel, items, saved){
   sel.innerHTML = "";

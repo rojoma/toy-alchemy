@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -202,7 +202,7 @@ tbody tr:hover{background:var(--surface-2)}
 
 <script>
 const TX = { en: {{ topic_tx_en|tojson }} };
-function tx(s){ const l=localStorage.getItem("tfLang")||"ja"; return (l!=="ja" && TX[l] && TX[l][s]) ? TX[l][s] : s; }
+function tx(s){ const l=localStorage.getItem("tfLang")||"en"; return (l!=="ja" && TX[l] && TX[l][s]) ? TX[l][s] : s; }
 document.querySelectorAll("[data-i18n-tx]").forEach(el=>{ el.textContent = tx(el.textContent.trim()); });
 
 function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }

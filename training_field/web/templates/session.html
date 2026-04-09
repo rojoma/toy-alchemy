@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -606,7 +606,7 @@ const TX = { en: Object.assign({
     "場合の数":"Combinatorics",
   }, {{ topic_tx_en|tojson }})
 };
-let curLang = localStorage.getItem("tfLang") || "ja";
+let curLang = localStorage.getItem("tfLang") || "en";
 function translateContent(el,l){
   if(!el.dataset.i18nOrig) el.dataset.i18nOrig = el.textContent.trim();
   const src = el.dataset.i18nOrig;

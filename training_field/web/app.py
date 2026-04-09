@@ -488,7 +488,7 @@ async def run_session_stream(
     grade: str = "小6", subject: str = "算数",
     pre_test: bool = False, post_test: bool = False,
     teacher_id: str = "t001",
-    lang: str = "ja",
+    lang: str = "en",
 ):
     async def event_generator():
         import json

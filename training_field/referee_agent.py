@@ -39,7 +39,7 @@ class PrincipalAgent:
         self.client = OpenAI()
         self.session_log: list = []
 
-    def _build_system(self, lang: str = "ja") -> str:
+    def _build_system(self, lang: str = "en") -> str:
         out_lang = "English" if lang == "en" else "Japanese"
         return """You are the Principal, a neutral educational evaluator.
 
@@ -81,7 +81,7 @@ LANGUAGE: All free-text fields (directive_to_teacher, summary) must be in __LANG
         student_proficiency: float,
         grade: int = 6,
         subject: str = "算数",
-        lang: str = "ja",
+        lang: str = "en",
     ) -> TurnEvaluation:
         user_content = f"""Grade {grade} {subject}, Topic: "{topic}", Phase: {phase}
 Student proficiency: {student_proficiency:.0f}/100

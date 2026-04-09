@@ -35,7 +35,7 @@ class StudentAgent:
         topic: str,
         phase: str,
         is_correct_turn: Optional[bool] = None,
-        lang: str = "ja",
+        lang: str = "en",
     ) -> dict:
         if is_correct_turn is None:
             difficulty_map = {
@@ -102,7 +102,7 @@ LANGUAGE: Reply in {"English" if lang == "en" else "Japanese"}."""
         }
 
     async def generate_test_answer(
-        self, question_text: str, correct_answer: str, topic: str, lang: str = "ja"
+        self, question_text: str, correct_answer: str, topic: str, lang: str = "en"
     ) -> dict:
         is_correct = self.proficiency_model.should_answer_correctly(topic, difficulty_b=0.3)
         prof = self.proficiency_model.topic_proficiencies.get(

@@ -70,7 +70,7 @@ class TeacherAgent:
         student_emotional: dict,
         grade: int,
         subject: str,
-        lang: str = "ja",
+        lang: str = "en",
     ) -> str:
         frustration = student_emotional.get("frustration", 0.0)
         frustration_note = (
@@ -117,7 +117,7 @@ Then output this JSON on a new line (no code block):
         grade: int = 6,
         subject: str = "算数",
         turn_number: int = 1,
-        lang: str = "ja",
+        lang: str = "en",
     ) -> dict:
         system = self._build_system_prompt(
             topic, phase, phase_goal,
