@@ -1,0 +1,162 @@
+{
+  "version": "1.1",
+  "schema_note": "All monetary/sensitive fields excluded. Suitable for research use.",
+  "students": [
+    {
+      "student_id": "s001",
+      "name": "Emma",
+      "nickname_ja": "エマ",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "personality": {
+        "curiosity": 0.3,
+        "patience": 0.6,
+        "confidence": 0.2,
+        "verbosity": 0.3,
+        "description": "Anxious, withdrawn. Goes silent when wrong. Needs validation before moving on."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 32,
+        "比と比の値": 28,
+        "速さ・時間・距離": 35,
+        "比例と反比例": 40,
+        "円の面積": 30,
+        "場合の数": 25
+      },
+      "error_patterns": ["分母の扱いの混乱", "単位変換の忘れ", "問題文を最後まで読まない"],
+      "emotional_state_init": {"confidence": 0.2, "frustration": 0.1, "engagement": 0.4},
+      "learning_history": []
+    },
+    {
+      "student_id": "s002",
+      "name": "Jake",
+      "nickname_ja": "ジェイク",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "personality": {
+        "curiosity": 0.8,
+        "patience": 0.3,
+        "confidence": 0.6,
+        "verbosity": 0.8,
+        "description": "Impulsive, trial-and-error. Blurts first answer. Gives up fast if stuck."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 38,
+        "比と比の値": 42,
+        "速さ・時間・距離": 40,
+        "比例と反比例": 35,
+        "円の面積": 45,
+        "場合の数": 30
+      },
+      "error_patterns": ["計算を急いでミス", "検算をしない", "途中で方針変更"],
+      "emotional_state_init": {"confidence": 0.6, "frustration": 0.2, "engagement": 0.7},
+      "learning_history": []
+    },
+    {
+      "student_id": "s003",
+      "name": "Priya",
+      "nickname_ja": "プリヤ",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "personality": {
+        "curiosity": 0.5,
+        "patience": 0.8,
+        "confidence": 0.5,
+        "verbosity": 0.5,
+        "description": "Methodical, patient. Solves correctly if given time. Breaks under pressure."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 55,
+        "比と比の値": 50,
+        "速さ・時間・距離": 48,
+        "比例と反比例": 58,
+        "円の面積": 52,
+        "場合の数": 45
+      },
+      "error_patterns": ["時間制限下での計算ミス", "応用問題で手順を飛ばす"],
+      "emotional_state_init": {"confidence": 0.5, "frustration": 0.1, "engagement": 0.6},
+      "learning_history": []
+    },
+    {
+      "student_id": "s004",
+      "name": "Dylan",
+      "nickname_ja": "ディラン",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "personality": {
+        "curiosity": 0.6,
+        "patience": 0.3,
+        "confidence": 0.5,
+        "verbosity": 0.6,
+        "description": "Moody, topic-sensitive. Excels when engaged. Shuts down on disliked topics."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 60,
+        "比と比の値": 42,
+        "速さ・時間・距離": 55,
+        "比例と反比例": 65,
+        "円の面積": 50,
+        "場合の数": 35
+      },
+      "error_patterns": ["好きな単元は高得点・苦手は回避", "気分によるムラ"],
+      "emotional_state_init": {"confidence": 0.5, "frustration": 0.3, "engagement": 0.5},
+      "learning_history": []
+    },
+    {
+      "student_id": "s005",
+      "name": "Chloe",
+      "nickname_ja": "クロエ",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "personality": {
+        "curiosity": 0.5,
+        "patience": 0.7,
+        "confidence": 0.3,
+        "verbosity": 0.4,
+        "description": "Perfectionist, cautious. Accurate computation, shallow conceptual understanding."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 72,
+        "比と比の値": 68,
+        "速さ・時間・距離": 70,
+        "比例と反比例": 75,
+        "円の面積": 73,
+        "場合の数": 60
+      },
+      "error_patterns": ["概念の意味を問われると詰まる", "新しい形式の問題で混乱"],
+      "emotional_state_init": {"confidence": 0.3, "frustration": 0.2, "engagement": 0.5},
+      "learning_history": []
+    },
+    {
+      "student_id": "s006",
+      "name": "Marcus",
+      "nickname_ja": "マーカス",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "personality": {
+        "curiosity": 0.7,
+        "patience": 0.6,
+        "confidence": 0.8,
+        "verbosity": 0.7,
+        "description": "Confident, fast-moving. Quick grasp, skips verification steps."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 75,
+        "比と比の値": 72,
+        "速さ・時間・距離": 78,
+        "比例と反比例": 80,
+        "円の面積": 76,
+        "場合の数": 65
+      },
+      "error_patterns": ["検算省略によるケアレスミス", "問題を先読みして条件を見落とす"],
+      "emotional_state_init": {"confidence": 0.8, "frustration": 0.1, "engagement": 0.8},
+      "learning_history": []
+    }
+  ]
+}

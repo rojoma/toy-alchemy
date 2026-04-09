@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session — Training Field</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#fafaf7;
+  --bg-translucent:rgba(250,250,247,0.78);
+  --surface:#ffffff;
+  --surface-2:#f4f4f0;
+  --surface-3:#ececea;
+  --border:rgba(0,0,0,0.06);
+  --border-strong:rgba(0,0,0,0.12);
+  --text:#1d1d1f;
+  --text-secondary:#424245;
+  --muted:#86868b;
+  --link:#0071e3;
+  --success:#1f8a4c;
+  --warn:#b25000;
+  --danger:#c1272d;
+  --purple:#7c3aed;
+  --amber:#b25000;
+  /* chat bubbles */
+  --mt-bg:#f0efea;
+  --mt-bd:rgba(0,0,0,0.08);
+  --mt-fg:#1d1d1f;
+  --ms-bg:#0071e3;
+  --ms-bd:#0071e3;
+  --ms-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.05);
+  --shadow-lg:0 2px 4px rgba(0,0,0,0.04),0 24px 48px rgba(0,0,0,0.08);
+  --radius-sm:10px;
+  --radius-md:14px;
+  --radius-lg:20px;
+  --radius-pill:980px;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+:root[data-theme="dark"]{
+  --bg:#0a0a0a;
+  --bg-translucent:rgba(10,10,10,0.78);
+  --surface:#161618;
+  --surface-2:#1f1f22;
+  --surface-3:#27272a;
+  --border:rgba(255,255,255,0.08);
+  --border-strong:rgba(255,255,255,0.16);
+  --text:#f5f5f7;
+  --text-secondary:#c7c7cc;
+  --muted:#86868b;
+  --link:#2997ff;
+  --success:#30d158;
+  --warn:#ff9f0a;
+  --danger:#ff453a;
+  --purple:#bf5af2;
+  --amber:#ff9f0a;
+  --mt-bg:#1f1f22;
+  --mt-bd:rgba(255,255,255,0.08);
+  --mt-fg:#f5f5f7;
+  --ms-bg:#2997ff;
+  --ms-bd:#2997ff;
+  --ms-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.3),0 8px 24px rgba(0,0,0,0.4);
+  --shadow-lg:0 1px 2px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.5);
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter","Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  background:var(--bg);color:var(--text);
+  font-feature-settings:"ss01","cv11";
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:-0.011em;line-height:1.5;
+  height:100vh;overflow:hidden;display:flex;flex-direction:column;
+}
+
+/* ── Header ────────────────────────────────────────── */
+.hdr{
+  flex-shrink:0;
+  background:var(--bg-translucent);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:16px 32px;
+  display:flex;align-items:center;gap:18px;
+}
+.back{
+  color:var(--text);font-size:13px;font-weight:500;
+  text-decoration:none;
+  padding:7px 14px;
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-pill);
+  transition:background-color .2s var(--ease),border-color .2s var(--ease);
+}
+.back:hover{background:var(--surface-2)}
+.hdr-info{flex:1;display:flex;align-items:center;gap:14px}
+.av{
+  width:36px;height:36px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;letter-spacing:-0.01em;
+}
+.hdr-name{font-size:15px;font-weight:600;letter-spacing:-0.018em}
+.hdr-name-sub{color:var(--muted);font-weight:400;font-size:13px;margin-left:6px}
+.hdr-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-left:auto}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background-color .3s}
+.dot.run{background:var(--success);animation:pulse 1.4s infinite}
+.dot.done{background:var(--success)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.15)}}
+
+.icon-btn{
+  height:30px;padding:0 13px;
+  border:1px solid var(--border-strong);
+  background:transparent;color:var(--text);
+  border-radius:var(--radius-pill);
+  font:inherit;font-size:12px;font-weight:500;cursor:pointer;
+  transition:background-color .2s var(--ease),border-color .2s var(--ease),transform .15s var(--ease);
+}
+.icon-btn:hover{background:var(--surface-2)}
+.icon-btn:active{transform:scale(0.97)}
+.theme-btn{margin-left:8px}
+
+/* ── Layout ────────────────────────────────────────── */
+.layout{
+  display:grid;
+  grid-template-columns:260px 1fr 280px;
+  flex:1;overflow:hidden;
+}
+.panel{
+  border-right:1px solid var(--border);
+  overflow-y:auto;padding:28px 24px;
+  background:var(--bg);
+}
+.panel-last{border-right:none}
+.panel::-webkit-scrollbar{width:6px}
+.panel::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
+.panel:hover::-webkit-scrollbar-thumb{background:var(--border-strong)}
+
+.sec{margin-bottom:32px}
+.sec:last-child{margin-bottom:0}
+.slabel{
+  font-size:11px;font-weight:600;color:var(--muted);
+  letter-spacing:0.04em;text-transform:uppercase;
+  margin-bottom:14px;
+}
+
+/* ── Before/After rings ───────────────────────────── */
+.rings{
+  display:flex;gap:12px;align-items:center;justify-content:center;
+  padding:8px 0;
+}
+.rw{position:relative;width:74px;height:74px}
+.rw svg{width:74px;height:74px}
+.rw circle:first-child{stroke:var(--surface-2)}
+.rv{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:16px;font-weight:600;letter-spacing:-0.018em;
+  font-feature-settings:"tnum";
+}
+.rl{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
+.db{display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:14px}
+.dv{
+  font-size:13px;font-weight:600;
+  padding:3px 10px;border-radius:var(--radius-pill);
+  font-feature-settings:"tnum";
+  background:var(--surface-2);color:var(--muted);
+}
+
+/* ── Eval axes ────────────────────────────────────── */
+.ax-row{display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:8px}
+.ax-label{min-width:62px;color:var(--muted)}
+.ax-track{flex:1;height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden}
+.ax-fill{height:100%;border-radius:2px;transition:width .8s var(--ease)}
+.ax-val{
+  font-size:11px;min-width:34px;text-align:right;
+  font-feature-settings:"tnum";font-weight:500;
+}
+.gd{
+  text-align:center;padding:14px;margin-top:14px;
+  border-radius:var(--radius-md);font-size:18px;font-weight:600;
+  letter-spacing:-0.018em;
+}
+
+/* ── Sys metrics list ─────────────────────────────── */
+.metrics-list{display:flex;flex-direction:column;gap:10px;font-size:12px}
+.metrics-row{display:flex;justify-content:space-between;color:var(--muted)}
+.metrics-row span:last-child{
+  color:var(--text);font-weight:500;
+  font-feature-settings:"tnum";
+}
+
+/* ── History rows ─────────────────────────────────── */
+.hrow{
+  font-size:12px;padding:10px 0;
+  border-bottom:1px solid var(--border);
+  display:flex;gap:10px;align-items:center;
+}
+.hrow:last-child{border-bottom:none}
+.hrow-id{
+  color:var(--muted);font-size:10px;
+  font-feature-settings:"tnum";
+}
+.hrow-topic{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hrow-gain{font-feature-settings:"tnum";font-weight:500}
+
+/* ── Phase bar ────────────────────────────────────── */
+.cpanel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+.phbar{
+  display:flex;gap:8px;
+  padding:18px 32px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.ph{
+  flex:1;padding:10px 6px;text-align:center;
+  border-radius:var(--radius-md);
+  font-size:11px;color:var(--muted);font-weight:500;
+  border:1px solid var(--border);
+  background:transparent;
+  transition:all .35s var(--ease);
+}
+.ph .ph-num{font-size:9px;display:block;margin-bottom:2px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted)}
+.ph.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.ph.active .ph-num{color:var(--bg);opacity:0.6}
+.ph.done{opacity:0.45}
+/* phase color hint dots — kept for class compatibility but minimal visually */
+.ph.p1.active,.ph.p2.active,.ph.p3.active,.ph.p4.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+.tprog{height:2px;background:var(--surface-2);flex-shrink:0;position:relative;overflow:hidden}
+.tfill{height:100%;background:var(--text);transition:width .5s var(--ease)}
+
+/* ── Chat ─────────────────────────────────────────── */
+.chat{
+  flex:1;overflow-y:auto;
+  padding:28px 32px 16px;
+  display:flex;flex-direction:column;gap:14px;
+  scroll-behavior:smooth;
+}
+.chat::-webkit-scrollbar{width:8px}
+.chat::-webkit-scrollbar-thumb{background:transparent;border-radius:4px}
+.chat:hover::-webkit-scrollbar-thumb{background:var(--border-strong)}
+
+.mwrap{display:flex;flex-direction:column;gap:5px;animation:fadeUp .35s var(--ease)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.mrole{
+  font-size:11px;font-weight:500;color:var(--muted);
+  padding:0 4px;letter-spacing:-0.005em;
+}
+.msg{
+  border-radius:var(--radius-lg);
+  padding:14px 18px;font-size:14px;line-height:1.55;
+  max-width:78%;
+  letter-spacing:-0.011em;
+}
+.mt{
+  background:var(--mt-bg);
+  border:1px solid var(--mt-bd);
+  color:var(--mt-fg);
+  align-self:flex-start;
+  border-bottom-left-radius:6px;
+}
+.ms{
+  background:var(--ms-bg);
+  border:1px solid var(--ms-bd);
+  color:var(--ms-fg);
+  align-self:flex-end;
+  border-bottom-right-radius:6px;
+}
+.mr{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+  align-self:center;
+  font-size:12px;border-radius:var(--radius-md);
+  max-width:100%;width:100%;
+  padding:12px 16px;
+}
+
+.rpills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rp{
+  font-size:10px;padding:3px 9px;
+  border-radius:var(--radius-pill);
+  background:var(--surface-2);
+  color:var(--muted);
+  font-feature-settings:"tnum";font-weight:500;
+  letter-spacing:-0.005em;
+}
+.rp.warn{background:rgba(193,39,45,0.10);color:var(--danger)}
+:root[data-theme="dark"] .rp.warn{background:rgba(255,69,58,0.16)}
+
+.psep{
+  text-align:center;font-size:10px;font-weight:600;
+  letter-spacing:0.16em;text-transform:uppercase;
+  padding:14px 0;
+  display:flex;align-items:center;gap:14px;
+  color:var(--muted);
+}
+.psep::before,.psep::after{content:'';flex:1;height:1px;background:var(--border)}
+.psep.p1,.psep.p2,.psep.p3,.psep.p4{color:var(--muted)}
+
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:14px;color:var(--muted);
+  font-size:14px;letter-spacing:-0.01em;
+}
+.empty-mark{
+  font-size:32px;opacity:0.4;
+}
+
+/* ── Bottom bar ───────────────────────────────────── */
+.bbar{
+  padding:18px 32px;
+  border-top:1px solid var(--border);
+  display:flex;gap:12px;flex-shrink:0;
+  background:var(--bg-translucent);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+}
+.btn-run{
+  flex:1;height:44px;
+  border:none;border-radius:var(--radius-pill);
+  background:var(--text);color:var(--bg);
+  font:inherit;font-size:14px;font-weight:600;
+  letter-spacing:-0.01em;
+  cursor:pointer;
+  transition:opacity .2s var(--ease),transform .15s var(--ease);
+}
+.btn-run:hover:not(:disabled){opacity:0.88}
+.btn-run:active:not(:disabled){transform:scale(0.99)}
+.btn-run:disabled{opacity:0.35;cursor:not-allowed}
+.measure-toggle{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--text-secondary);font-weight:500;
+  cursor:pointer;user-select:none;letter-spacing:-0.01em;
+  padding:0 8px;
+}
+.measure-toggle input{position:absolute;opacity:0;pointer-events:none}
+.measure-box{
+  width:20px;height:20px;border-radius:6px;
+  border:1.5px solid var(--border-strong);
+  background:var(--surface);
+  display:flex;align-items:center;justify-content:center;
+  transition:background-color .2s var(--ease),border-color .2s var(--ease);
+  color:var(--bg);
+}
+.measure-box svg{width:12px;height:12px;opacity:0;transition:opacity .15s var(--ease)}
+.measure-toggle input:checked + .measure-box{background:var(--text);border-color:var(--text)}
+.measure-toggle input:checked + .measure-box svg{opacity:1}
+.measure-toggle:hover .measure-box{border-color:var(--text)}
+
+/* ── Skills chips ─────────────────────────────────── */
+.sk{
+  display:inline-block;font-size:12px;font-weight:500;
+  padding:6px 12px;
+  border-radius:var(--radius-pill);
+  border:1px solid var(--border-strong);
+  background:transparent;color:var(--muted);
+  cursor:pointer;margin:3px 3px 3px 0;
+  letter-spacing:-0.005em;
+  transition:all .2s var(--ease);
+}
+.sk.on{border-color:var(--text);background:var(--text);color:var(--bg)}
+
+/* ── Selects ──────────────────────────────────────── */
+select{
+  width:100%;
+  appearance:none;-webkit-appearance:none;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  font:inherit;font-size:13px;font-weight:500;
+  padding:9px 36px 9px 14px;
+  cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2386868b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;background-size:12px;
+  transition:border-color .2s var(--ease);
+}
+select:hover{border-color:var(--text)}
+
+/* ── Agent cards (right panel) ────────────────────── */
+.agent-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:14px;
+}
+.agent-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.agent-av{
+  width:32px;height:32px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;letter-spacing:-0.01em;
+}
+.agent-name{font-size:13px;font-weight:600;letter-spacing:-0.012em}
+.agent-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.prow{
+  display:flex;justify-content:space-between;
+  font-size:11px;margin-top:8px;color:var(--muted);
+}
+.prow span:last-child{color:var(--text);font-weight:500;font-feature-settings:"tnum"}
+.pbar{height:3px;background:var(--surface-2);border-radius:2px;overflow:hidden;margin-top:3px}
+.pfill{height:100%;border-radius:2px;background:var(--text);transition:width .8s var(--ease)}
+
+.referee-card{
+  font-size:11px;color:var(--muted);line-height:1.7;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+}
+.referee-card .frame{font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
+
+<div class="hdr">
+  <a href="/" class="back" data-i18n="back_dashboard">← Dashboard</a>
+  <div class="hdr-info">
+    <div class="av" style="background:{{ student.color }}1a;color:{{ student.color }}">{{ student.name[:2].upper() }}</div>
+    <div>
+      <div class="hdr-name">{{ student.name }}<span class="hdr-name-sub">/ {{ student.nickname }}</span></div>
+      <div class="hdr-sub">{{ student.personality }}</div>
+    </div>
+  </div>
+  <div class="status"><div class="dot" id="sdot"></div><span id="stxt" data-i18n="status_idle">待機中</span></div>
+  <button class="icon-btn theme-btn" id="langbtn" onclick="toggleLang()">EN</button>
+  <button class="icon-btn theme-btn" onclick="(function(){var r=document.documentElement,n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);localStorage.setItem('tfTheme',n);document.getElementById('thlbl').textContent=n==='light'?'☀':'☾';})()"><span id="thlbl">☾</span></button>
+</div>
+<script>document.getElementById('thlbl').textContent=document.documentElement.getAttribute('data-theme')==='light'?'☀':'☾';</script>
+
+<div class="layout">
+
+<!-- LEFT -->
+<div class="panel">
+  <div class="sec">
+    <div class="slabel" data-i18n="before_after">Before / After</div>
+    <div class="rings">
+      <div>
+        <div class="rw"><svg viewBox="0 0 74 74"><circle cx="37" cy="37" r="29" fill="none" stroke-width="5"/><circle id="rb" cx="37" cy="37" r="29" fill="none" stroke="#86868b" stroke-width="5" stroke-linecap="round" stroke-dasharray="182.2" stroke-dashoffset="182.2" transform="rotate(-90 37 37)" style="transition:stroke-dashoffset .9s"/></svg><div class="rv" id="vb" style="color:#86868b">—</div></div>
+        <div class="rl" data-i18n="before">before</div>
+      </div>
+      <div class="db"><div style="font-size:14px;color:var(--muted)">→</div><div class="dv" id="dv">+0</div></div>
+      <div>
+        <div class="rw"><svg viewBox="0 0 74 74"><circle cx="37" cy="37" r="29" fill="none" stroke-width="5"/><circle id="ra" cx="37" cy="37" r="29" fill="none" stroke="#1f8a4c" stroke-width="5" stroke-linecap="round" stroke-dasharray="182.2" stroke-dashoffset="182.2" transform="rotate(-90 37 37)" style="transition:stroke-dashoffset .9s"/></svg><div class="rv" id="va" style="color:#1f8a4c">—</div></div>
+        <div class="rl" data-i18n="after">after</div>
+      </div>
+    </div>
+    <div id="gd" style="display:none" class="gd"></div>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="eval_axes">評価軸</div>
+    <div class="ax-row"><span class="ax-label" data-i18n="ax_system">システム</span><div class="ax-track"><div class="ax-fill" id="ax0" style="width:0%;background:#86868b"></div></div><span class="ax-val" id="av0">—</span></div>
+    <div class="ax-row"><span class="ax-label" data-i18n="ax_prof">習熟度</span><div class="ax-track"><div class="ax-fill" id="ax1" style="width:0%;background:#1f8a4c"></div></div><span class="ax-val" id="av1">—</span></div>
+    <div class="ax-row"><span class="ax-label" data-i18n="ax_dialog">対話品質</span><div class="ax-track"><div class="ax-fill" id="ax2" style="width:0%;background:#7c3aed"></div></div><span class="ax-val" id="av2">—</span></div>
+    <div class="ax-row"><span class="ax-label" data-i18n="ax_goal">目標達成</span><div class="ax-track"><div class="ax-fill" id="ax3" style="width:0%;background:#b25000"></div></div><span class="ax-val" id="av3">—</span></div>
+    <div class="ax-row"><span class="ax-label" data-i18n="ax_pass">合格点</span><div class="ax-track"><div class="ax-fill" id="ax4" style="width:0%;background:#1f8a4c"></div></div><span class="ax-val" id="av4">—</span></div>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="sys_metrics">システム指標</div>
+    <div class="metrics-list">
+      <div class="metrics-row"><span data-i18n="halluc_rate">幻覚発生率</span><span id="halluc">—</span></div>
+      <div class="metrics-row"><span data-i18n="direct_rate">直接回答率</span><span id="direct">—</span></div>
+      <div class="metrics-row"><span data-i18n="avg_zpd">avg ZPD</span><span id="zpd">—</span></div>
+      <div class="metrics-row"><span data-i18n="avg_bloom">avg Bloom</span><span id="bloom">—</span></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="session_hist">Session History</div>
+    {% for h in history %}
+    <div class="hrow">
+      <span class="hrow-id">{{ h.exp_id[-6:] }}</span>
+      <span class="hrow-topic" data-i18n-tx>{{ h.topic }}</span>
+      <span class="hrow-gain" style="color:{% if h.learning_gain > 0 %}var(--success){% else %}var(--muted){% endif %}">{% if h.learning_gain > 0 %}+{{ h.learning_gain }}{% else %}—{% endif %}</span>
+    </div>
+    {% endfor %}
+    {% if not history %}<div style="font-size:12px;color:var(--muted)" data-i18n="no_sessions">No sessions yet</div>{% endif %}
+  </div>
+</div>
+
+<!-- CENTER -->
+<div class="cpanel">
+  <div class="phbar">
+    <div class="ph p1" id="ph1"><span class="ph-num">Phase 1</span>Diagnosis</div>
+    <div class="ph p2" id="ph2"><span class="ph-num">Phase 2</span>Exploration</div>
+    <div class="ph p3" id="ph3"><span class="ph-num">Phase 3</span>Practice</div>
+    <div class="ph p4" id="ph4"><span class="ph-num">Phase 4</span>Reflection</div>
+  </div>
+  <div class="tprog"><div class="tfill" id="tp" style="width:0%"></div></div>
+  <div class="chat" id="chat">
+    <div class="empty">
+      <div class="empty-mark">◌</div>
+      <div data-i18n="select_unit">単元を選択してセッションを開始</div>
+    </div>
+  </div>
+  <div class="bbar">
+    <label class="measure-toggle">
+      <input type="checkbox" id="measureChk">
+      <span class="measure-box"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span data-i18n="measure_learning">学習効果を測定 (pre/post test)</span>
+    </label>
+    <button class="btn-run" id="brun" onclick="runSession()" data-i18n="start_session">セッション開始</button>
+  </div>
+</div>
+
+<!-- RIGHT -->
+<div class="panel panel-last">
+  <div class="sec"><div class="slabel" data-i18n="topic">Topic</div><select id="tsel">{% for t in topics %}<option data-i18n-tx>{{ t }}</option>{% endfor %}</select></div>
+  <div class="sec"><div class="slabel" data-i18n="depth">Depth</div>
+    <select id="dsel">
+      <option value="quick">Quick · 8 turns</option>
+      <option value="standard" selected>Standard · 12 turns</option>
+      <option value="deep">Deep · 16 turns</option>
+    </select>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="skills_lib">Skills Library</div>
+    <span class="sk on" data-s="socratic_questioning">Socratic</span>
+    <span class="sk" data-s="concrete_examples">Concrete</span>
+    <span class="sk" data-s="stepwise_decomposition">Stepwise</span>
+    <span class="sk" data-s="visual_explanation">Visual</span>
+    <span class="sk on" data-s="error_reframing">Error reframe</span>
+    <span class="sk" data-s="metacognitive_prompting">Metacognitive</span>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="teacher_agent">Teacher Agent</div>
+    <select id="teacherSel" style="margin-bottom:12px">
+      {% for t in teachers %}
+      <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
+      {% endfor %}
+    </select>
+    <div class="agent-card" id="teacherCard">
+      <div class="agent-head">
+        <div class="agent-av" id="tAv" style="background:rgba(178,80,0,0.12);color:var(--amber)">—</div>
+        <div><div class="agent-name" id="tName">—</div><div class="agent-sub" id="tSub">—</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:8px 0 10px;line-height:1.5" id="tPhilosophy"></div>
+      <div class="prow"><span>Warmth</span><span id="tWarmthVal">—</span></div>
+      <div class="pbar"><div class="pfill" id="tWarmthBar" style="width:0%"></div></div>
+      <div class="prow"><span>Patience</span><span id="tPatienceVal">—</span></div>
+      <div class="pbar"><div class="pfill" id="tPatienceBar" style="width:0%"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:10px" id="tSkills"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="student_agent">Student Agent</div>
+    <div class="agent-card">
+      <div class="agent-head">
+        <div class="agent-av" style="background:{{ student.color }}1a;color:{{ student.color }}">{{ student.name[:2].upper() }}</div>
+        <div><div class="agent-name">{{ student.name }}</div><div class="agent-sub">Grade 6 · Prof {{ student.prof_baseline }}</div></div>
+      </div>
+      <div class="prow"><span>Curiosity</span><span id="pcur">—</span></div>
+      <div class="pbar"><div class="pfill" id="pbcur" style="width:30%"></div></div>
+      <div class="prow"><span>Confidence</span><span id="pcon">—</span></div>
+      <div class="pbar"><div class="pfill" id="pbcon" style="width:20%"></div></div>
+      <div class="prow"><span>Patience</span><span id="ppat">—</span></div>
+      <div class="pbar"><div class="pfill" id="pbpat" style="width:60%"></div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="referee">Referee</div>
+    <div class="referee-card">
+      <span class="frame">ZPD · Bloom · SDT · Hattie</span><br>
+      <span data-i18n="neutral_eval">中立評価 — 全Agentに適用</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const I18N = {
+  ja: {
+    back_dashboard:"← ダッシュボード", before_after:"前 / 後", before:"前", after:"後",
+    eval_axes:"評価軸", ax_system:"システム", ax_prof:"習熟度", ax_dialog:"対話品質", ax_goal:"目標達成", ax_pass:"合格点",
+    sys_metrics:"システム指標", halluc_rate:"幻覚発生率", direct_rate:"直接回答率", avg_zpd:"平均ZPD", avg_bloom:"平均Bloom",
+    session_hist:"セッション履歴", no_sessions:"セッションなし",
+    select_unit:"単元を選択してセッションを開始", start_session:"セッション開始", run_test:"テスト実施", measure_learning:"学習効果を測定 (pre/post test)",
+    topic:"単元", depth:"深さ", skills_lib:"スキルライブラリ",
+    teacher_agent:"教師エージェント", student_agent:"生徒エージェント", referee:"審判",
+    neutral_eval:"中立評価 — 全Agentに適用",
+    status_idle:"待機中", status_running:"セッション実行中", status_done:"セッション完了",
+    status_test:"テスト実施中", status_pass:"合格 ○", status_fail:"不合格 ×", status_error:"エラー",
+  },
+  en: {
+    back_dashboard:"← Dashboard", before_after:"Before / After", before:"before", after:"after",
+    eval_axes:"Evaluation Axes", ax_system:"System", ax_prof:"Proficiency", ax_dialog:"Dialog Quality", ax_goal:"Goal Achieved", ax_pass:"Pass Score",
+    sys_metrics:"System Metrics", halluc_rate:"Hallucination Rate", direct_rate:"Direct Answer Rate", avg_zpd:"avg ZPD", avg_bloom:"avg Bloom",
+    session_hist:"Session History", no_sessions:"No sessions yet",
+    select_unit:"Select a topic to start a session", start_session:"Start Session", run_test:"Run Test", measure_learning:"Measure learning (pre/post test)",
+    topic:"Topic", depth:"Depth", skills_lib:"Skills Library",
+    teacher_agent:"Teacher Agent", student_agent:"Student Agent", referee:"Referee",
+    neutral_eval:"Neutral evaluation — applied to all Agents",
+    status_idle:"Idle", status_running:"Session running", status_done:"Session complete",
+    status_test:"Running test", status_pass:"Pass ○", status_fail:"Fail ×", status_error:"Error",
+  }
+};
+const TX = { en: Object.assign({
+    "分数のかけ算・わり算":"Multiplication & Division of Fractions",
+    "比と比の値":"Ratios and Ratio Values",
+    "速さ・時間・距離":"Speed, Time, Distance",
+    "比例と反比例":"Proportion & Inverse Proportion",
+    "円の面積":"Area of a Circle",
+    "場合の数":"Combinatorics",
+  }, {{ topic_tx_en|tojson }})
+};
+let curLang = localStorage.getItem("tfLang") || "ja";
+function translateContent(el,l){
+  if(!el.dataset.i18nOrig) el.dataset.i18nOrig = el.textContent.trim();
+  const src = el.dataset.i18nOrig;
+  el.textContent = (l!=="ja" && TX[l] && TX[l][src]) ? TX[l][src] : src;
+}
+function applyLang(l){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k=el.getAttribute("data-i18n");
+    if(I18N[l] && I18N[l][k]) el.textContent = I18N[l][k];
+  });
+  document.querySelectorAll("[data-i18n-tx]").forEach(el=>translateContent(el,l));
+  const b=document.getElementById("langbtn"); if(b) b.textContent = l==="ja"?"EN":"JA";
+  curLang=l; localStorage.setItem("tfLang",l);
+  document.documentElement.lang = l;
+}
+function tx(s){ return (curLang!=="ja" && TX[curLang] && TX[curLang][s]) ? TX[curLang][s] : s; }
+function toggleLang(){ applyLang(curLang==="ja"?"en":"ja"); }
+const SID = "{{ student_id }}";
+const GRADE = "{{ grade }}";
+const SUBJECT = "{{ subject }}";
+const PARAMS = {"s001":{c:.3,n:.2,p:.6},"s002":{c:.8,n:.6,p:.3},"s003":{c:.5,n:.5,p:.8},"s004":{c:.6,n:.5,p:.3},"s005":{c:.5,n:.3,p:.7},"s006":{c:.7,n:.8,p:.6}};
+const pp = PARAMS[SID]||{c:.5,n:.5,p:.5};
+document.getElementById("pcur").textContent=pp.c; document.getElementById("pbcur").style.width=(pp.c*100)+"%";
+document.getElementById("pcon").textContent=pp.n; document.getElementById("pbcon").style.width=(pp.n*100)+"%";
+document.getElementById("ppat").textContent=pp.p; document.getElementById("pbpat").style.width=(pp.p*100)+"%";
+document.querySelectorAll(".sk").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("on")));
+
+// ── Teacher selector ─────────────────────────────────
+const TEACHERS = {{ teachers|tojson }};
+const teacherSel = document.getElementById("teacherSel");
+function renderTeacher(tid){
+  const t = TEACHERS.find(x=>x.teacher_id===tid) || TEACHERS[0];
+  if(!t) return;
+  const initials = (t.name||"--").replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase() || "EX";
+  document.getElementById("tAv").textContent = initials;
+  document.getElementById("tName").textContent = t.name;
+  document.getElementById("tSub").textContent = (t.origin==="internal"?"Internal":"External") + " · " + (t.selected_skills||[]).length + " skills";
+  document.getElementById("tPhilosophy").textContent = t.teaching_philosophy || "";
+  const w = (t.warmth ?? 0.5);
+  document.getElementById("tWarmthVal").textContent = w.toFixed(2);
+  document.getElementById("tWarmthBar").style.width = (w*100)+"%";
+  const p = (t.patience_threshold ?? 3);
+  document.getElementById("tPatienceVal").textContent = p+" turns";
+  document.getElementById("tPatienceBar").style.width = Math.min(100,p*15)+"%";
+  document.getElementById("tSkills").textContent = "Skills: " + (t.selected_skills||[]).join(", ");
+}
+const savedTeacher = localStorage.getItem("tfTeacher");
+if(savedTeacher && TEACHERS.some(t=>t.teacher_id===savedTeacher)) teacherSel.value = savedTeacher;
+renderTeacher(teacherSel.value);
+teacherSel.addEventListener("change",()=>{
+  localStorage.setItem("tfTeacher", teacherSel.value);
+  renderTeacher(teacherSel.value);
+});
+function currentTeacher(){ return TEACHERS.find(x=>x.teacher_id===teacherSel.value) || TEACHERS[0] || {name:"Teacher"}; }
+
+applyLang(curLang);
+function ss(st,key){const d=document.getElementById("sdot");d.className="dot"+(st=="run"?" run":st=="done"?" done":"");const e=document.getElementById("stxt");e.setAttribute("data-i18n-key",key);e.textContent=(window.I18N&&I18N[curLang]&&I18N[curLang][key])||key;}
+function ring(id,vid,val,col){const e=document.getElementById(id),v=document.getElementById(vid);if(val===null){e.style.strokeDashoffset="182.2";v.textContent="—";return;}e.style.stroke=col;e.style.strokeDashoffset=182.2-(182.2*val/100);v.textContent=val;v.style.color=col;}
+function ax(i,p,t){document.getElementById("ax"+i).style.width=p+"%";document.getElementById("av"+i).textContent=t;}
+function psep(label,n){const d=document.createElement("div");d.className="psep p"+n;d.textContent="Phase "+n+" — "+label;document.getElementById("chat").appendChild(d);}
+function msg(role,name,text,ref){
+  const area=document.getElementById("chat");
+  const w=document.createElement("div");w.className="mwrap";
+  w.style.alignSelf=role=="teacher"?"flex-start":role=="student"?"flex-end":"center";
+  w.style.maxWidth=role=="referee"?"100%":"78%";
+  if(role=="referee"){
+    const d=document.createElement("div");d.className="msg mr";
+    d.innerHTML='<span style="font-weight:600;color:var(--text)">'+name+'</span> '+(text||"");
+    if(ref){d.innerHTML+='<div class="rpills"><span class="rp">ZPD '+ref.z+'</span><span class="rp">Bloom L'+ref.b+'</span><span class="rp">Scaf '+ref.s+'</span><span class="rp '+(ref.h?"warn":"")+'">幻覚 '+(ref.h?"detected":"none")+'</span><span class="rp '+(ref.d?"warn":"")+'">直回答 '+(ref.d?"detected":"none")+'</span><span class="rp" style="color:var(--success)">Δ '+ref.dt+'</span></div>';}
+    if(ref&&ref.dir){d.innerHTML+='<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">→ '+ref.dir+'</div>';}
+    w.appendChild(d);
+  }else{
+    const r=document.createElement("div");r.className="mrole";r.textContent=name;
+    const d=document.createElement("div");d.className="msg m"+role[0];d.textContent=text;
+    w.appendChild(r);w.appendChild(d);
+  }
+  area.appendChild(w);area.scrollTop=99999;
+}
+function setPh(a){[1,2,3,4].forEach(i=>{const e=document.getElementById("ph"+i);e.className="ph p"+i+(i==a?" active":i<a?" done":"");});}
+function typeInto(el, text, cps){
+  return new Promise(res=>{
+    cps = cps || 60;
+    const delay = Math.max(8, Math.round(1000/cps));
+    let i = 0;
+    el.textContent = "";
+    const chat = document.getElementById("chat");
+    const tick = ()=>{
+      if(i >= text.length){ res(); return; }
+      const chunk = Math.max(1, Math.floor(text.length/120));
+      el.textContent += text.substr(i, chunk);
+      i += chunk;
+      chat.scrollTop = chat.scrollHeight;
+      setTimeout(tick, delay);
+    };
+    tick();
+  });
+}
+function pushMsgEmpty(role,name){
+  const area=document.getElementById("chat");
+  const w=document.createElement("div");w.className="mwrap";
+  w.style.alignSelf=role=="teacher"?"flex-start":"flex-end";
+  w.style.maxWidth="78%";
+  const r=document.createElement("div");r.className="mrole";r.textContent=name;
+  const d=document.createElement("div");d.className="msg m"+role[0];d.textContent="";
+  w.appendChild(r);w.appendChild(d);
+  area.appendChild(w); area.scrollTop=area.scrollHeight;
+  return d;
+}
+function startStream(opts){
+  document.getElementById("brun").disabled=true;
+  ss("run",opts.statusKey);document.getElementById("chat").innerHTML="";
+  const topic=document.getElementById("tsel").value,depth=document.getElementById("dsel").value;
+  const pm={diagnosis:1,exploration:2,practice:3,reflection:4};
+  const params = {student_id:SID,topic,depth,grade:GRADE,subject:SUBJECT,teacher_id:teacherSel.value,lang:curLang};
+  if(opts.pre_test) params.pre_test="true";
+  if(opts.post_test) params.post_test="true";
+  const qs = new URLSearchParams(params).toString();
+  const es = new EventSource("/api/run-session-stream?"+qs);
+  let queue = Promise.resolve();
+  const enqueue = fn => { queue = queue.then(fn).catch(e=>console.error(e)); };
+  let zpdAcc=0, bloomAcc=0, hallucAcc=0, directAcc=0, evalCount=0;
+
+  es.onmessage = (ev)=>{
+    let d; try{ d = JSON.parse(ev.data); }catch(_){ return; }
+    if(d.type==="phase"){
+      enqueue(async ()=>{ psep(d.label, pm[d.phase]||1); setPh(pm[d.phase]||1); });
+    } else if(d.type==="teacher"){
+      enqueue(async ()=>{
+        const el = pushMsgEmpty("teacher",currentTeacher().name);
+        await typeInto(el, d.text, 80);
+        if(d.total) document.getElementById("tp").style.width=Math.round((d.turn/d.total)*100)+"%";
+      });
+    } else if(d.type==="student"){
+      enqueue(async ()=>{
+        const el = pushMsgEmpty("student","{{ student.name }}");
+        await typeInto(el, d.text, 80);
+      });
+    } else if(d.type==="referee"){
+      enqueue(async ()=>{
+        msg("referee","Referee",d.summary||"評価完了",
+          {z:d.zpd,b:d.bloom,s:d.scaffolding,h:d.halluc,d:d.direct,dt:d.delta,dir:d.directive});
+        zpdAcc+=d.zpd||0; bloomAcc+=d.bloom||0;
+        hallucAcc+=(d.halluc?1:0); directAcc+=(d.direct?1:0); evalCount++;
+        if(d.progress!=null) document.getElementById("tp").style.width=d.progress+"%";
+      });
+    } else if(d.type==="test_phase"){
+      enqueue(async ()=>{
+        const lbl = d.which==="pre" ? "Pre-test 開始" : "Post-test 開始";
+        msg("referee","System",lbl,null);
+      });
+    } else if(d.type==="test_q"){
+      enqueue(async ()=>{
+        msg("referee","System",
+          (d.which==="pre"?"事前":"事後")+"テスト Q"+d.i+"/"+d.n+" — "+(d.correct?"○ 正解":"× 不正解"),null);
+      });
+    } else if(d.type==="test_score"){
+      enqueue(async ()=>{
+        if(d.which==="pre"){
+          ring("rb","vb",d.score,"#86868b");
+        } else {
+          ring("ra","va",d.score,"#1f8a4c");
+          ax(4,d.score,d.score+"/100");
+        }
+      });
+    } else if(d.type==="proposal"){
+      enqueue(async ()=>{
+        msg("referee","Skills Proposal",
+          "⚠ "+(d.severity||"medium").toUpperCase()+" — target: "+d.target_skill+"\n"+(d.rationale||"")+"\n→ saved: "+(d.path||""),null);
+      });
+    } else if(d.type==="done"){
+      enqueue(async ()=>{
+        es.close();
+        setPh(4);
+        const fp = d.final_proficiency||0;
+        const azpd = evalCount? zpdAcc/evalCount : 0;
+        const abloom = evalCount? bloomAcc/evalCount : 0;
+        ax(0,92,"92%");
+        ax(1,Math.min(100,fp),Math.round(fp)+"%");
+        ax(2,Math.round(azpd*100),Math.round(azpd*100)+"%");
+        ax(3,80,"80%");
+        document.getElementById("halluc").textContent=evalCount?Math.round(hallucAcc/evalCount*100)+"%":"0%";
+        document.getElementById("direct").textContent=evalCount?Math.round(directAcc/evalCount*100)+"%":"0%";
+        document.getElementById("zpd").textContent=azpd.toFixed(2);
+        document.getElementById("bloom").textContent=abloom.toFixed(1);
+        if(d.pre_test_score!=null && d.post_test_score!=null){
+          const delta=(d.post_test_score||0)-(d.pre_test_score||0);
+          const dv=document.getElementById("dv");dv.textContent=(delta>=0?"+":"")+delta;
+          if(delta>0){dv.style.background="rgba(31,138,76,0.12)";dv.style.color="var(--success)";}
+          else{dv.style.background="rgba(193,39,45,0.10)";dv.style.color="var(--danger)";}
+        }
+        if(d.session_grade){
+          const g=d.session_grade,gd=document.getElementById("gd");gd.style.display="block";
+          if(g.status=="excellent"){gd.style.background="rgba(31,138,76,0.10)";gd.style.color="var(--success)";gd.textContent="◎ Excellent";}
+          else if(g.status=="pass"){gd.style.background="rgba(0,113,227,0.10)";gd.style.color="var(--link)";gd.textContent="○ Pass";}
+          else{gd.style.background="rgba(193,39,45,0.10)";gd.style.color="var(--danger)";gd.textContent="× Fail";}
+        }
+        document.getElementById("brun").disabled=false;
+        if(d.session_grade){
+          ss("done", (d.session_grade.status=="pass"||d.session_grade.status=="excellent")?"status_pass":"status_fail");
+        } else {
+          ss("done","status_done");
+        }
+      });
+    }
+  };
+  es.onerror = ()=>{
+    enqueue(async ()=>{
+      es.close();
+      ss("","status_error");
+      document.getElementById("brun").disabled=false;
+    });
+  };
+}
+function runSession(){
+  const measure = document.getElementById("measureChk").checked;
+  startStream({
+    pre_test: measure, post_test: measure,
+    statusKey: measure ? "status_test" : "status_running",
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session History — Training Field</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf7;--bg-translucent:rgba(250,250,247,0.78);
+  --surface:#ffffff;--surface-2:#f4f4f0;
+  --border:rgba(0,0,0,0.06);--border-strong:rgba(0,0,0,0.12);
+  --text:#1d1d1f;--text-secondary:#424245;--muted:#86868b;
+  --link:#0071e3;--success:#1f8a4c;--danger:#c1272d;
+  --mt-bg:#f0efea;--mt-bd:rgba(0,0,0,0.08);--mt-fg:#1d1d1f;
+  --ms-bg:#0071e3;--ms-bd:#0071e3;--ms-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:0 2px 4px rgba(0,0,0,0.04),0 24px 48px rgba(0,0,0,0.12);
+  --radius-md:14px;--radius-lg:22px;--radius-pill:980px;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+:root[data-theme="dark"]{
+  --bg:#0a0a0a;--bg-translucent:rgba(10,10,10,0.78);
+  --surface:#161618;--surface-2:#1f1f22;
+  --border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.16);
+  --text:#f5f5f7;--text-secondary:#c7c7cc;--muted:#86868b;
+  --link:#2997ff;--success:#30d158;--danger:#ff453a;
+  --mt-bg:#1f1f22;--mt-bd:rgba(255,255,255,0.08);--mt-fg:#f5f5f7;
+  --ms-bg:#2997ff;--ms-bd:#2997ff;--ms-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-lg:0 1px 2px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.5);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter","Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:-0.011em;line-height:1.5;min-height:100vh;
+}
+.header{
+  position:sticky;top:0;z-index:50;
+  background:var(--bg-translucent);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.header-inner{max-width:1280px;margin:0 auto;padding:20px 40px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-size:17px;font-weight:600;letter-spacing:-0.022em}
+.brand-mark{color:var(--muted);font-weight:400}
+.icon-btn{
+  height:32px;padding:0 14px;border:1px solid var(--border-strong);background:transparent;
+  color:var(--text);border-radius:var(--radius-pill);font:inherit;font-size:12px;font-weight:500;
+  cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;
+  transition:background-color .2s var(--ease);
+}
+.icon-btn:hover{background:var(--surface-2)}
+main{max-width:1280px;margin:0 auto;padding:80px 40px 120px}
+.title{font-size:48px;font-weight:600;letter-spacing:-0.032em;line-height:1.05;margin-bottom:14px}
+.title-sub{font-size:18px;color:var(--muted);margin-bottom:48px}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;font-weight:500;color:var(--muted);text-align:left;padding:18px 24px;border-bottom:1px solid var(--border)}
+tbody td{font-size:13px;padding:18px 24px;border-bottom:1px solid var(--border)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer;transition:background-color .15s var(--ease)}
+tbody tr:hover{background:var(--surface-2)}
+.td-mono{font-feature-settings:"tnum";color:var(--muted);font-size:12px}
+.td-truncate{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.depth-tag{font-size:11px;padding:3px 11px;background:var(--surface-2);color:var(--muted);border-radius:var(--radius-pill);font-weight:500}
+.gain-pos{color:var(--success);font-weight:500;font-feature-settings:"tnum"}
+.gain-neg{color:var(--muted);font-feature-settings:"tnum"}
+.grade-mark{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;font-size:14px;font-weight:600}
+.g-ex{background:rgba(31,138,76,0.12);color:var(--success)}
+.g-pass{background:rgba(0,113,227,0.12);color:var(--link)}
+.g-fail{background:rgba(193,39,45,0.10);color:var(--danger)}
+:root[data-theme="dark"] .g-ex{background:rgba(48,209,88,0.16)}
+:root[data-theme="dark"] .g-pass{background:rgba(41,151,255,0.16)}
+:root[data-theme="dark"] .g-fail{background:rgba(255,69,58,0.16)}
+
+/* ── Modal ─────────────────────────────────────────── */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  display:none;align-items:center;justify-content:center;z-index:200;
+  backdrop-filter:blur(4px);
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--bg);
+  border-radius:var(--radius-lg);
+  width:min(880px,92vw);
+  max-height:88vh;
+  display:flex;flex-direction:column;
+  box-shadow:var(--shadow-lg);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.modal-header{
+  padding:22px 28px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-title{font-size:18px;font-weight:600;letter-spacing:-0.018em}
+.modal-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid var(--border-strong);background:transparent;color:var(--text);
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{background:var(--surface-2)}
+.modal-body{
+  flex:1;overflow-y:auto;padding:24px 28px;
+  display:flex;flex-direction:column;gap:14px;
+  background:var(--surface);
+}
+.mwrap{display:flex;flex-direction:column;gap:5px}
+.mrole{font-size:11px;font-weight:500;color:var(--muted);padding:0 4px}
+.msg{border-radius:var(--radius-lg);padding:14px 18px;font-size:14px;line-height:1.55;max-width:78%;letter-spacing:-0.011em}
+.mt{background:var(--mt-bg);border:1px solid var(--mt-bd);color:var(--mt-fg);align-self:flex-start;border-bottom-left-radius:6px}
+.ms{background:var(--ms-bg);border:1px solid var(--ms-bd);color:var(--ms-fg);align-self:flex-end;border-bottom-right-radius:6px}
+.mr{background:transparent;border:1px solid var(--border);color:var(--text-secondary);align-self:center;font-size:12px;border-radius:var(--radius-md);max-width:100%;width:100%;padding:12px 16px}
+.psep{text-align:center;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;padding:14px 0;display:flex;align-items:center;gap:14px;color:var(--muted)}
+.psep::before,.psep::after{content:'';flex:1;height:1px;background:var(--border)}
+.rpills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rp{font-size:10px;padding:3px 9px;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--muted);font-feature-settings:"tnum";font-weight:500}
+.rp.warn{background:rgba(193,39,45,0.10);color:var(--danger)}
+.modal-loading{padding:60px;text-align:center;color:var(--muted)}
+
+@media(max-width:760px){
+  .header-inner{padding:16px 20px}
+  main{padding:56px 20px 80px}
+  .title{font-size:34px}
+}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">Training Field<span class="brand-mark"> / Agent</span></div>
+    <a href="/" class="icon-btn">← Dashboard</a>
+  </div>
+</header>
+
+<main>
+  <h1 class="title">Session History</h1>
+  <p class="title-sub">{{ sessions|length }} sessions · click any row to replay the conversation</p>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Session</th>
+          <th>Time</th>
+          <th>Student</th>
+          <th>Teacher</th>
+          <th>Topic</th>
+          <th>Depth</th>
+          <th>Pre</th>
+          <th>Post</th>
+          <th>Gain</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in sessions %}
+        <tr onclick="openModal('{{ r.exp_id }}')" data-sid="{{ r.exp_id }}">
+          <td class="td-mono">{{ r.exp_id }}</td>
+          <td class="td-mono">{{ r.timestamp[:16].replace('T',' ') if r.timestamp else '—' }}</td>
+          <td>{{ r.student_id }}</td>
+          <td class="td-mono">{{ r.teacher_id }}</td>
+          <td class="td-truncate" data-i18n-tx>{{ r.topic }}</td>
+          <td><span class="depth-tag">{{ r.depth }}</span></td>
+          <td class="td-mono">{{ r.pre_test_score if r.pre_test_score else "—" }}</td>
+          <td class="td-mono">{{ r.post_test_score if r.post_test_score else "—" }}</td>
+          <td class="{% if r.learning_gain > 0 %}gain-pos{% else %}gain-neg{% endif %}">{% if r.learning_gain > 0 %}+{{ r.learning_gain }}{% else %}—{% endif %}</td>
+          <td>
+            {% if r.session_grade == "◎" %}<span class="grade-mark g-ex">◎</span>
+            {% elif r.session_grade == "○" %}<span class="grade-mark g-pass">○</span>
+            {% else %}<span class="grade-mark g-fail">×</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="mTitle">Session</div>
+        <div class="modal-meta" id="mMeta"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="mBody">
+      <div class="modal-loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TX = { en: {{ topic_tx_en|tojson }} };
+function tx(s){ const l=localStorage.getItem("tfLang")||"ja"; return (l!=="ja" && TX[l] && TX[l][s]) ? TX[l][s] : s; }
+document.querySelectorAll("[data-i18n-tx]").forEach(el=>{ el.textContent = tx(el.textContent.trim()); });
+
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+async function openModal(sid){
+  const modal = document.getElementById("modal");
+  const body = document.getElementById("mBody");
+  document.getElementById("mTitle").textContent = "Session " + sid;
+  document.getElementById("mMeta").textContent = "";
+  body.innerHTML = '<div class="modal-loading">Loading…</div>';
+  modal.classList.add("open");
+  try{
+    const res = await fetch("/api/session/"+sid+"/transcript");
+    if(!res.ok){
+      body.innerHTML = '<div class="modal-loading">Transcript not found.<br><span style="font-size:11px">Older sessions saved before this feature don\'t have replay data.</span></div>';
+      return;
+    }
+    const data = await res.json();
+    document.getElementById("mMeta").textContent =
+      data.teacher_name + " · " + data.student_id + " · " + data.topic + " · " + data.depth +
+      (data.pre_test_score!=null ? " · " + data.pre_test_score + "→" + data.post_test_score : "");
+    body.innerHTML = "";
+    let lastPhase = null;
+    (data.turns||[]).forEach(t=>{
+      if(t.phase !== lastPhase){
+        const p = document.createElement("div");
+        p.className = "psep"; p.textContent = "Phase — " + t.phase_label;
+        body.appendChild(p);
+        lastPhase = t.phase;
+      }
+      // Teacher
+      const tw = document.createElement("div"); tw.className = "mwrap";
+      tw.style.alignSelf = "flex-start"; tw.style.maxWidth = "78%";
+      tw.innerHTML = '<div class="mrole">'+escapeHtml(data.teacher_name||"Teacher")+'</div>'+
+        '<div class="msg mt">'+escapeHtml(t.teacher)+'</div>';
+      body.appendChild(tw);
+      // Student
+      const sw = document.createElement("div"); sw.className = "mwrap";
+      sw.style.alignSelf = "flex-end"; sw.style.maxWidth = "78%";
+      sw.innerHTML = '<div class="mrole">'+escapeHtml(data.student_id)+'</div>'+
+        '<div class="msg ms">'+escapeHtml(t.student)+'</div>';
+      body.appendChild(sw);
+      // Referee
+      const rw = document.createElement("div"); rw.className = "mwrap"; rw.style.alignSelf = "center"; rw.style.maxWidth = "100%";
+      rw.innerHTML = '<div class="msg mr"><span style="font-weight:600;color:var(--text)">Referee</span> '+escapeHtml(t.summary||"")+
+        '<div class="rpills">'+
+          '<span class="rp">ZPD '+t.zpd+'</span>'+
+          '<span class="rp">Bloom L'+t.bloom+'</span>'+
+          '<span class="rp">Scaf '+t.scaffolding+'</span>'+
+          '<span class="rp '+(t.halluc?"warn":"")+'">幻覚 '+(t.halluc?"detected":"none")+'</span>'+
+          '<span class="rp '+(t.direct?"warn":"")+'">直回答 '+(t.direct?"detected":"none")+'</span>'+
+          '<span class="rp" style="color:var(--success)">Δ '+t.delta+'</span>'+
+        '</div>'+
+        (t.directive?'<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">→ '+escapeHtml(t.directive)+'</div>':'')+
+      '</div>';
+      body.appendChild(rw);
+    });
+    if(!data.turns || !data.turns.length){
+      body.innerHTML = '<div class="modal-loading">This session has no turn data.</div>';
+    }
+  }catch(e){
+    body.innerHTML = '<div class="modal-loading">Error: '+escapeHtml(e.message)+'</div>';
+  }
+}
+function closeModal(){ document.getElementById("modal").classList.remove("open"); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+</script>
+</body>
+</html>

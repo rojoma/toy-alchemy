@@ -1,0 +1,18 @@
+{
+  "source": "OECD PISA",
+  "target_age": 15,
+  "copyright_mode": "B_generated_aligned",
+  "domains": ["数学的リテラシー", "読解力", "科学的リテラシー"],
+  "sample_references": {
+    "PISA2022_math": "https://www.nier.go.jp/05_kenkyu_seika/pisa/pdf/2022/02_example_2.pdf",
+    "PISA2018_reading": "https://www.nier.go.jp/05_kenkyu_seika/pisa/pdf/2018/04_example.pdf",
+    "PISA2015_science": "https://www.nier.go.jp/05_kenkyu_seika/pisa/pdf/2015/04_example.pdf"
+  },
+  "PISA2025_status": "本調査2025年実施済み。結果・問題公開は2026年以降予定。",
+  "style_characteristics": {
+    "structure": "コンテキスト設定（現実場面）→ 複数小問",
+    "framework": "定式化 → 数学的処理 → 解釈・評価",
+    "context": "実世界の複雑な状況設定",
+    "literacy_focus": "知識の適用・批判的思考"
+  }
+}

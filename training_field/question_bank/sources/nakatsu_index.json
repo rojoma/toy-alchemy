@@ -1,0 +1,26 @@
+{
+  "source": "全国学力・学習状況調査",
+  "publisher": "国立教育政策研究所",
+  "copyright_notice": "無断転載・複製禁止。本システムは著作権方針Bにより類似オリジナル問題を生成します。",
+  "license_status": "pending_application",
+  "copyright_mode": "B_generated_aligned",
+  "years_available": ["令和7", "令和6", "令和5", "令和4", "令和3"],
+  "pdf_urls": {
+    "R7": {
+      "小学校_算数_問題": "https://www.nier.go.jp/25chousa/pdf/25mondai_shou_sansuu.pdf",
+      "小学校_算数_正答": "https://www.nier.go.jp/25chousa/pdf/25seitourei_shou_sansuu.pdf",
+      "小学校_算数_解説": "https://www.nier.go.jp/25chousa/pdf/25kaisetsu_shou_sansuu.pdf",
+      "小学校_国語_問題": "https://www.nier.go.jp/25chousa/pdf/25mondai_shou_kokugo.pdf",
+      "小学校_理科_問題": "https://www.nier.go.jp/25chousa/pdf/25mondai_shou_rika.pdf",
+      "中学校_数学_問題": "https://www.nier.go.jp/25chousa/pdf/25mondai_chuu_suugaku.pdf",
+      "中学校_国語_問題": "https://www.nier.go.jp/25chousa/pdf/25mondai_chuu_kokugo.pdf",
+      "中学校_理科_問題": "https://www.nier.go.jp/25chousa/pdf/25mondai_chuu_rika.pdf"
+    }
+  },
+  "style_characteristics": {
+    "structure": "知識・技能 と 思考・判断・表現 を一体的に問う",
+    "context": "実生活場面への応用を含む",
+    "format": "選択肢＋記述の混合形式",
+    "grade_coverage": ["小学6年", "中学3年"]
+  }
+}

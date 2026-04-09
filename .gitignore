@@ -20,3 +20,9 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Training Field runtime data (lives on Railway Volume in production)
+training_field/experiments/experiment_registry.json
+training_field/reports/
+training_field/field/skills/proposals/
+training_field/question_bank/*.db

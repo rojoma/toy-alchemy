@@ -1,0 +1,23 @@
+{
+  "registry_version": "1.0",
+  "note": "Model selection will become dynamic (like Skills) in future versions.",
+  "models": {
+    "claude-sonnet": {
+      "model_id": "claude-sonnet-4-20250514",
+      "provider": "Anthropic",
+      "strengths": ["Japanese fluency", "educational reasoning", "Socratic dialogue"],
+      "cost_per_1k_input_tokens": 0.003,
+      "cost_per_1k_output_tokens": 0.015,
+      "status": "active"
+    },
+    "gpt-4o": {
+      "model_id": "gpt-4o",
+      "provider": "OpenAI",
+      "strengths": ["vision", "structured output", "speed"],
+      "cost_per_1k_input_tokens": 0.005,
+      "cost_per_1k_output_tokens": 0.015,
+      "status": "available"
+    }
+  },
+  "default": "claude-sonnet"
+}

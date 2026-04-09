@@ -1,0 +1,89 @@
+{
+    "field_version":  "1.0.0",
+    "field_name":  "Toy Alchemy Agent Training Field",
+    "last_updated":  "2025-04-07",
+    "absolute_rules":  {
+                           "no_direct_answers":  {
+                                                     "rule":  "Never provide the direct answer to a problem under any circumstances",
+                                                     "violation_threshold":  0,
+                                                     "example_violation":  "The answer is 24.",
+                                                     "example_compliant":  "What happens if you group these 24 items into sets of 6?"
+                                                 },
+                           "age_appropriate_language":  {
+                                                            "rule":  "All output must suit a 12-15 year old comprehension level",
+                                                            "readability_target":  "Grade 4-8 Japanese or English"
+                                                        },
+                           "turn_budget":  {
+                                               "quick":  8,
+                                               "standard":  12,
+                                               "deep":  16,
+                                               "rule":  "Complete all 4 phases within the allocated turn count"
+                                           },
+                           "log_format_compliance":  {
+                                                         "rule":  "Every teacher response must return structured JSON metadata alongside text"
+                                                     },
+                           "frustration_threshold":  {
+                                                         "rule":  "If student frustration_score exceeds 0.85, switch to encouragement mode immediately",
+                                                         "threshold":  0.85
+                                                     },
+                           "safety":  {
+                                          "rule":  "No content that could distress a child. Halt session and log if triggered."
+                                      }
+                       },
+    "evaluation_notice":  {
+                              "message":  "All interactions are evaluated by PrincipalAgent using neutral rubrics grounded in educational psychology.",
+                              "referee_frameworks":  [
+                                                         "ZPD",
+                                                         "Bloom_Taxonomy",
+                                                         "Self_Determination_Theory",
+                                                         "Hattie_Visible_Learning"
+                                                     ],
+                              "human_validation":  {
+                                                       "frequency":  "every_20_sessions",
+                                                       "metric":  "cohen_kappa_target_0.7"
+                                                   }
+                          },
+    "skills_library":  {
+                           "location":  "training_field/field/skills/",
+                           "format":  "markdown",
+                           "usage":  "optional - teacher agent selects relevant skills before session",
+                           "update_trigger":  {
+                                                  "zpd_alignment_below":  0.6,
+                                                  "hallucination_rate_above":  0.1,
+                                                  "process":  "semi_auto - referee generates proposal, human approves"
+                                              }
+                       },
+    "curriculum_standards":  {
+                                 "reference":  "文部科学省 小学校・中学校学習指導要領",
+                                 "primary_assessment":  "全国学力・学習状況調査（NAKATSU）",
+                                 "international_assessment":  "OECD PISA",
+                                 "copyright_mode":  "B_generated_aligned",
+                                 "grade_range":  [
+                                                     4,
+                                                     5,
+                                                     6,
+                                                     7,
+                                                     8,
+                                                     9
+                                                 ],
+                                 "age_range":  [
+                                                   10,
+                                                   15
+                                               ]
+                             },
+    "response_schema":  {
+                            "text":  "string",
+                            "metadata":  {
+                                             "phase":  "string - diagnosis|exploration|practice|reflection",
+                                             "scaffolding_level":  "int 1-5",
+                                             "question_asked":  "bool",
+                                             "strategy_used":  "string",
+                                             "emotional_read":  "float 0-1"
+                                         }
+                        },
+    "passing_thresholds":  {
+                               "excellent":  90,
+                               "pass":  70,
+                               "fail":  69
+                           }
+}
