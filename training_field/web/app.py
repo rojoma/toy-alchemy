@@ -31,7 +31,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+_static_dir = Path(__file__).parent / "static"
+_static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 # ── Agent API auth ─────────────────────────────────────────────
