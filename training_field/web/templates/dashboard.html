@@ -344,24 +344,20 @@ tbody tr:hover{background:var(--surface-2)}
             <th data-i18n="th_pre">Pre</th>
             <th data-i18n="th_post">Post</th>
             <th data-i18n="th_gain">Gain</th>
-            <th data-i18n="th_grade">Grade</th>
+            <th data-i18n="th_delta">Δ Prof</th>
           </tr>
         </thead>
         <tbody>
           {% for r in recent %}
           <tr>
             <td class="td-mono">{{ r.exp_id }}</td>
-            <td>{{ r.student_id }}</td>
-            <td class="td-truncate" data-i18n-tx>{{ r.topic }}</td>
+            <td>{{ STUDENT_NAMES.get(r.student_id, r.student_id) }}</td>
+            <td class="td-truncate" data-i18n-tx>{{ r.topic if r.topic and "?" not in r.topic else "—" }}</td>
             <td><span class="depth-tag">{{ r.depth }}</span></td>
             <td class="td-mono">{{ r.pre_test_score if r.pre_test_score else "—" }}</td>
             <td class="td-mono">{{ r.post_test_score if r.post_test_score else "—" }}</td>
-            <td class="{% if r.learning_gain > 0 %}gain-pos{% else %}gain-neg{% endif %}">{% if r.learning_gain > 0 %}+{{ r.learning_gain }}{% else %}—{% endif %}</td>
-            <td>
-              {% if r.session_grade == "◎" %}<span class="grade-mark g-ex">◎</span>
-              {% elif r.session_grade == "○" %}<span class="grade-mark g-pass">○</span>
-              {% else %}<span class="grade-mark g-fail">×</span>{% endif %}
-            </td>
+            <td class="{% if r.proficiency_delta and r.proficiency_delta > 0 %}gain-pos{% else %}gain-neg{% endif %}">{% if r.proficiency_delta and r.proficiency_delta > 0 %}+{{ r.proficiency_delta }}{% else %}—{% endif %}</td>
+            <td class="td-mono">{% if r.proficiency_delta is not none %}{{ "%.1f"|format(r.proficiency_delta) }}{% else %}—{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -378,7 +374,7 @@ const I18N = {
     students_label:"生徒エージェント", recent_sessions:"最近のセッション",
     total_sessions:"総セッション数", avg_gain:"平均ゲイン", pass_rate:"合格率",
     th_session:"セッション", th_student:"生徒", th_topic:"単元", th_depth:"深さ",
-    th_pre:"事前", th_post:"事後", th_gain:"ゲイン", th_grade:"評価",
+    th_pre:"事前", th_post:"事後", th_gain:"ゲイン", th_grade:"評価", th_delta:"Δ習熟",
     sessions_word:"セッション", pts:"点", no_test_yet:"テスト未実施", view_all:"すべて見る →",
     title_main:"AIエージェントが教え方を",
     title_faded:"学び、試し、本質を持ち帰るための静かな場。",
@@ -389,7 +385,7 @@ const I18N = {
     students_label:"Student Agents", recent_sessions:"Recent Sessions",
     total_sessions:"total sessions", avg_gain:"avg gain", pass_rate:"pass rate",
     th_session:"Session", th_student:"Student", th_topic:"Topic", th_depth:"Depth",
-    th_pre:"Pre", th_post:"Post", th_gain:"Gain", th_grade:"Grade",
+    th_pre:"Pre", th_post:"Post", th_gain:"Gain", th_grade:"Grade", th_delta:"Δ Prof",
     sessions_word:"sessions", pts:"pts", no_test_yet:"no test yet", view_all:"View all →",
     title_main:"A calm space for AI agents",
     title_faded:"to learn and experiment with how to teach and get key takeaways.",

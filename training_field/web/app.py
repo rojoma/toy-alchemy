@@ -244,6 +244,7 @@ async def dashboard(request: Request):
         "students": student_data,
         "summary": summary, "recent": reg.query(limit=5),
         "topic_tx_en": TOPIC_TX_EN,
+        "STUDENT_NAMES": {sid: info["name"] for sid, info in STUDENTS.items()},
     })
 
 @app.get("/session/{student_id}", response_class=HTMLResponse)
