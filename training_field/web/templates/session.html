@@ -675,7 +675,14 @@ function msg(role,name,text,ref){
   if(role=="referee"){
     const d=document.createElement("div");d.className="msg mr";
     d.innerHTML='<span style="font-weight:600;color:var(--text)">'+name+'</span> '+(text||"");
-    if(ref){d.innerHTML+='<div class="rpills"><span class="rp">ZPD '+ref.z+'</span><span class="rp">Bloom L'+ref.b+'</span><span class="rp">Scaf '+ref.s+'</span><span class="rp '+(ref.h?"warn":"")+'">幻覚 '+(ref.h?"detected":"none")+'</span><span class="rp '+(ref.d?"warn":"")+'">直回答 '+(ref.d?"detected":"none")+'</span><span class="rp" style="color:var(--success)">Δ '+ref.dt+'</span></div>';}
+    if(ref){
+      const ja = curLang === "ja";
+      const hLabel = ja ? "幻覚" : "halluc";
+      const dLabel = ja ? "直回答" : "direct";
+      const yes = ja ? "detected" : "yes";
+      const no = ja ? "none" : "no";
+      d.innerHTML += '<div class="rpills"><span class="rp">ZPD '+ref.z+'</span><span class="rp">Bloom L'+ref.b+'</span><span class="rp">Scaf '+ref.s+'</span><span class="rp '+(ref.h?"warn":"")+'">'+hLabel+' '+(ref.h?yes:no)+'</span><span class="rp '+(ref.d?"warn":"")+'">'+dLabel+' '+(ref.d?yes:no)+'</span><span class="rp" style="color:var(--success)">Δ '+ref.dt+'</span></div>';
+    }
     if(ref&&ref.dir){d.innerHTML+='<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">→ '+ref.dir+'</div>';}
     w.appendChild(d);
   }else{
@@ -746,7 +753,7 @@ function startStream(opts){
       });
     } else if(d.type==="referee"){
       enqueue(async ()=>{
-        msg("referee","Referee",d.summary||"評価完了",
+        msg("referee","Referee",d.summary||(curLang==="ja"?"評価完了":"evaluation complete"),
           {z:d.zpd,b:d.bloom,s:d.scaffolding,h:d.halluc,d:d.direct,dt:d.delta,dir:d.directive});
         zpdAcc+=d.zpd||0; bloomAcc+=d.bloom||0;
         hallucAcc+=(d.halluc?1:0); directAcc+=(d.direct?1:0); evalCount++;
@@ -754,13 +761,23 @@ function startStream(opts){
       });
     } else if(d.type==="test_phase"){
       enqueue(async ()=>{
-        const lbl = d.which==="pre" ? "Pre-test 開始" : "Post-test 開始";
+        const ja = curLang === "ja";
+        const lbl = d.which==="pre"
+          ? (ja ? "事前テスト開始" : "Pre-test starting")
+          : (ja ? "事後テスト開始" : "Post-test starting");
         msg("referee","System",lbl,null);
       });
     } else if(d.type==="test_q"){
       enqueue(async ()=>{
-        msg("referee","System",
-          (d.which==="pre"?"事前":"事後")+"テスト Q"+d.i+"/"+d.n+" — "+(d.correct?"○ 正解":"× 不正解"),null);
+        const ja = curLang === "ja";
+        const which = d.which==="pre"
+          ? (ja ? "事前" : "Pre")
+          : (ja ? "事後" : "Post");
+        const result = d.correct
+          ? (ja ? "○ 正解" : "✓ correct")
+          : (ja ? "× 不正解" : "✗ incorrect");
+        const word = ja ? "テスト" : "test";
+        msg("referee","System", `${which} ${word} Q${d.i}/${d.n} — ${result}`, null);
       });
     } else if(d.type==="test_score"){
       enqueue(async ()=>{
