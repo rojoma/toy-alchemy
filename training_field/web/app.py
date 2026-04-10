@@ -231,6 +231,14 @@ LEGACY_TOPIC_ALIASES: dict[str, str] = {
 for _ja, _en in LEGACY_TOPIC_ALIASES.items():
     TOPIC_TX_EN.setdefault(_ja, _en)
 
+_SUBJECT_EN = {"算数":"Math","国語":"Japanese","理科":"Science","社会":"Social Studies","英語":"English"}
+
+def display_topic(topic: str, lang: str) -> str:
+    """Translate topic/subject name for LLM prompts. JA → EN when lang='en', pass-through otherwise."""
+    if lang == "en":
+        return TOPIC_TX_EN.get(topic, _SUBJECT_EN.get(topic, topic))
+    return topic
+
 # ── Live Session (Human Student Mode) ─────────────────────────
 # In-memory store for active live sessions. Each session holds teacher + referee
 # state between HTTP requests. Lost on redeploy (acceptable for now).
@@ -282,12 +290,14 @@ class LiveSession:
 def _test_prompt(teacher_config, topic, grade, subject, lang, question_num, total_qs, student_name, is_post=False):
     """Build system prompt for a conversational test question."""
     test_type = "post-test (review)" if is_post else "pre-test (diagnostic)"
+    dtopic = display_topic(topic, lang)
+    dsubject = display_topic(subject, lang)
     return f"""You are {teacher_config.name}, giving a friendly {test_type} to {student_name}.
-Topic: {topic} (Grade {grade} {subject}).
+Topic: {dtopic} (Grade {grade} {dsubject}).
 This is question {question_num} of {total_qs}.
 
 RULES:
-- Ask ONE clear, specific question about {topic} appropriate for grade {grade}.
+- Ask ONE clear, specific question about {dtopic} appropriate for grade {grade}.
 - Keep it conversational and encouraging — NOT a formal exam tone.
 - {"Ask about concepts covered in today's lesson." if is_post else "Test their existing knowledge before the lesson."}
 - Each question should test a DIFFERENT aspect of the topic.
@@ -298,9 +308,10 @@ RULES:
 
 def _judge_prompt(teacher_config, topic, grade, lang, question_text, student_answer):
     """Build system prompt for judging a test answer."""
+    dtopic = display_topic(topic, lang)
     return f"""You are {teacher_config.name}, evaluating a student's answer.
 
-The question was about "{topic}" (Grade {grade}).
+The question was about "{dtopic}" (Grade {grade}).
 Student answered: "{student_answer}"
 
 RULES:
@@ -353,7 +364,7 @@ async def live_start(body: dict):
     resp = client.chat.completions.create(
         model="gpt-4o", max_tokens=300,
         messages=[{"role": "system", "content": prompt},
-                  {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {topic}."}],
+                  {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {display_topic(topic, lang)}."}],
     )
     first_q = resp.choices[0].message.content.strip()
     session.last_teacher_text = first_q
@@ -459,8 +470,9 @@ async def live_respond(session_id: str, body: dict):
 
             # Generate first teaching message
             phase = session.current_phase
+            dtopic = display_topic(session.topic, session.lang)
             tr = await teacher.get_response(
-                topic=session.topic, phase=phase["name"], phase_goal=phase["goal"],
+                topic=dtopic, phase=phase["name"], phase_goal=phase["goal"],
                 student_name=session.student_label, student_proficiency=session.proficiency,
                 student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
                 student_last_response=None,
@@ -510,12 +522,13 @@ async def live_respond(session_id: str, body: dict):
     # ── TEACHING phase ───────────────────────────────────────
     phase = session.current_phase
     principal = session.principal
+    dtopic = display_topic(session.topic, session.lang)
 
     # Referee evaluates
     ev = await principal.evaluate_turn(
         teacher_text=session.last_teacher_text or "",
         student_text=student_text,
-        topic=session.topic, phase=phase["name"],
+        topic=dtopic, phase=phase["name"],
         student_proficiency=session.proficiency,
         grade=session.grade, subject=session.subject,
         lang=session.lang,
@@ -549,7 +562,7 @@ async def live_respond(session_id: str, body: dict):
         session.session_phase = "post_test"
         session.test_question_num = 1
         prompt = _test_prompt(
-            teacher.config, session.topic, session.grade, session.subject,
+            teacher.config, dtopic, session.grade, session.subject,
             session.lang, 1, NUM_TEST_QUESTIONS, session.student_label, is_post=True,
         )
         resp = client.chat.completions.create(
@@ -572,7 +585,7 @@ async def live_respond(session_id: str, body: dict):
     # Next teaching turn
     next_phase = session.current_phase
     tr = await teacher.get_response(
-        topic=session.topic, phase=next_phase["name"], phase_goal=next_phase["goal"],
+        topic=dtopic, phase=next_phase["name"], phase_goal=next_phase["goal"],
         student_name=session.student_label, student_proficiency=session.proficiency,
         student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
         student_last_response=student_text,
@@ -1054,6 +1067,7 @@ async def run_session_stream(
         last_student_text = None
         total = sum(p["turns"] for p in phases)
         done = 0
+        dtopic = display_topic(topic, lang)
         for phase in phases:
             yield f"data: {json.dumps({'type':'phase','phase':phase['name'],'label':phase['label'],'goal':phase['goal']})}\n\n"
             await asyncio.sleep(0)
@@ -1061,7 +1075,7 @@ async def run_session_stream(
                 current_prof = student.proficiency_model.topic_proficiencies.get(
                     topic, student.proficiency_model.proficiency)
                 tr = await teacher.get_response(
-                    topic=topic, phase=phase["name"], phase_goal=phase["goal"],
+                    topic=dtopic, phase=phase["name"], phase_goal=phase["goal"],
                     student_name=student.name if lang == "en" else student.name_ja(),
                     student_proficiency=current_prof,
                     student_emotional=student.emotional_state.__dict__,
@@ -1072,13 +1086,13 @@ async def run_session_stream(
                 yield f"data: {json.dumps({'type':'teacher','text':tr['text'],'turn':turn_num,'total':total})}\n\n"
                 await asyncio.sleep(0.3)
                 sr = await student.get_response(
-                    teacher_message=tr["text"], topic=topic, phase=phase["name"], lang=lang,
+                    teacher_message=tr["text"], topic=dtopic, phase=phase["name"], lang=lang,
                 )
                 yield f"data: {json.dumps({'type':'student','text':sr['text']})}\n\n"
                 await asyncio.sleep(0.3)
                 ev = await principal.evaluate_turn(
                     teacher_text=tr["text"], student_text=sr["text"],
-                    topic=topic, phase=phase["name"],
+                    topic=dtopic, phase=phase["name"],
                     student_proficiency=current_prof,
                     grade=config.grade, subject=config.subject,
                     lang=lang,
