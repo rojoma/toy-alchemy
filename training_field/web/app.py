@@ -236,6 +236,8 @@ for _ja, _en in LEGACY_TOPIC_ALIASES.items():
 # state between HTTP requests. Lost on redeploy (acceptable for now).
 from dataclasses import dataclass as _dc, field as _field
 
+NUM_TEST_QUESTIONS = 3
+
 @_dc
 class LiveSession:
     session_id: str
@@ -250,14 +252,19 @@ class LiveSession:
     teacher_name: str
     student_label: str  # human's display name
     # state
+    session_phase: str = "pre_test"  # pre_test → teaching → post_test → complete
     current_phase_idx: int = 0
     current_turn: int = 0
     total_turns_done: int = 0
+    test_question_num: int = 0  # current test question (1-based)
     proficiency: float = 50.0
     initial_proficiency: float = 50.0
     last_teacher_text: str | None = None
     turns_log: list = _field(default_factory=list)
     turn_evaluations: list = _field(default_factory=list)
+    pre_test_results: list = _field(default_factory=list)  # [{question, student_answer, correct, explanation}]
+    post_test_results: list = _field(default_factory=list)
+    key_moments: list = _field(default_factory=list)  # [{turn, delta, summary}] — biggest learning moments
     is_complete: bool = False
     started_at: str = ""
 
@@ -271,11 +278,44 @@ class LiveSession:
             return self.phases[self.current_phase_idx]
         return None
 
+
+def _test_prompt(teacher_config, topic, grade, subject, lang, question_num, total_qs, student_name, is_post=False):
+    """Build system prompt for a conversational test question."""
+    test_type = "post-test (review)" if is_post else "pre-test (diagnostic)"
+    return f"""You are {teacher_config.name}, giving a friendly {test_type} to {student_name}.
+Topic: {topic} (Grade {grade} {subject}).
+This is question {question_num} of {total_qs}.
+
+RULES:
+- Ask ONE clear, specific question about {topic} appropriate for grade {grade}.
+- Keep it conversational and encouraging — NOT a formal exam tone.
+- {"Ask about concepts covered in today's lesson." if is_post else "Test their existing knowledge before the lesson."}
+- Each question should test a DIFFERENT aspect of the topic.
+- Reply in {"English" if lang == "en" else "Japanese"}.
+- End your message with the question. Do NOT answer it yourself.
+- Do NOT number the question — just ask it naturally."""
+
+
+def _judge_prompt(teacher_config, topic, grade, lang, question_text, student_answer):
+    """Build system prompt for judging a test answer."""
+    return f"""You are {teacher_config.name}, evaluating a student's answer.
+
+The question was about "{topic}" (Grade {grade}).
+Student answered: "{student_answer}"
+
+RULES:
+- Determine if the answer is correct, partially correct, or incorrect.
+- Give brief, encouraging feedback (1-2 sentences).
+- Reply in {"English" if lang == "en" else "Japanese"}.
+- Start with a clear signal: "✓" if correct, "△" if partially correct, "✗" if incorrect.
+- Then on a NEW LINE, add this exact JSON (no code block):
+{{"correct": true_or_false, "question": "the original question you asked", "explanation": "brief correct answer explanation"}}"""
+
 LIVE_SESSIONS: dict[str, LiveSession] = {}
 
 @app.post("/api/live/start")
 async def live_start(body: dict):
-    """Start a live (human-student) session. Returns session_id + first teacher message."""
+    """Start a live (human-student) session. Begins with pre-test."""
     teacher_id = body.get("teacher_id", "t001")
     topic = body.get("topic", "分数のかけ算とわり算")
     depth = body.get("depth", "quick")
@@ -299,38 +339,40 @@ async def live_start(body: dict):
         depth=depth, lang=lang,
         teacher_name=teacher.config.name,
         student_label=student_label,
+        session_phase="pre_test",
+        test_question_num=1,
         proficiency=50.0, initial_proficiency=50.0,
         started_at=datetime.datetime.now().isoformat(),
     )
     LIVE_SESSIONS[sid] = session
 
-    # Generate first teacher message
-    phase = session.current_phase
-    session.current_turn = 1
-    tr = await teacher.get_response(
-        topic=topic, phase=phase["name"], phase_goal=phase["goal"],
-        student_name=student_label, student_proficiency=session.proficiency,
-        student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
-        student_last_response=None,
-        grade=gcode, subject=subject, turn_number=1, lang=lang,
+    # Generate first pre-test question
+    prompt = _test_prompt(teacher.config, topic, gcode, subject, lang, 1, NUM_TEST_QUESTIONS, student_label, is_post=False)
+    from openai import OpenAI
+    client = OpenAI()
+    resp = client.chat.completions.create(
+        model="gpt-4o", max_tokens=300,
+        messages=[{"role": "system", "content": prompt},
+                  {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {topic}."}],
     )
-    session.last_teacher_text = tr["text"]
+    first_q = resp.choices[0].message.content.strip()
+    session.last_teacher_text = first_q
+
+    greeting = "Let's start with a quick check!" if lang == "en" else "まずは軽いチェックから始めましょう！"
 
     return {
         "session_id": sid,
         "teacher_name": teacher.config.name,
-        "teacher_message": tr["text"],
-        "phase": phase["name"],
-        "phase_label": phase["label"],
-        "turn": 1,
-        "total_turns": session.total_turns,
+        "teacher_message": f"{greeting}\n\n{first_q}",
+        "session_phase": "pre_test",
+        "test_progress": f"1/{NUM_TEST_QUESTIONS}",
         "is_complete": False,
     }
 
 
 @app.post("/api/live/{session_id}/respond")
 async def live_respond(session_id: str, body: dict):
-    """Submit the human student's response. Returns referee eval + next teacher message (or completion)."""
+    """Submit the human student's response. Handles pre_test / teaching / post_test phases."""
     session = LIVE_SESSIONS.get(session_id)
     if not session:
         raise HTTPException(404, "session not found or expired")
@@ -341,11 +383,135 @@ async def live_respond(session_id: str, body: dict):
     if not student_text:
         raise HTTPException(400, "text is required")
 
-    phase = session.current_phase
     teacher = session.teacher
+    from openai import OpenAI
+    client = OpenAI()
+
+    # ── PRE-TEST or POST-TEST phase ──────────────────────────
+    if session.session_phase in ("pre_test", "post_test"):
+        is_post = session.session_phase == "post_test"
+        results_list = session.post_test_results if is_post else session.pre_test_results
+
+        # Judge the answer
+        judge_sys = _judge_prompt(
+            teacher.config, session.topic, session.grade, session.lang,
+            session.last_teacher_text or "", student_text,
+        )
+        resp = client.chat.completions.create(
+            model="gpt-4o", max_tokens=400,
+            messages=[{"role": "system", "content": judge_sys},
+                      {"role": "user", "content": f'Student answered: "{student_text}"'}],
+        )
+        raw = resp.choices[0].message.content.strip()
+
+        # Parse feedback + JSON
+        feedback_text = raw
+        result_data = {"correct": False, "question": session.last_teacher_text or "", "explanation": ""}
+        for line in raw.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("{") and "correct" in stripped:
+                try:
+                    result_data = json.loads(stripped)
+                    feedback_text = raw.replace(stripped, "").strip()
+                except json.JSONDecodeError:
+                    pass
+
+        results_list.append({
+            "question": result_data.get("question", session.last_teacher_text or ""),
+            "student_answer": student_text,
+            "correct": bool(result_data.get("correct", False)),
+            "explanation": result_data.get("explanation", ""),
+            "feedback": feedback_text,
+        })
+        session.test_question_num += 1
+
+        # More test questions?
+        if session.test_question_num <= NUM_TEST_QUESTIONS:
+            prompt = _test_prompt(
+                teacher.config, session.topic, session.grade, session.subject,
+                session.lang, session.test_question_num, NUM_TEST_QUESTIONS,
+                session.student_label, is_post=is_post,
+            )
+            resp2 = client.chat.completions.create(
+                model="gpt-4o", max_tokens=300,
+                messages=[{"role": "system", "content": prompt},
+                          {"role": "user", "content": f"Ask question {session.test_question_num} of {NUM_TEST_QUESTIONS}."}],
+            )
+            next_q = resp2.choices[0].message.content.strip()
+            session.last_teacher_text = next_q
+            return {
+                "teacher_message": f"{feedback_text}\n\n{next_q}",
+                "teacher_name": session.teacher_name,
+                "session_phase": session.session_phase,
+                "test_progress": f"{session.test_question_num}/{NUM_TEST_QUESTIONS}",
+                "is_complete": False,
+            }
+
+        # Test phase complete — transition
+        if session.session_phase == "pre_test":
+            # Move to teaching
+            session.session_phase = "teaching"
+            session.current_turn = 1
+            session.current_phase_idx = 0
+            pre_score = sum(1 for r in session.pre_test_results if r["correct"])
+            session.initial_proficiency = round(pre_score / NUM_TEST_QUESTIONS * 100)
+            session.proficiency = session.initial_proficiency
+
+            # Generate first teaching message
+            phase = session.current_phase
+            tr = await teacher.get_response(
+                topic=session.topic, phase=phase["name"], phase_goal=phase["goal"],
+                student_name=session.student_label, student_proficiency=session.proficiency,
+                student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
+                student_last_response=None,
+                grade=session.grade, subject=session.subject,
+                turn_number=1, lang=session.lang,
+            )
+            session.last_teacher_text = tr["text"]
+
+            transition = ("Great! Now let's learn together." if session.lang == "en"
+                          else "では、一緒に学びましょう！")
+            return {
+                "teacher_message": f"{feedback_text}\n\n{transition}\n\n{tr['text']}",
+                "teacher_name": session.teacher_name,
+                "session_phase": "teaching",
+                "phase": phase["name"],
+                "phase_label": phase["label"],
+                "pre_test_score": f"{pre_score}/{NUM_TEST_QUESTIONS}",
+                "is_complete": False,
+            }
+        else:
+            # Post-test done → session complete
+            session.is_complete = True
+            session.session_phase = "complete"
+            # Compute key moments
+            if session.turns_log:
+                sorted_turns = sorted(session.turns_log, key=lambda t: t.get("delta", 0), reverse=True)
+                session.key_moments = [
+                    {"turn": t["turn"], "phase": t["phase_label"], "delta": t["delta"], "summary": t["summary"]}
+                    for t in sorted_turns[:3] if t.get("delta", 0) > 0
+                ]
+            _save_live_session(session)
+            post_score = sum(1 for r in session.post_test_results if r["correct"])
+            pre_score = sum(1 for r in session.pre_test_results if r["correct"])
+            return {
+                "teacher_message": feedback_text,
+                "session_phase": "complete",
+                "is_complete": True,
+                "pre_test": session.pre_test_results,
+                "post_test": session.post_test_results,
+                "pre_score": f"{pre_score}/{NUM_TEST_QUESTIONS}",
+                "post_score": f"{post_score}/{NUM_TEST_QUESTIONS}",
+                "improvement": post_score - pre_score,
+                "key_moments": session.key_moments,
+                "proficiency_delta": round(session.proficiency - session.initial_proficiency, 1),
+            }
+
+    # ── TEACHING phase ───────────────────────────────────────
+    phase = session.current_phase
     principal = session.principal
 
-    # Referee evaluates the teacher-student exchange
+    # Referee evaluates
     ev = await principal.evaluate_turn(
         teacher_text=session.last_teacher_text or "",
         student_text=student_text,
@@ -355,12 +521,9 @@ async def live_respond(session_id: str, body: dict):
         lang=session.lang,
     )
     session.turn_evaluations.append(ev)
-
-    # Update proficiency
     if ev.understanding_delta > 0:
         session.proficiency += ev.understanding_delta * 0.3
 
-    # Log turn
     session.turns_log.append({
         "phase": phase["name"], "phase_label": phase["label"],
         "turn": session.current_turn,
@@ -381,26 +544,32 @@ async def live_respond(session_id: str, body: dict):
         session.current_phase_idx += 1
         session.current_turn = 1
 
-    # Check if session complete
+    # Teaching complete? → transition to post-test
     if session.current_phase_idx >= len(session.phases):
-        session.is_complete = True
-        # Save to registry + transcript
-        _save_live_session(session)
+        session.session_phase = "post_test"
+        session.test_question_num = 1
+        prompt = _test_prompt(
+            teacher.config, session.topic, session.grade, session.subject,
+            session.lang, 1, NUM_TEST_QUESTIONS, session.student_label, is_post=True,
+        )
+        resp = client.chat.completions.create(
+            model="gpt-4o", max_tokens=300,
+            messages=[{"role": "system", "content": prompt},
+                      {"role": "user", "content": f"Ask review question 1 of {NUM_TEST_QUESTIONS}."}],
+        )
+        post_q = resp.choices[0].message.content.strip()
+        session.last_teacher_text = post_q
+        review_intro = ("Great work! Let's see how much you've learned." if session.lang == "en"
+                        else "よく頑張りました！どれだけ学んだか確認しましょう。")
         return {
-            "referee": {
-                "zpd": round(ev.zpd_alignment, 2), "bloom": ev.bloom_level,
-                "scaffolding": round(ev.scaffolding_quality, 2),
-                "halluc": ev.hallucination_detected, "direct": ev.answer_given_directly,
-                "delta": round(ev.understanding_delta, 1),
-                "directive": ev.directive_to_teacher, "summary": ev.summary,
-            },
-            "is_complete": True,
-            "final_proficiency": round(session.proficiency, 1),
-            "proficiency_delta": round(session.proficiency - session.initial_proficiency, 1),
-            "total_turns": session.total_turns_done,
+            "teacher_message": f"{review_intro}\n\n{post_q}",
+            "teacher_name": session.teacher_name,
+            "session_phase": "post_test",
+            "test_progress": f"1/{NUM_TEST_QUESTIONS}",
+            "is_complete": False,
         }
 
-    # Generate next teacher message
+    # Next teaching turn
     next_phase = session.current_phase
     tr = await teacher.get_response(
         topic=session.topic, phase=next_phase["name"], phase_goal=next_phase["goal"],
@@ -415,13 +584,7 @@ async def live_respond(session_id: str, body: dict):
     return {
         "teacher_message": tr["text"],
         "teacher_name": session.teacher_name,
-        "referee": {
-            "zpd": round(ev.zpd_alignment, 2), "bloom": ev.bloom_level,
-            "scaffolding": round(ev.scaffolding_quality, 2),
-            "halluc": ev.hallucination_detected, "direct": ev.answer_given_directly,
-            "delta": round(ev.understanding_delta, 1),
-            "directive": ev.directive_to_teacher, "summary": ev.summary,
-        },
+        "session_phase": "teaching",
         "phase": next_phase["name"],
         "phase_label": next_phase["label"],
         "turn": session.current_turn,

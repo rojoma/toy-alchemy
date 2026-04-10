@@ -304,7 +304,7 @@ async function initSession(){
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"start failed");
     sessionId = d.session_id;
-    showPhase(d.phase_label);
+    showPhase("Check");
     await showTeacherMsg(d.teacher_message);
     // Enable input
     document.getElementById("inputField").disabled = false;
@@ -318,6 +318,78 @@ async function initSession(){
 
 // ── Send response ────────────────────────────────
 let lastPhase = null;
+let lastSessionPhase = "pre_test";
+
+function showReview(d){
+  const chat = document.getElementById("chat");
+  document.getElementById("inputBar").style.display = "none";
+  document.getElementById("statusDot").className = "status-dot";
+
+  const preScore = d.pre_score || "0/0";
+  const postScore = d.post_score || "0/0";
+  const improvement = d.improvement || 0;
+
+  let reviewHTML = '<div class="complete-card" style="max-width:520px;text-align:left">';
+  reviewHTML += '<div class="complete-mark" style="text-align:center">✓</div>';
+  reviewHTML += '<div class="complete-title" style="text-align:center">Session Complete</div>';
+
+  // Score comparison
+  reviewHTML += '<div style="display:flex;justify-content:center;gap:40px;margin:24px 0">';
+  reviewHTML += '<div style="text-align:center"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">PRE-TEST</div><div style="font-size:28px;font-weight:600">'+preScore+'</div></div>';
+  reviewHTML += '<div style="text-align:center;padding-top:18px;color:var(--muted)">→</div>';
+  reviewHTML += '<div style="text-align:center"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">POST-TEST</div><div style="font-size:28px;font-weight:600;color:var(--success)">'+postScore+'</div></div>';
+  reviewHTML += '</div>';
+
+  if(improvement > 0){
+    reviewHTML += '<div style="text-align:center;font-size:14px;color:var(--success);margin-bottom:24px">+'+improvement+' questions improved!</div>';
+  }
+
+  // Detailed Q&A review
+  const pre = d.pre_test || [];
+  const post = d.post_test || [];
+
+  function renderTest(label, items){
+    if(!items.length) return "";
+    let h = '<div style="margin-top:20px"><div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:10px">'+label+'</div>';
+    items.forEach((q,i)=>{
+      const mark = q.correct ? "✓" : "✗";
+      const color = q.correct ? "var(--success)" : "var(--muted)";
+      h += '<div style="padding:12px 0;border-bottom:1px solid var(--border)">';
+      h += '<div style="font-size:13px;font-weight:500;margin-bottom:4px">Q'+(i+1)+': '+escHtml(q.question)+'</div>';
+      h += '<div style="font-size:12px;color:var(--text-secondary)">Your answer: '+escHtml(q.student_answer)+'</div>';
+      h += '<div style="font-size:12px;color:'+color+';margin-top:2px">'+mark+' '+(q.explanation||"")+'</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  reviewHTML += renderTest("PRE-TEST QUESTIONS", pre);
+  reviewHTML += renderTest("POST-TEST QUESTIONS", post);
+
+  // Key learning moments
+  const moments = d.key_moments || [];
+  if(moments.length > 0){
+    reviewHTML += '<div style="margin-top:24px"><div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:10px">KEY LEARNING MOMENTS</div>';
+    moments.forEach(m=>{
+      reviewHTML += '<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:12px">';
+      reviewHTML += '<div style="color:var(--success);font-weight:500">'+m.phase+' · Turn '+m.turn+' · Δ +'+m.delta+'</div>';
+      reviewHTML += '<div style="color:var(--text-secondary);margin-top:2px">'+escHtml(m.summary)+'</div>';
+      reviewHTML += '</div>';
+    });
+    reviewHTML += '</div>';
+  }
+
+  reviewHTML += '<div style="text-align:center;margin-top:28px"><a href="/learn" class="complete-btn">Continue Learning</a></div>';
+  reviewHTML += '</div>';
+
+  const card = document.createElement("div");
+  card.innerHTML = reviewHTML;
+  chat.appendChild(card.firstChild);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function escHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 
 async function sendResponse(){
   const input = document.getElementById("inputField");
@@ -344,13 +416,20 @@ async function sendResponse(){
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({topic:TOPIC,delta:d.proficiency_delta||0}),
       });
-      showComplete(d.proficiency_delta||0, d.final_proficiency||0);
+      // Show final teacher feedback
+      if(d.teacher_message) await showTeacherMsg(d.teacher_message);
+      // Show review card
+      showReview(d);
     } else {
-      // Phase transition
-      if(d.phase && d.phase !== lastPhase){
+      // Phase or session_phase transition
+      if(d.session_phase === "teaching" && d.phase && d.phase !== lastPhase){
         showPhase(d.phase_label);
         lastPhase = d.phase;
       }
+      if(d.session_phase === "post_test" && lastSessionPhase !== "post_test"){
+        showPhase("Review");
+      }
+      lastSessionPhase = d.session_phase;
       await showTeacherMsg(d.teacher_message);
       input.disabled = false;
       document.getElementById("sendBtn").disabled = false;
