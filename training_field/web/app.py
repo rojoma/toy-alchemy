@@ -471,12 +471,13 @@ async def live_respond(session_id: str, body: dict):
             # Generate first teaching message
             phase = session.current_phase
             dtopic = display_topic(session.topic, session.lang)
+            dsubject = display_topic(session.subject, session.lang)
             tr = await teacher.get_response(
                 topic=dtopic, phase=phase["name"], phase_goal=phase["goal"],
                 student_name=session.student_label, student_proficiency=session.proficiency,
                 student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
                 student_last_response=None,
-                grade=session.grade, subject=session.subject,
+                grade=session.grade, subject=dsubject,
                 turn_number=1, lang=session.lang,
             )
             session.last_teacher_text = tr["text"]
@@ -523,6 +524,7 @@ async def live_respond(session_id: str, body: dict):
     phase = session.current_phase
     principal = session.principal
     dtopic = display_topic(session.topic, session.lang)
+    dsubject = display_topic(session.subject, session.lang)
 
     # Referee evaluates
     ev = await principal.evaluate_turn(
@@ -530,7 +532,7 @@ async def live_respond(session_id: str, body: dict):
         student_text=student_text,
         topic=dtopic, phase=phase["name"],
         student_proficiency=session.proficiency,
-        grade=session.grade, subject=session.subject,
+        grade=session.grade, subject=dsubject,
         lang=session.lang,
     )
     session.turn_evaluations.append(ev)
@@ -589,7 +591,7 @@ async def live_respond(session_id: str, body: dict):
         student_name=session.student_label, student_proficiency=session.proficiency,
         student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
         student_last_response=student_text,
-        grade=session.grade, subject=session.subject,
+        grade=session.grade, subject=dsubject,
         turn_number=session.current_turn, lang=session.lang,
     )
     session.last_teacher_text = tr["text"]
@@ -1068,6 +1070,7 @@ async def run_session_stream(
         total = sum(p["turns"] for p in phases)
         done = 0
         dtopic = display_topic(topic, lang)
+        dsubject = display_topic(subject, lang)
         for phase in phases:
             yield f"data: {json.dumps({'type':'phase','phase':phase['name'],'label':phase['label'],'goal':phase['goal']})}\n\n"
             await asyncio.sleep(0)
@@ -1080,7 +1083,7 @@ async def run_session_stream(
                     student_proficiency=current_prof,
                     student_emotional=student.emotional_state.__dict__,
                     student_last_response=last_student_text,
-                    grade=config.grade, subject=config.subject, turn_number=turn_num,
+                    grade=config.grade, subject=dsubject, turn_number=turn_num,
                     lang=lang,
                 )
                 yield f"data: {json.dumps({'type':'teacher','text':tr['text'],'turn':turn_num,'total':total})}\n\n"
@@ -1094,7 +1097,7 @@ async def run_session_stream(
                     teacher_text=tr["text"], student_text=sr["text"],
                     topic=dtopic, phase=phase["name"],
                     student_proficiency=current_prof,
-                    grade=config.grade, subject=config.subject,
+                    grade=config.grade, subject=dsubject,
                     lang=lang,
                 )
                 turn_evaluations.append(ev)

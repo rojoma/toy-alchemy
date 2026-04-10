@@ -135,13 +135,20 @@ Reply in 2-4 sentences in English with realistic grade-{self.grade} language. St
             topic, self.proficiency_model.proficiency
         )
 
-        system = f"""あなたは小学{self.grade}年生の{self.name_ja()}です。
+        if lang == "en":
+            system = f"""You are {self.name}, a grade {self.grade} student taking a test.
+Topic: "{topic}" — your proficiency: {prof:.0f}/100.
+Personality: {self.personality['description']}
+
+{'Answer correctly (but naturally, as if you figured it out).' if is_correct else f'Make a mistake (typical errors: {", ".join(self.error_patterns)}). Do NOT write the correct answer.'}
+Write only your answer, briefly, in English."""
+        else:
+            system = f"""あなたは小学{self.grade}年生の{self.name_ja()}です。
 テストを受けています。単元「{topic}」の習熟度: {prof:.0f}/100。
 性格: {self.personality['description']}
 
 この問題に{'正しく答えてください' if is_correct else f'間違えてください。典型的なミス: {", ".join(self.error_patterns)}。正解は絶対に書かないこと'}。
-答えだけを短く書いてください。
-LANGUAGE: Reply in {"English" if lang == "en" else "Japanese"}."""
+答えだけを短く日本語で書いてください。"""
 
         response = self.client.chat.completions.create(
             model="gpt-4o",
