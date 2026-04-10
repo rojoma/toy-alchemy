@@ -1,19 +1,19 @@
 ■ snapshot before
 ▶ EXP1: Tournament (3 parallel)
-  ✓ exp1/ext_tanaka_emma 46s | "session_id":"sess_8c95ca64" | "avg_zpd":0.763 | "final_proficiency":37.1
-  ✓ exp1/t001_emma 92s | "session_id":"sess_5a70a69d" | "avg_zpd":0.688 | "final_proficiency":37.1
-  ✓ exp1/ext_rivera_emma 141s | "session_id":"sess_c4bc8697" | "avg_zpd":0.688 | "final_proficiency":35.9
+  ✓ exp1/t001_emma 55s | "session_id":"sess_121bb582" | "avg_zpd":0.613 | "final_proficiency":36.8
+  ✓ exp1/ext_tanaka_emma 98s | "session_id":"sess_9337dcb2" | "avg_zpd":0.738 | "final_proficiency":36.0
+  ✓ exp1/ext_rivera_emma 137s | "session_id":"sess_339289c5" | "avg_zpd":0.762 | "final_proficiency":38.0
 ■ snapshot after_exp1
 ▶ EXP2: Warmth x Confidence (4 parallel)
-  ✓ exp2/ext_warm_v1_s001 50s | "session_id":"sess_d0790c62" | "avg_zpd":0.662 | "final_proficiency":37.1
-  ✓ exp2/ext_warm_v1_s006 100s | "session_id":"sess_a9b2e207" | "avg_zpd":0.725 | "final_proficiency":80.9
-  ✓ exp2/ext_cool_v1_s001 152s | "session_id":"sess_6aad6e97" | "avg_zpd":0.713 | "final_proficiency":38.6
-  ✓ exp2/ext_cool_v1_s006 203s | "session_id":"sess_4ea956c3" | "avg_zpd":0.775 | "final_proficiency":79.3
+  ✓ exp2/ext_warm_v1_s001 39s | "session_id":"sess_c39ba346" | "avg_zpd":0.75 | "final_proficiency":38.6
+  ✓ exp2/ext_warm_v1_s006 87s | "session_id":"sess_0fab119f" | "avg_zpd":0.812 | "final_proficiency":83.6
+  ✓ exp2/ext_cool_v1_s001 122s | "session_id":"sess_f37e6a99" | "avg_zpd":0.675 | "final_proficiency":36.2
+  ✓ exp2/ext_cool_v1_s006 170s | "session_id":"sess_04971f75" | "avg_zpd":0.85 | "final_proficiency":82.0
 ■ snapshot after_exp2
 ▶ EXP3: Depth ROI (3 parallel)
-  ✓ exp3/t001_priya_quick 46s | "session_id":"sess_d8dc574c" | "avg_zpd":0.725 | "final_proficiency":54.8
-  ✓ exp3/t001_priya_standard 113s | "session_id":"sess_c2974f2e" | "avg_zpd":0.658 | "final_proficiency":57.9
-  ✓ exp3/t001_priya_deep 202s |  |  | 
+  ✓ exp3/t001_priya_quick 39s | "session_id":"sess_72cf57c1" | "avg_zpd":0.775 | "final_proficiency":58.2
+  ✓ exp3/t001_priya_standard 103s | "session_id":"sess_20afe2c5" | "avg_zpd":0.742 | "final_proficiency":60.9
+  ✓ exp3/t001_priya_deep 183s | "session_id":"sess_1bb68c5c" | "avg_zpd":0.769 | "final_proficiency":63.2
 ■ snapshot after_exp3
 
 All done.

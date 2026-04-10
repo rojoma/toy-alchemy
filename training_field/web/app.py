@@ -509,6 +509,89 @@ def _save_live_session(session: LiveSession):
         print(f"[live-persist] failed: {e}")
 
 
+# ── Real Student Profiles ──────────────────────────────────────
+# Lightweight file-based profile store. Each student gets a JSON file
+# in reports/students/{student_id}.json. localStorage on the client
+# holds the student_id for auto-login on return visits.
+STUDENT_PROFILES_DIR = Path(__file__).parent.parent / "reports" / "students"
+
+@app.post("/api/student/register")
+async def student_register(body: dict):
+    """Register or update a real student profile. Returns student_id."""
+    STUDENT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(400, "name is required")
+    grade = body.get("grade", "小6")
+    subject = body.get("subject", "算数")
+    sid = body.get("student_id")  # None for new, existing for update
+    if not sid:
+        sid = f"stu_{uuid.uuid4().hex[:8]}"
+    profile_path = STUDENT_PROFILES_DIR / f"{sid}.json"
+    # Load existing or create new
+    if profile_path.exists():
+        profile = json.loads(profile_path.read_text(encoding="utf-8"))
+        profile["name"] = name
+        profile["grade"] = grade
+        profile["subject"] = subject
+    else:
+        profile = {
+            "student_id": sid,
+            "name": name,
+            "grade": grade,
+            "subject": subject,
+            "created_at": datetime.datetime.now().isoformat(),
+            "proficiency": {},  # topic → score, accumulated over sessions
+            "sessions_completed": 0,
+        }
+    profile["last_seen"] = datetime.datetime.now().isoformat()
+    profile_path.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+    return profile
+
+@app.get("/api/student/{student_id}")
+async def student_get(student_id: str):
+    """Get a real student's profile + session history."""
+    path = STUDENT_PROFILES_DIR / f"{student_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "student not found")
+    profile = json.loads(path.read_text(encoding="utf-8"))
+    reg = ExperimentRegistry()
+    history = reg.query(filter_by={"student_id": student_id}, limit=20)
+    profile["history"] = history
+    return profile
+
+@app.post("/api/student/{student_id}/update-proficiency")
+async def student_update_prof(student_id: str, body: dict):
+    """Update a real student's topic proficiency after a session."""
+    path = STUDENT_PROFILES_DIR / f"{student_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "student not found")
+    profile = json.loads(path.read_text(encoding="utf-8"))
+    topic = body.get("topic")
+    delta = body.get("delta", 0)
+    if topic:
+        current = profile.get("proficiency", {}).get(topic, 50.0)
+        profile.setdefault("proficiency", {})[topic] = round(current + delta, 1)
+    profile["sessions_completed"] = profile.get("sessions_completed", 0) + 1
+    profile["last_seen"] = datetime.datetime.now().isoformat()
+    path.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+    return profile
+
+# ── Learn pages (real student portal) ─────────────────────────
+@app.get("/learn", response_class=HTMLResponse)
+async def learn_page(request: Request):
+    return templates.TemplateResponse(request, "learn.html", {
+        "teachers": list_teachers(),
+        "topic_tx_en": TOPIC_TX_EN,
+    })
+
+@app.get("/learn/session", response_class=HTMLResponse)
+async def learn_session_page(request: Request):
+    return templates.TemplateResponse(request, "learn_session.html", {
+        "teachers": list_teachers(),
+        "topic_tx_en": TOPIC_TX_EN,
+    })
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     reg = ExperimentRegistry()

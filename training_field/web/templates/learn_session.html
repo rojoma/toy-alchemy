@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session — Training Field</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf7;--bg-translucent:rgba(250,250,247,0.78);
+  --surface:#ffffff;--surface-2:#f4f4f0;
+  --border:rgba(0,0,0,0.06);--border-strong:rgba(0,0,0,0.12);
+  --text:#1d1d1f;--text-secondary:#424245;--muted:#86868b;
+  --link:#0071e3;--success:#1f8a4c;
+  --teacher-bg:#f0efea;--teacher-fg:#1d1d1f;
+  --student-bg:#0071e3;--student-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.04);
+  --radius-md:14px;--radius-lg:22px;--radius-pill:980px;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+:root[data-theme="dark"]{
+  --bg:#0a0a0a;--bg-translucent:rgba(10,10,10,0.78);
+  --surface:#161618;--surface-2:#1f1f22;
+  --border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.16);
+  --text:#f5f5f7;--text-secondary:#c7c7cc;--muted:#86868b;
+  --link:#2997ff;--success:#30d158;
+  --teacher-bg:#1f1f22;--teacher-fg:#f5f5f7;
+  --student-bg:#2997ff;--student-fg:#ffffff;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue","Hiragino Sans",sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;letter-spacing:-0.011em;line-height:1.5;
+  height:100vh;display:flex;flex-direction:column;overflow:hidden;
+}
+
+/* ── Header (minimal) ─────────────────────────── */
+.header{
+  flex-shrink:0;padding:16px 28px;
+  background:var(--bg-translucent);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;
+}
+.header-back{
+  color:var(--muted);text-decoration:none;font-size:13px;font-weight:500;
+  padding:7px 14px;border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  transition:background .2s;
+}
+.header-back:hover{background:var(--surface-2)}
+.header-info{flex:1;display:flex;align-items:center;gap:12px}
+/* Avatar placeholder (future: animated speaking image) */
+.teacher-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:600;color:var(--text);
+  flex-shrink:0;
+}
+.teacher-label{font-size:15px;font-weight:600;letter-spacing:-0.015em}
+.teacher-topic{font-size:12px;color:var(--muted)}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--muted);
+  margin-left:auto;flex-shrink:0;transition:background .3s;
+}
+.status-dot.active{background:var(--success);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Chat ─────────────────────────────────────── */
+.chat{
+  flex:1;overflow-y:auto;padding:32px 28px 20px;
+  display:flex;flex-direction:column;gap:20px;
+  max-width:720px;width:100%;margin:0 auto;
+}
+.chat::-webkit-scrollbar{width:6px}
+.chat::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
+.chat:hover::-webkit-scrollbar-thumb{background:var(--border-strong)}
+
+.bubble-wrap{display:flex;flex-direction:column;gap:6px;animation:fadeUp .3s var(--ease)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bubble-wrap.teacher{align-items:flex-start}
+.bubble-wrap.student{align-items:flex-end}
+.bubble-sender{font-size:11px;font-weight:500;color:var(--muted);padding:0 6px}
+.bubble{
+  max-width:80%;padding:16px 20px;font-size:15px;line-height:1.6;
+  letter-spacing:-0.011em;
+}
+.bubble.teacher{
+  background:var(--teacher-bg);color:var(--teacher-fg);
+  border-radius:var(--radius-lg) var(--radius-lg) var(--radius-lg) 6px;
+}
+.bubble.student{
+  background:var(--student-bg);color:var(--student-fg);
+  border-radius:var(--radius-lg) var(--radius-lg) 6px var(--radius-lg);
+}
+
+/* Phase divider (subtle) */
+.phase-divider{
+  text-align:center;font-size:10px;font-weight:600;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--muted);padding:8px 0;opacity:0.6;
+}
+
+/* Typing indicator */
+.typing{display:flex;align-items:center;gap:4px;padding:16px 20px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:typePulse .8s infinite}
+.typing-dot:nth-child(2){animation-delay:.15s}
+.typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes typePulse{0%,100%{opacity:.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}
+
+/* Completion card */
+.complete-card{
+  text-align:center;padding:40px 32px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);margin:20px auto;max-width:400px;
+}
+.complete-mark{font-size:40px;margin-bottom:12px}
+.complete-title{font-size:20px;font-weight:600;letter-spacing:-0.02em;margin-bottom:6px}
+.complete-delta{font-size:32px;font-weight:600;color:var(--success);letter-spacing:-0.02em;margin:12px 0}
+.complete-sub{font-size:13px;color:var(--muted)}
+.complete-btn{
+  display:inline-block;margin-top:24px;padding:12px 32px;
+  background:var(--text);color:var(--bg);border-radius:var(--radius-pill);
+  font:inherit;font-size:14px;font-weight:600;text-decoration:none;
+  border:none;cursor:pointer;transition:opacity .2s;
+}
+.complete-btn:hover{opacity:0.85}
+
+/* ── Input bar ────────────────────────────────── */
+.input-bar{
+  flex-shrink:0;padding:16px 28px;
+  max-width:720px;width:100%;margin:0 auto;
+  display:flex;gap:10px;
+}
+.input-field{
+  flex:1;height:48px;
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  padding:0 22px;
+  font:inherit;font-size:15px;color:var(--text);
+  background:var(--surface);outline:none;
+  transition:border-color .2s var(--ease);
+}
+.input-field:focus{border-color:var(--text)}
+.input-field::placeholder{color:var(--muted)}
+.send-btn{
+  width:48px;height:48px;border-radius:50%;
+  border:none;background:var(--text);color:var(--bg);
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:opacity .2s var(--ease),transform .15s var(--ease);
+}
+.send-btn:hover{opacity:0.85}
+.send-btn:active{transform:scale(0.95)}
+.send-btn:disabled{opacity:0.3;cursor:not-allowed}
+.send-btn svg{width:18px;height:18px}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
+
+<div class="header">
+  <a href="/learn" class="header-back">← Back</a>
+  <div class="header-info">
+    <div class="teacher-avatar" id="tAvatar">—</div>
+    <div>
+      <div class="teacher-label" id="tLabel">Teacher</div>
+      <div class="teacher-topic" id="tTopic"></div>
+    </div>
+  </div>
+  <div class="status-dot" id="statusDot"></div>
+</div>
+
+<div class="chat" id="chat"></div>
+
+<div class="input-bar" id="inputBar">
+  <input type="text" class="input-field" id="inputField" placeholder="Type your answer..."
+    autocomplete="off" disabled
+    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendResponse();}">
+  <button class="send-btn" id="sendBtn" onclick="sendResponse()" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  </button>
+</div>
+
+<script>
+const TOPIC_TX = {{ topic_tx_en|tojson }};
+const TEACHERS = {{ teachers|tojson }};
+const params = new URLSearchParams(window.location.search);
+const STUDENT_ID = params.get("student_id") || localStorage.getItem("tfStudentId");
+const TEACHER_ID = params.get("teacher_id") || "t001";
+const TOPIC = params.get("topic") || "分数のかけ算とわり算";
+const DEPTH = params.get("depth") || "standard";
+const GRADE = localStorage.getItem("tfStudentGrade") || "小6";
+const SUBJECT = localStorage.getItem("tfStudentSubject") || "算数";
+
+let sessionId = null;
+let studentName = "Student";
+let teacherName = "Teacher";
+
+// ── Typing animation ─────────────────────────────
+function typeInto(el, text, cps){
+  return new Promise(res=>{
+    cps = cps || 60;
+    const delay = Math.max(8, Math.round(1000/cps));
+    let i = 0; el.textContent = "";
+    const chat = document.getElementById("chat");
+    const tick = ()=>{
+      if(i >= text.length){res(); return;}
+      const chunk = Math.max(1, Math.floor(text.length/100));
+      el.textContent += text.substr(i, chunk);
+      i += chunk;
+      chat.scrollTop = chat.scrollHeight;
+      setTimeout(tick, delay);
+    };
+    tick();
+  });
+}
+
+// ── Show teacher message ─────────────────────────
+async function showTeacherMsg(text, phaseName){
+  const chat = document.getElementById("chat");
+  const wrap = document.createElement("div");
+  wrap.className = "bubble-wrap teacher";
+  const sender = document.createElement("div");
+  sender.className = "bubble-sender";
+  sender.textContent = teacherName;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble teacher";
+  wrap.appendChild(sender);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  await typeInto(bubble, text, 70);
+}
+
+function showStudentMsg(text){
+  const chat = document.getElementById("chat");
+  const wrap = document.createElement("div");
+  wrap.className = "bubble-wrap student";
+  const sender = document.createElement("div");
+  sender.className = "bubble-sender";
+  sender.textContent = studentName;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble student";
+  bubble.textContent = text;
+  wrap.appendChild(sender);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showPhase(label){
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "phase-divider";
+  div.textContent = label;
+  chat.appendChild(div);
+}
+
+function showComplete(delta, finalProf){
+  const chat = document.getElementById("chat");
+  document.getElementById("inputBar").style.display = "none";
+  document.getElementById("statusDot").className = "status-dot";
+  const card = document.createElement("div");
+  card.className = "complete-card";
+  card.innerHTML = '<div class="complete-mark">✓</div>'+
+    '<div class="complete-title">Session Complete</div>'+
+    '<div class="complete-delta">'+(delta>=0?"+":"")+delta+' points</div>'+
+    '<div class="complete-sub">Well done, '+studentName+'! Your proficiency is now at '+finalProf+'.</div>'+
+    '<a href="/learn" class="complete-btn">Continue Learning</a>';
+  chat.appendChild(card);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ── Session start ────────────────────────────────
+async function initSession(){
+  // Get student profile
+  try {
+    const pRes = await fetch("/api/student/"+STUDENT_ID);
+    if(pRes.ok){
+      const profile = await pRes.json();
+      studentName = profile.name || "Student";
+    }
+  } catch(e){}
+
+  // Header
+  const t = TEACHERS.find(x=>x.teacher_id===TEACHER_ID) || {};
+  teacherName = t.name || "Teacher";
+  const initials = (teacherName).replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase() || "T";
+  document.getElementById("tAvatar").textContent = initials;
+  document.getElementById("tLabel").textContent = teacherName;
+  document.getElementById("tTopic").textContent = TOPIC_TX[TOPIC] || TOPIC;
+
+  // Start live session
+  document.getElementById("statusDot").className = "status-dot active";
+  try {
+    const res = await fetch("/api/live/start",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        teacher_id: TEACHER_ID, topic: TOPIC, depth: DEPTH,
+        grade: GRADE, subject: SUBJECT, lang: "en",
+        student_name: studentName,
+      }),
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.detail||"start failed");
+    sessionId = d.session_id;
+    showPhase(d.phase_label);
+    await showTeacherMsg(d.teacher_message);
+    // Enable input
+    document.getElementById("inputField").disabled = false;
+    document.getElementById("sendBtn").disabled = false;
+    document.getElementById("inputField").focus();
+  } catch(e){
+    const chat = document.getElementById("chat");
+    chat.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">Error: '+e.message+'</div>';
+  }
+}
+
+// ── Send response ────────────────────────────────
+let lastPhase = null;
+
+async function sendResponse(){
+  const input = document.getElementById("inputField");
+  const text = input.value.trim();
+  if(!text || !sessionId) return;
+
+  input.value = "";
+  input.disabled = true;
+  document.getElementById("sendBtn").disabled = true;
+  showStudentMsg(text);
+  document.getElementById("statusDot").className = "status-dot active";
+
+  try {
+    const res = await fetch("/api/live/"+sessionId+"/respond",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({text}),
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.detail||"respond failed");
+
+    if(d.is_complete){
+      // Update proficiency on server
+      fetch("/api/student/"+STUDENT_ID+"/update-proficiency",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({topic:TOPIC,delta:d.proficiency_delta||0}),
+      });
+      showComplete(d.proficiency_delta||0, d.final_proficiency||0);
+    } else {
+      // Phase transition
+      if(d.phase && d.phase !== lastPhase){
+        showPhase(d.phase_label);
+        lastPhase = d.phase;
+      }
+      await showTeacherMsg(d.teacher_message);
+      input.disabled = false;
+      document.getElementById("sendBtn").disabled = false;
+      input.focus();
+      document.getElementById("statusDot").className = "status-dot";
+    }
+  } catch(e){
+    showTeacherMsg("⚠ "+e.message);
+    input.disabled = false;
+    document.getElementById("sendBtn").disabled = false;
+  }
+}
+
+initSession();
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start Learning — Training Field</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf7;--surface:#ffffff;--surface-2:#f4f4f0;
+  --border:rgba(0,0,0,0.06);--border-strong:rgba(0,0,0,0.12);
+  --text:#1d1d1f;--text-secondary:#424245;--muted:#86868b;
+  --link:#0071e3;--success:#1f8a4c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.05);
+  --radius-md:14px;--radius-lg:22px;--radius-pill:980px;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+}
+:root[data-theme="dark"]{
+  --bg:#0a0a0a;--surface:#161618;--surface-2:#1f1f22;
+  --border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.16);
+  --text:#f5f5f7;--text-secondary:#c7c7cc;--muted:#86868b;
+  --link:#2997ff;--success:#30d158;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.3),0 8px 24px rgba(0,0,0,0.4);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue","Hiragino Sans",sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;letter-spacing:-0.011em;line-height:1.5;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 24px;
+}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:48px;max-width:480px;width:100%;
+  box-shadow:var(--shadow-md);
+}
+.back-link{
+  position:absolute;top:24px;left:24px;
+  color:var(--muted);text-decoration:none;font-size:13px;font-weight:500;
+  padding:8px 16px;border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+}
+.back-link:hover{color:var(--text);background:var(--surface-2)}
+h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
+.subtitle{font-size:15px;color:var(--muted);margin-bottom:36px}
+.welcome{font-size:22px;font-weight:600;margin-bottom:6px;letter-spacing:-0.02em}
+.welcome-sub{font-size:14px;color:var(--muted);margin-bottom:28px}
+
+.form-group{margin-bottom:24px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:0.02em}
+.form-input,.form-select{
+  width:100%;height:48px;
+  border:1px solid var(--border-strong);border-radius:var(--radius-md);
+  padding:0 18px;font:inherit;font-size:15px;color:var(--text);
+  background:var(--surface);outline:none;
+  transition:border-color .2s var(--ease);
+}
+.form-input:focus,.form-select:focus{border-color:var(--text)}
+.form-input::placeholder{color:var(--muted)}
+.form-select{
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2386868b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;background-size:12px;
+}
+
+.btn-primary{
+  width:100%;height:52px;margin-top:8px;
+  border:none;border-radius:var(--radius-pill);
+  background:var(--text);color:var(--bg);
+  font:inherit;font-size:16px;font-weight:600;letter-spacing:-0.01em;
+  cursor:pointer;transition:opacity .2s var(--ease),transform .15s var(--ease);
+}
+.btn-primary:hover{opacity:0.88}
+.btn-primary:active{transform:scale(0.99)}
+
+.history-list{margin-top:24px}
+.history-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.history-item:last-child{border-bottom:none}
+.history-topic{font-weight:500}
+.history-delta{font-weight:600;color:var(--success);font-feature-settings:"tnum"}
+.history-date{color:var(--muted);font-size:11px}
+
+.new-session-link{
+  display:block;text-align:center;margin-top:20px;
+  color:var(--link);font-size:14px;font-weight:500;text-decoration:none;
+}
+.new-session-link:hover{text-decoration:underline}
+
+.prof-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;margin-bottom:24px}
+.prof-chip{
+  font-size:11px;padding:5px 12px;border-radius:var(--radius-pill);
+  background:var(--surface-2);color:var(--text-secondary);
+  font-weight:500;font-feature-settings:"tnum";
+}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
+<a href="/" class="back-link">← Training Field</a>
+
+<!-- Onboarding (shown if no saved profile) -->
+<div class="card" id="onboard">
+  <h1>Start Learning</h1>
+  <p class="subtitle">Tell us a little about yourself so we can match you with the right teacher.</p>
+  <div class="form-group">
+    <label class="form-label">YOUR NAME</label>
+    <input type="text" class="form-input" id="nameInput" placeholder="e.g. Emma" autocomplete="given-name">
+  </div>
+  <div class="form-group">
+    <label class="form-label">GRADE</label>
+    <select class="form-select" id="gradeInput">
+      <option value="小1">Grade 1</option><option value="小2">Grade 2</option>
+      <option value="小3">Grade 3</option><option value="小4">Grade 4</option>
+      <option value="小5">Grade 5</option><option value="小6" selected>Grade 6</option>
+      <option value="中1">Jr High 1</option><option value="中2">Jr High 2</option><option value="中3">Jr High 3</option>
+      <option value="高1">High 1</option><option value="高2">High 2</option><option value="高3">High 3</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">SUBJECT</label>
+    <select class="form-select" id="subjectInput">
+      <option value="算数">Math</option>
+      <option value="国語">Japanese</option>
+      <option value="理科">Science</option>
+      <option value="社会">Social Studies</option>
+      <option value="英語">English</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">TEACHER</label>
+    <select class="form-select" id="teacherInput">
+      {% for t in teachers %}
+      <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn-primary" onclick="registerStudent()">Let's Go</button>
+</div>
+
+<!-- Welcome back (shown if profile exists) -->
+<div class="card" id="welcome" style="display:none">
+  <div class="welcome" id="welcomeMsg">Welcome back!</div>
+  <div class="welcome-sub" id="welcomeSub"></div>
+
+  <div class="form-label">YOUR PROGRESS</div>
+  <div class="prof-grid" id="profGrid"></div>
+
+  <div class="form-group">
+    <label class="form-label">TOPIC</label>
+    <select class="form-select" id="topicSelect"></select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">TEACHER</label>
+    <select class="form-select" id="teacherSelect">
+      {% for t in teachers %}
+      <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">DEPTH</label>
+    <select class="form-select" id="depthSelect">
+      <option value="quick">Quick · 8 turns</option>
+      <option value="standard" selected>Standard · 12 turns</option>
+      <option value="deep">Deep · 16 turns</option>
+    </select>
+  </div>
+  <button class="btn-primary" onclick="startSession()">Start Session</button>
+
+  <div class="history-list" id="historyList"></div>
+  <a href="#" class="new-session-link" onclick="resetProfile();return false;">Switch student</a>
+</div>
+
+<script>
+const TEACHERS = {{ teachers|tojson }};
+const TOPIC_TX = {{ topic_tx_en|tojson }};
+
+// Check for saved profile
+const savedId = localStorage.getItem("tfStudentId");
+if(savedId) loadProfile(savedId);
+
+async function registerStudent(){
+  const name = document.getElementById("nameInput").value.trim();
+  if(!name){document.getElementById("nameInput").focus();return;}
+  const body = {
+    name,
+    grade: document.getElementById("gradeInput").value,
+    subject: document.getElementById("subjectInput").value,
+  };
+  const res = await fetch("/api/student/register",{
+    method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)
+  });
+  const profile = await res.json();
+  localStorage.setItem("tfStudentId", profile.student_id);
+  localStorage.setItem("tfStudentGrade", profile.grade);
+  localStorage.setItem("tfStudentSubject", profile.subject);
+  localStorage.setItem("tfStudentTeacher", document.getElementById("teacherInput").value);
+  // Go to session
+  goToSession(profile, document.getElementById("teacherInput").value);
+}
+
+async function loadProfile(sid){
+  try {
+    const res = await fetch("/api/student/"+sid);
+    if(!res.ok) throw new Error("not found");
+    const profile = await res.json();
+    showWelcome(profile);
+  } catch(e){
+    // Profile gone — show onboarding
+    localStorage.removeItem("tfStudentId");
+  }
+}
+
+function showWelcome(profile){
+  document.getElementById("onboard").style.display = "none";
+  document.getElementById("welcome").style.display = "block";
+  document.getElementById("welcomeMsg").textContent = "Welcome back, "+profile.name+"!";
+  document.getElementById("welcomeSub").textContent = profile.grade+" · "+profile.subject+" · "+profile.sessions_completed+" sessions completed";
+
+  // Proficiency chips
+  const grid = document.getElementById("profGrid");
+  grid.innerHTML = "";
+  const profs = profile.proficiency || {};
+  if(Object.keys(profs).length === 0){
+    grid.innerHTML = '<span class="prof-chip">No topics studied yet</span>';
+  } else {
+    for(const [topic, score] of Object.entries(profs)){
+      const label = TOPIC_TX[topic] || topic;
+      const chip = document.createElement("span");
+      chip.className = "prof-chip";
+      chip.textContent = label + " " + Math.round(score);
+      grid.appendChild(chip);
+    }
+  }
+
+  // Populate topic selector
+  const topicSel = document.getElementById("topicSelect");
+  topicSel.innerHTML = "";
+  fetch("/api/topics?grade="+encodeURIComponent(profile.grade)+"&subject="+encodeURIComponent(profile.subject))
+    .then(r=>r.json()).then(d=>{
+      (d.topics||[]).forEach(t=>{
+        const o=document.createElement("option");o.value=t;
+        o.textContent=TOPIC_TX[t]||t;
+        topicSel.appendChild(o);
+      });
+    });
+
+  // Restore saved teacher
+  const savedTeacher = localStorage.getItem("tfStudentTeacher");
+  if(savedTeacher) document.getElementById("teacherSelect").value = savedTeacher;
+
+  // History
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+  (profile.history || []).slice(0,5).forEach(h=>{
+    const item = document.createElement("div");
+    item.className = "history-item";
+    const topicLabel = TOPIC_TX[h.topic] || h.topic || "—";
+    const delta = h.proficiency_delta || 0;
+    item.innerHTML = '<div><div class="history-topic">'+topicLabel+'</div><div class="history-date">'+
+      (h.timestamp||"").slice(0,10)+'</div></div>'+
+      '<div class="history-delta">'+(delta>0?"+":"")+delta.toFixed(1)+'</div>';
+    list.appendChild(item);
+  });
+}
+
+function startSession(){
+  const sid = localStorage.getItem("tfStudentId");
+  const teacher = document.getElementById("teacherSelect").value;
+  const topic = document.getElementById("topicSelect").value;
+  const depth = document.getElementById("depthSelect").value;
+  localStorage.setItem("tfStudentTeacher", teacher);
+  window.location.href = "/learn/session?student_id="+sid+
+    "&teacher_id="+encodeURIComponent(teacher)+
+    "&topic="+encodeURIComponent(topic)+
+    "&depth="+depth;
+}
+
+function goToSession(profile, teacherId){
+  // First time — go straight to session with default topic
+  const grade = profile.grade;
+  const subject = profile.subject;
+  fetch("/api/topics?grade="+encodeURIComponent(grade)+"&subject="+encodeURIComponent(subject))
+    .then(r=>r.json()).then(d=>{
+      const topic = (d.topics||[])[0] || "Math";
+      window.location.href = "/learn/session?student_id="+profile.student_id+
+        "&teacher_id="+encodeURIComponent(teacherId)+
+        "&topic="+encodeURIComponent(topic)+
+        "&depth=standard";
+    });
+}
+
+function resetProfile(){
+  localStorage.removeItem("tfStudentId");
+  localStorage.removeItem("tfStudentGrade");
+  localStorage.removeItem("tfStudentSubject");
+  localStorage.removeItem("tfStudentTeacher");
+  location.reload();
+}
+</script>
+</body>
+</html>

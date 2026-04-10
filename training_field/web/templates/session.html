@@ -537,18 +537,7 @@ select:hover{border-color:var(--text)}
       <div data-i18n="select_unit">単元を選択してセッションを開始</div>
     </div>
   </div>
-  <!-- Student input (shown only in Live mode) -->
-  <div class="input-bar" id="inputBar" style="display:none">
-    <input type="text" id="studentInput" class="student-input" placeholder="Type your answer..." autocomplete="off"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLiveResponse();}">
-    <button class="btn-send" id="btnSend" onclick="sendLiveResponse()">Send</button>
-  </div>
   <div class="bbar">
-    <!-- Mode toggle -->
-    <div class="mode-toggle">
-      <button class="mode-btn active" id="modeAI" onclick="setMode('ai')">AI Student</button>
-      <button class="mode-btn" id="modeLive" onclick="setMode('live')">Real Student</button>
-    </div>
     <label class="measure-toggle" id="measureWrap">
       <input type="checkbox" id="measureChk">
       <span class="measure-box"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>

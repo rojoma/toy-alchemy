@@ -246,6 +246,7 @@ tbody tr:hover{background:var(--surface-2)}
 :root[data-theme="dark"] .g-pass{background:rgba(41,151,255,0.16)}
 :root[data-theme="dark"] .g-fail{background:rgba(255,69,58,0.16)}
 
+.portal-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg) !important}
 @media(max-width:760px){
   .header-inner{padding:16px 20px;gap:16px}
   .stat-row{gap:18px}
@@ -285,9 +286,22 @@ tbody tr:hover{background:var(--surface-2)}
       <span class="title-faded" data-i18n="title_faded">to learn and experiment with how to teach and get key takeaways.</span>
     </h1>
     <p class="title-sub" data-i18n="title_sub">Currently, there are six types of student personas, six types of skills (ways to teach), and five pillars of evaluation feedback for agents to gain insights for growth.</p>
+
+    <div style="display:flex;gap:16px;margin-top:48px;flex-wrap:wrap">
+      <a href="#observatory" class="portal-card" style="flex:1;min-width:260px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-sm);transition:transform .3s var(--ease),box-shadow .3s var(--ease)">
+        <div style="font-size:24px;margin-bottom:10px">👀</div>
+        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em">Observatory</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Watch AI agents teach and learn. Run experiments and compare results.</div>
+      </a>
+      <a href="/learn" class="portal-card" style="flex:1;min-width:260px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-sm);transition:transform .3s var(--ease),box-shadow .3s var(--ease)">
+        <div style="font-size:24px;margin-bottom:10px">📚</div>
+        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em">Start Learning</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">Join as a real student. Pick a teacher, choose a topic, and start your session.</div>
+      </a>
+    </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="observatory">
     <div class="section-head">
       <div class="section-title">
         <span data-i18n="students_label">Student Agents</span>
