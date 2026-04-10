@@ -231,6 +231,284 @@ LEGACY_TOPIC_ALIASES: dict[str, str] = {
 for _ja, _en in LEGACY_TOPIC_ALIASES.items():
     TOPIC_TX_EN.setdefault(_ja, _en)
 
+# ── Live Session (Human Student Mode) ─────────────────────────
+# In-memory store for active live sessions. Each session holds teacher + referee
+# state between HTTP requests. Lost on redeploy (acceptable for now).
+from dataclasses import dataclass as _dc, field as _field
+
+@_dc
+class LiveSession:
+    session_id: str
+    teacher: object  # TeacherAgent
+    principal: object  # PrincipalAgent
+    phases: list
+    topic: str
+    grade: int
+    subject: str
+    depth: str
+    lang: str
+    teacher_name: str
+    student_label: str  # human's display name
+    # state
+    current_phase_idx: int = 0
+    current_turn: int = 0
+    total_turns_done: int = 0
+    proficiency: float = 50.0
+    initial_proficiency: float = 50.0
+    last_teacher_text: str | None = None
+    turns_log: list = _field(default_factory=list)
+    turn_evaluations: list = _field(default_factory=list)
+    is_complete: bool = False
+    started_at: str = ""
+
+    @property
+    def total_turns(self):
+        return sum(p["turns"] for p in self.phases)
+
+    @property
+    def current_phase(self):
+        if self.current_phase_idx < len(self.phases):
+            return self.phases[self.current_phase_idx]
+        return None
+
+LIVE_SESSIONS: dict[str, LiveSession] = {}
+
+@app.post("/api/live/start")
+async def live_start(body: dict):
+    """Start a live (human-student) session. Returns session_id + first teacher message."""
+    teacher_id = body.get("teacher_id", "t001")
+    topic = body.get("topic", "分数のかけ算とわり算")
+    depth = body.get("depth", "quick")
+    grade_str = body.get("grade", "小6")
+    subject = body.get("subject", "算数")
+    lang = body.get("lang", "en")
+    student_label = body.get("student_name", "You")
+
+    gcode = GRADE_CODES.get(grade_str, 6)
+    teacher = load_teacher(teacher_id)
+    principal = PrincipalAgent()
+    phases = PHASE_CONFIG[depth]
+    sid = f"live_{uuid.uuid4().hex[:8]}"
+
+    session = LiveSession(
+        session_id=sid,
+        teacher=teacher,
+        principal=principal,
+        phases=phases,
+        topic=topic, grade=gcode, subject=subject,
+        depth=depth, lang=lang,
+        teacher_name=teacher.config.name,
+        student_label=student_label,
+        proficiency=50.0, initial_proficiency=50.0,
+        started_at=datetime.datetime.now().isoformat(),
+    )
+    LIVE_SESSIONS[sid] = session
+
+    # Generate first teacher message
+    phase = session.current_phase
+    session.current_turn = 1
+    tr = await teacher.get_response(
+        topic=topic, phase=phase["name"], phase_goal=phase["goal"],
+        student_name=student_label, student_proficiency=session.proficiency,
+        student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
+        student_last_response=None,
+        grade=gcode, subject=subject, turn_number=1, lang=lang,
+    )
+    session.last_teacher_text = tr["text"]
+
+    return {
+        "session_id": sid,
+        "teacher_name": teacher.config.name,
+        "teacher_message": tr["text"],
+        "phase": phase["name"],
+        "phase_label": phase["label"],
+        "turn": 1,
+        "total_turns": session.total_turns,
+        "is_complete": False,
+    }
+
+
+@app.post("/api/live/{session_id}/respond")
+async def live_respond(session_id: str, body: dict):
+    """Submit the human student's response. Returns referee eval + next teacher message (or completion)."""
+    session = LIVE_SESSIONS.get(session_id)
+    if not session:
+        raise HTTPException(404, "session not found or expired")
+    if session.is_complete:
+        raise HTTPException(400, "session already complete")
+
+    student_text = body.get("text", "").strip()
+    if not student_text:
+        raise HTTPException(400, "text is required")
+
+    phase = session.current_phase
+    teacher = session.teacher
+    principal = session.principal
+
+    # Referee evaluates the teacher-student exchange
+    ev = await principal.evaluate_turn(
+        teacher_text=session.last_teacher_text or "",
+        student_text=student_text,
+        topic=session.topic, phase=phase["name"],
+        student_proficiency=session.proficiency,
+        grade=session.grade, subject=session.subject,
+        lang=session.lang,
+    )
+    session.turn_evaluations.append(ev)
+
+    # Update proficiency
+    if ev.understanding_delta > 0:
+        session.proficiency += ev.understanding_delta * 0.3
+
+    # Log turn
+    session.turns_log.append({
+        "phase": phase["name"], "phase_label": phase["label"],
+        "turn": session.current_turn,
+        "teacher": session.last_teacher_text,
+        "student": student_text,
+        "zpd": round(ev.zpd_alignment, 2), "bloom": ev.bloom_level,
+        "scaffolding": round(ev.scaffolding_quality, 2),
+        "halluc": ev.hallucination_detected, "direct": ev.answer_given_directly,
+        "delta": round(ev.understanding_delta, 1),
+        "directive": ev.directive_to_teacher, "summary": ev.summary,
+        "prof_after": round(session.proficiency, 1),
+    })
+    session.total_turns_done += 1
+
+    # Advance turn / phase
+    session.current_turn += 1
+    if session.current_turn > phase["turns"]:
+        session.current_phase_idx += 1
+        session.current_turn = 1
+
+    # Check if session complete
+    if session.current_phase_idx >= len(session.phases):
+        session.is_complete = True
+        # Save to registry + transcript
+        _save_live_session(session)
+        return {
+            "referee": {
+                "zpd": round(ev.zpd_alignment, 2), "bloom": ev.bloom_level,
+                "scaffolding": round(ev.scaffolding_quality, 2),
+                "halluc": ev.hallucination_detected, "direct": ev.answer_given_directly,
+                "delta": round(ev.understanding_delta, 1),
+                "directive": ev.directive_to_teacher, "summary": ev.summary,
+            },
+            "is_complete": True,
+            "final_proficiency": round(session.proficiency, 1),
+            "proficiency_delta": round(session.proficiency - session.initial_proficiency, 1),
+            "total_turns": session.total_turns_done,
+        }
+
+    # Generate next teacher message
+    next_phase = session.current_phase
+    tr = await teacher.get_response(
+        topic=session.topic, phase=next_phase["name"], phase_goal=next_phase["goal"],
+        student_name=session.student_label, student_proficiency=session.proficiency,
+        student_emotional={"confidence": 0.5, "frustration": 0.0, "engagement": 0.5},
+        student_last_response=student_text,
+        grade=session.grade, subject=session.subject,
+        turn_number=session.current_turn, lang=session.lang,
+    )
+    session.last_teacher_text = tr["text"]
+
+    return {
+        "teacher_message": tr["text"],
+        "teacher_name": session.teacher_name,
+        "referee": {
+            "zpd": round(ev.zpd_alignment, 2), "bloom": ev.bloom_level,
+            "scaffolding": round(ev.scaffolding_quality, 2),
+            "halluc": ev.hallucination_detected, "direct": ev.answer_given_directly,
+            "delta": round(ev.understanding_delta, 1),
+            "directive": ev.directive_to_teacher, "summary": ev.summary,
+        },
+        "phase": next_phase["name"],
+        "phase_label": next_phase["label"],
+        "turn": session.current_turn,
+        "total_turns": session.total_turns,
+        "turns_done": session.total_turns_done,
+        "proficiency": round(session.proficiency, 1),
+        "is_complete": False,
+    }
+
+
+@app.get("/api/live/{session_id}")
+async def live_status(session_id: str):
+    """Get current state of a live session."""
+    session = LIVE_SESSIONS.get(session_id)
+    if not session:
+        raise HTTPException(404, "session not found or expired")
+    phase = session.current_phase
+    return {
+        "session_id": session.session_id,
+        "is_complete": session.is_complete,
+        "teacher_name": session.teacher_name,
+        "phase": phase["name"] if phase else None,
+        "phase_label": phase["label"] if phase else None,
+        "turn": session.current_turn,
+        "total_turns": session.total_turns,
+        "turns_done": session.total_turns_done,
+        "proficiency": round(session.proficiency, 1),
+        "last_teacher_message": session.last_teacher_text,
+    }
+
+
+def _save_live_session(session: LiveSession):
+    """Persist a completed live session to registry + transcript."""
+    try:
+        evaluator = Evaluator()
+        registry = ExperimentRegistry()
+        cost_tracker = CostTracker()
+        final_prof = session.proficiency
+        update_check = session.principal.check_skills_update_trigger()
+        evaluation = evaluator.evaluate(
+            session_id=session.session_id, turn_evaluations=session.turn_evaluations,
+            pre_score=None, post_score=None,
+            student_id="human", teacher_id=session.teacher.config.teacher_id,
+            topic=session.topic, grade=session.grade, subject=session.subject,
+            depth=session.depth, initial_proficiency=session.initial_proficiency,
+            final_proficiency=final_prof, cost_tracker=cost_tracker,
+            principal_update_check=update_check,
+        )
+        evaluator.generate_report(evaluation)
+        record = ExperimentRecord(
+            exp_id=session.session_id, hypothesis_id=None,
+            timestamp=session.started_at,
+            student_id="human", teacher_id=session.teacher.config.teacher_id,
+            topic=session.topic, grade=session.grade, subject=session.subject,
+            depth=session.depth, teaching_style="LIVE",
+            skills_used=session.teacher.config.selected_skills,
+            pre_test_score=None, post_test_score=None,
+            learning_gain=evaluation.learning_gain,
+            proficiency_delta=evaluation.proficiency_delta,
+            hallucination_rate=evaluation.hallucination_rate,
+            direct_answer_rate=evaluation.direct_answer_rate,
+            avg_zpd_alignment=evaluation.avg_zpd_alignment,
+            avg_bloom_level=evaluation.avg_bloom_level,
+            frustration_events=evaluation.frustration_events,
+            aha_moments=evaluation.aha_moments,
+            teacher_compatibility_score=evaluation.teacher_compatibility_score,
+            total_tokens=evaluation.total_tokens_used,
+            cost_usd=evaluation.estimated_cost_usd,
+            session_grade="—",
+        )
+        registry.register(record)
+        transcript = {
+            "session_id": session.session_id, "timestamp": session.started_at,
+            "student_id": "human", "student_name": session.student_label,
+            "teacher_id": session.teacher.config.teacher_id,
+            "teacher_name": session.teacher_name,
+            "topic": session.topic, "grade": session.grade, "subject": session.subject,
+            "depth": session.depth, "lang": session.lang, "mode": "live",
+            "turns": session.turns_log,
+        }
+        tp = Path(__file__).parent.parent / "reports" / f"{session.session_id}_transcript.json"
+        tp.parent.mkdir(exist_ok=True)
+        tp.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        print(f"[live-persist] failed: {e}")
+
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     reg = ExperimentRegistry()

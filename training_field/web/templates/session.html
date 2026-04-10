@@ -332,6 +332,47 @@ body{
 .btn-run:hover:not(:disabled){opacity:0.88}
 .btn-run:active:not(:disabled){transform:scale(0.99)}
 .btn-run:disabled{opacity:0.35;cursor:not-allowed}
+/* ── Student input bar ─────────────────────────── */
+.input-bar{
+  padding:14px 32px;border-top:1px solid var(--border);
+  display:flex;gap:10px;flex-shrink:0;
+  background:var(--bg-translucent);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+}
+.student-input{
+  flex:1;height:44px;
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  padding:0 20px;
+  font:inherit;font-size:14px;color:var(--text);
+  background:var(--surface);
+  outline:none;transition:border-color .2s var(--ease);
+}
+.student-input:focus{border-color:var(--text)}
+.student-input::placeholder{color:var(--muted)}
+.btn-send{
+  height:44px;padding:0 24px;
+  border:none;border-radius:var(--radius-pill);
+  background:var(--text);color:var(--bg);
+  font:inherit;font-size:14px;font-weight:600;
+  cursor:pointer;transition:opacity .2s var(--ease);
+}
+.btn-send:hover{opacity:0.85}
+.btn-send:disabled{opacity:0.35;cursor:not-allowed}
+
+/* ── Mode toggle ──────────────────────────────── */
+.mode-toggle{
+  display:flex;border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  overflow:hidden;height:34px;
+}
+.mode-btn{
+  padding:0 16px;border:none;background:transparent;color:var(--muted);
+  font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  transition:background-color .2s var(--ease),color .2s var(--ease);
+}
+.mode-btn.active{background:var(--text);color:var(--bg)}
+.mode-btn:not(.active):hover{background:var(--surface-2);color:var(--text)}
+
 .measure-toggle{
   display:flex;align-items:center;gap:10px;
   font-size:13px;color:var(--text-secondary);font-weight:500;
@@ -496,13 +537,24 @@ select:hover{border-color:var(--text)}
       <div data-i18n="select_unit">単元を選択してセッションを開始</div>
     </div>
   </div>
+  <!-- Student input (shown only in Live mode) -->
+  <div class="input-bar" id="inputBar" style="display:none">
+    <input type="text" id="studentInput" class="student-input" placeholder="Type your answer..." autocomplete="off"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLiveResponse();}">
+    <button class="btn-send" id="btnSend" onclick="sendLiveResponse()">Send</button>
+  </div>
   <div class="bbar">
-    <label class="measure-toggle">
+    <!-- Mode toggle -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeAI" onclick="setMode('ai')">AI Student</button>
+      <button class="mode-btn" id="modeLive" onclick="setMode('live')">Real Student</button>
+    </div>
+    <label class="measure-toggle" id="measureWrap">
       <input type="checkbox" id="measureChk">
       <span class="measure-box"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span data-i18n="measure_learning">学習効果を測定 (pre/post test)</span>
+      <span data-i18n="measure_learning">Measure learning (pre/post test)</span>
     </label>
-    <button class="btn-run" id="brun" onclick="runSession()" data-i18n="start_session">セッション開始</button>
+    <button class="btn-run" id="brun" onclick="runSession()" data-i18n="start_session">Start Session</button>
   </div>
 </div>
 
@@ -837,12 +889,151 @@ function startStream(opts){
     });
   };
 }
+// ── Mode toggle ──────────────────────────────────────
+let sessionMode = "ai"; // "ai" or "live"
+function setMode(m){
+  sessionMode = m;
+  document.getElementById("modeAI").className = "mode-btn" + (m==="ai"?" active":"");
+  document.getElementById("modeLive").className = "mode-btn" + (m==="live"?" active":"");
+  document.getElementById("measureWrap").style.display = m==="ai"?"flex":"none";
+}
+
 function runSession(){
+  if(sessionMode === "live") return startLiveSession();
   const measure = document.getElementById("measureChk").checked;
   startStream({
     pre_test: measure, post_test: measure,
     statusKey: measure ? "status_test" : "status_running",
   });
+}
+
+// ── Live Session (Human Student) ──────────────────────
+let liveSessionId = null;
+const pm = {diagnosis:1,exploration:2,practice:3,reflection:4};
+
+async function startLiveSession(){
+  document.getElementById("brun").disabled = true;
+  ss("run","status_running");
+  document.getElementById("chat").innerHTML = "";
+  document.getElementById("tp").style.width = "0%";
+
+  const topic = document.getElementById("tsel").value;
+  const depth = document.getElementById("dsel").value;
+  const tName = prompt(curLang==="ja" ? "あなたの名前を入力:" : "Enter your name:") || "Student";
+
+  try {
+    const res = await fetch("/api/live/start", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        teacher_id: teacherSel.value, topic, depth,
+        grade: GRADE, subject: SUBJECT, lang: curLang,
+        student_name: tName,
+      }),
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.detail || "start failed");
+    liveSessionId = d.session_id;
+
+    // Phase separator
+    psep(d.phase_label, pm[d.phase]||1);
+    setPh(pm[d.phase]||1);
+
+    // Show teacher message with typing animation
+    const el = pushMsgEmpty("teacher", d.teacher_name);
+    await typeInto(el, d.teacher_message, 80);
+
+    // Show input bar
+    document.getElementById("inputBar").style.display = "flex";
+    document.getElementById("studentInput").focus();
+    document.getElementById("studentInput").dataset.tname = tName;
+    ss("run","status_idle");
+  } catch(e) {
+    msg("referee","System","Error: "+e.message,null);
+    ss("","status_error");
+    document.getElementById("brun").disabled = false;
+  }
+}
+
+async function sendLiveResponse(){
+  const input = document.getElementById("studentInput");
+  const text = input.value.trim();
+  if(!text || !liveSessionId) return;
+
+  const tName = input.dataset.tname || "You";
+  input.value = "";
+  input.disabled = true;
+  document.getElementById("btnSend").disabled = true;
+
+  // Show student bubble
+  const sw = document.createElement("div"); sw.className = "mwrap";
+  sw.style.alignSelf = "flex-end"; sw.style.maxWidth = "78%";
+  const sr = document.createElement("div"); sr.className = "mrole"; sr.textContent = tName;
+  const sd = document.createElement("div"); sd.className = "msg ms"; sd.textContent = text;
+  sw.appendChild(sr); sw.appendChild(sd);
+  document.getElementById("chat").appendChild(sw);
+  document.getElementById("chat").scrollTop = 99999;
+
+  ss("run","status_running");
+
+  try {
+    const res = await fetch(`/api/live/${liveSessionId}/respond`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({text}),
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.detail || "respond failed");
+
+    // Show referee eval
+    if(d.referee){
+      msg("referee","Referee", d.referee.summary || (curLang==="ja"?"評価完了":"evaluation complete"), {
+        z:d.referee.zpd, b:d.referee.bloom, s:d.referee.scaffolding,
+        h:d.referee.halluc, d:d.referee.direct, dt:d.referee.delta,
+        dir:d.referee.directive,
+      });
+    }
+
+    // Update progress bar
+    const progress = d.turns_done ? Math.round(d.turns_done / d.total_turns * 100) : 0;
+    document.getElementById("tp").style.width = progress + "%";
+
+    if(d.is_complete){
+      // Session finished
+      document.getElementById("inputBar").style.display = "none";
+      setPh(4);
+      document.getElementById("tp").style.width = "100%";
+      ax(1, Math.min(100, d.final_proficiency||0), Math.round(d.final_proficiency||0)+"%");
+      msg("referee","System",
+        (curLang==="ja"
+          ? `セッション完了！ Δ習熟: +${d.proficiency_delta}`
+          : `Session complete! Δ proficiency: +${d.proficiency_delta}`),
+        null);
+      ss("done","status_done");
+      document.getElementById("brun").disabled = false;
+      liveSessionId = null;
+    } else {
+      // Phase separator if changed
+      if(d.phase){
+        const phNum = pm[d.phase]||1;
+        const currentPh = document.querySelector(".ph.active");
+        if(!currentPh || !currentPh.classList.contains("p"+phNum)){
+          psep(d.phase_label, phNum);
+          setPh(phNum);
+        }
+      }
+      // Show next teacher message
+      const el = pushMsgEmpty("teacher", d.teacher_name);
+      await typeInto(el, d.teacher_message, 80);
+      input.disabled = false;
+      document.getElementById("btnSend").disabled = false;
+      input.focus();
+      ss("run","status_idle");
+    }
+  } catch(e) {
+    msg("referee","System","Error: "+e.message,null);
+    input.disabled = false;
+    document.getElementById("btnSend").disabled = false;
+    ss("","status_error");
+  }
 }
 </script>
 </body>
