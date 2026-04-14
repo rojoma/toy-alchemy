@@ -1,0 +1,32 @@
+{
+  "session_id": "sess_ba4b4099",
+  "student_id": "s002",
+  "teacher_id": "t001",
+  "topic": "速さ時間距離",
+  "grade": 6,
+  "subject": "算数",
+  "depth": "standard",
+  "hallucination_rate": 0.0,
+  "direct_answer_rate": 0.083,
+  "system_stability": true,
+  "avg_zpd_alignment": 0.742,
+  "avg_bloom_level": 2.58,
+  "avg_scaffolding_quality": 0.633,
+  "pre_test_score": 20,
+  "post_test_score": 40,
+  "proficiency_delta": 9.15,
+  "learning_gain": 20,
+  "avg_engagement": 0.758,
+  "frustration_events": 0,
+  "aha_moments": 1,
+  "teacher_compatibility_score": 0.562,
+  "total_tokens_used": 0,
+  "estimated_cost_usd": 0.0,
+  "cost_per_learning_gain": null,
+  "session_grade": {
+    "grade": "×",
+    "status": "fail"
+  },
+  "skills_update_needed": true,
+  "timestamp": "2026-04-07T23:36:56.267368"
+}
