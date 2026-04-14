@@ -183,6 +183,16 @@ body{
 .send-btn:active{transform:scale(0.95)}
 .send-btn:disabled{opacity:0.3;cursor:not-allowed}
 .send-btn svg{width:18px;height:18px}
+.end-session-btn{
+  display:block;margin:0 auto 12px;
+  padding:8px 18px;
+  background:transparent;color:var(--muted);
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  font:inherit;font-size:12px;font-weight:500;cursor:pointer;
+  transition:all .2s var(--ease);
+}
+.end-session-btn:hover{background:var(--surface-2);color:var(--text)}
+.end-session-btn:disabled{opacity:0.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -202,6 +212,8 @@ body{
 </div>
 
 <div class="chat" id="chat"></div>
+
+<button class="end-session-btn" id="endSessionBtn" onclick="endSession()" data-i18n="end_session_btn" disabled>End Session</button>
 
 <div class="input-bar" id="inputBar">
   <input type="text" class="input-field" id="inputField" placeholder="Type your answer..." data-i18n-placeholder="input_placeholder"
@@ -231,6 +243,7 @@ const I18N = {
     back:"← 戻る",
     input_placeholder:"答えを入力してください...",
     phase_check:"確認", phase_review:"振り返り",
+    end_session_btn:"セッションを終了する",
     complete_title:"セッション完了",
     complete_points:"ポイント",
     complete_sub:(name,prof)=>"よくできました、"+name+"さん！現在の習熟度は "+prof+" です。",
@@ -248,6 +261,7 @@ const I18N = {
     back:"← Back",
     input_placeholder:"Type your answer...",
     phase_check:"Check", phase_review:"Review",
+    end_session_btn:"End Session",
     complete_title:"Session Complete",
     complete_points:"points",
     complete_sub:(name,prof)=>"Well done, "+name+"! Your proficiency is now at "+prof+".",
@@ -433,6 +447,7 @@ async function initSession(){
     // Enable input
     document.getElementById("inputField").disabled = false;
     document.getElementById("sendBtn").disabled = false;
+    document.getElementById("endSessionBtn").disabled = false;
     document.getElementById("inputField").focus();
   } catch(e){
     const chat = document.getElementById("chat");
@@ -552,6 +567,7 @@ async function sendResponse(){
       }
       if(d.session_phase === "post_test" && lastSessionPhase !== "post_test"){
         showPhase(t("phase_review"));
+        document.getElementById("endSessionBtn").disabled = true;
       }
       lastSessionPhase = d.session_phase;
       await showTeacherMsg(d.teacher_message);
@@ -564,6 +580,41 @@ async function sendResponse(){
     showTeacherMsg("⚠ "+t("error_prefix")+e.message);
     input.disabled = false;
     document.getElementById("sendBtn").disabled = false;
+  }
+}
+
+// ── End Session ──────────────────────────────────
+async function endSession(){
+  if(!sessionId) return;
+  const confirmMsg = curLang === "ja"
+    ? "セッションを終了して復習テストに進みますか？"
+    : "End the session and proceed to the review test?";
+  if(!window.confirm(confirmMsg)) return;
+  const input = document.getElementById("inputField");
+  const sendBtn = document.getElementById("sendBtn");
+  const endBtn = document.getElementById("endSessionBtn");
+  input.disabled = true;
+  sendBtn.disabled = true;
+  endBtn.disabled = true;
+  document.getElementById("statusDot").className = "status-dot active";
+  try {
+    const res = await fetch("/api/live/"+sessionId+"/end",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.detail||"end failed");
+    showPhase(t("phase_review"));
+    lastSessionPhase = "post_test";
+    await showTeacherMsg(d.teacher_message);
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.focus();
+    document.getElementById("statusDot").className = "status-dot";
+  } catch(e){
+    showTeacherMsg("⚠ "+t("error_prefix")+e.message);
+    input.disabled = false;
+    sendBtn.disabled = false;
+    endBtn.disabled = false;
   }
 }
 
