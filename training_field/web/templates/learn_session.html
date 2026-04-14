@@ -50,6 +50,13 @@ body{
   transition:background .2s;
 }
 .header-back:hover{background:var(--surface-2)}
+.header-lang{
+  color:var(--text);background:var(--surface);text-decoration:none;
+  font-size:12px;font-weight:600;letter-spacing:0.04em;
+  padding:7px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  cursor:pointer;font-family:inherit;transition:background .2s;
+}
+.header-lang:hover{background:var(--surface-2)}
 .header-info{flex:1;display:flex;align-items:center;gap:12px}
 /* Avatar placeholder (future: animated speaking image) */
 .teacher-avatar{
@@ -90,6 +97,15 @@ body{
 .bubble.teacher{
   background:var(--teacher-bg);color:var(--teacher-fg);
   border-radius:var(--radius-lg) var(--radius-lg) var(--radius-lg) 6px;
+}
+.question-box{
+  display:block;margin-top:12px;padding:14px 18px;
+  background:var(--surface);border:2px solid var(--link);
+  border-radius:12px;font-weight:600;font-size:15px;line-height:1.5;
+  color:var(--text);
+}
+:root[data-theme="dark"] .question-box{
+  background:var(--surface-2);border-color:var(--link);
 }
 .bubble.student{
   background:var(--student-bg);color:var(--student-fg);
@@ -143,6 +159,20 @@ body{
 }
 .input-field:focus{border-color:var(--text)}
 .input-field::placeholder{color:var(--muted)}
+.mic-btn{
+  width:48px;height:48px;border-radius:50%;
+  border:none;background:var(--surface);color:var(--muted);
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border-strong);
+  transition:all .2s var(--ease);
+}
+.mic-btn:hover{background:var(--surface-2);color:var(--text)}
+.mic-btn.listening{
+  background:#ef4444;color:#fff;border-color:#ef4444;
+  animation:mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
+.mic-btn.unsupported{display:none}
 .send-btn{
   width:48px;height:48px;border-radius:50%;
   border:none;background:var(--text);color:var(--bg);
@@ -159,7 +189,7 @@ body{
 <script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
 
 <div class="header">
-  <a href="/learn" class="header-back">← Back</a>
+  <a href="/learn" class="header-back" data-i18n="back">← Back</a>
   <div class="header-info">
     <div class="teacher-avatar" id="tAvatar">—</div>
     <div>
@@ -168,14 +198,18 @@ body{
     </div>
   </div>
   <div class="status-dot" id="statusDot"></div>
+  <button class="header-lang" id="langbtn" onclick="toggleLang()">JA</button>
 </div>
 
 <div class="chat" id="chat"></div>
 
 <div class="input-bar" id="inputBar">
-  <input type="text" class="input-field" id="inputField" placeholder="Type your answer..."
+  <input type="text" class="input-field" id="inputField" placeholder="Type your answer..." data-i18n-placeholder="input_placeholder"
     autocomplete="off" disabled
     onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendResponse();}">
+  <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Voice input">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  </button>
   <button class="send-btn" id="sendBtn" onclick="sendResponse()" disabled>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
   </button>
@@ -191,6 +225,72 @@ const TOPIC = params.get("topic") || "分数のかけ算とわり算";
 const DEPTH = params.get("depth") || "standard";
 const GRADE = localStorage.getItem("tfStudentGrade") || "小6";
 const SUBJECT = localStorage.getItem("tfStudentSubject") || "算数";
+
+const I18N = {
+  ja: {
+    back:"← 戻る",
+    input_placeholder:"答えを入力してください...",
+    phase_check:"確認", phase_review:"振り返り",
+    complete_title:"セッション完了",
+    complete_points:"ポイント",
+    complete_sub:(name,prof)=>"よくできました、"+name+"さん！現在の習熟度は "+prof+" です。",
+    continue_learning:"学習を続ける",
+    pre_test:"事前テスト", post_test:"事後テスト",
+    questions_improved:n=>n+" 問改善しました！",
+    pre_test_questions:"事前テスト問題",
+    post_test_questions:"事後テスト問題",
+    your_answer:"あなたの回答：",
+    key_moments:"重要な学びの瞬間",
+    turn_label:"ターン",
+    error_prefix:"エラー：",
+  },
+  en: {
+    back:"← Back",
+    input_placeholder:"Type your answer...",
+    phase_check:"Check", phase_review:"Review",
+    complete_title:"Session Complete",
+    complete_points:"points",
+    complete_sub:(name,prof)=>"Well done, "+name+"! Your proficiency is now at "+prof+".",
+    continue_learning:"Continue Learning",
+    pre_test:"PRE-TEST", post_test:"POST-TEST",
+    questions_improved:n=>"+"+n+" questions improved!",
+    pre_test_questions:"PRE-TEST QUESTIONS",
+    post_test_questions:"POST-TEST QUESTIONS",
+    your_answer:"Your answer: ",
+    key_moments:"KEY LEARNING MOMENTS",
+    turn_label:"Turn",
+    error_prefix:"Error: ",
+  }
+};
+let curLang = localStorage.getItem("tfLang") || "en";
+function t(k){ return (I18N[curLang] && I18N[curLang][k]) || (I18N.en[k]) || k; }
+function applyLang(l){
+  curLang = l;
+  localStorage.setItem("tfLang", l);
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k = el.getAttribute("data-i18n");
+    if(I18N[l] && I18N[l][k]) el.textContent = I18N[l][k];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>{
+    const k = el.getAttribute("data-i18n-placeholder");
+    if(I18N[l] && I18N[l][k]) el.placeholder = I18N[l][k];
+  });
+  const b = document.getElementById("langbtn");
+  if(b) b.textContent = (l==="ja") ? "EN" : "JA";
+}
+function toggleLang(){
+  const next = (curLang==="ja") ? "en" : "ja";
+  applyLang(next);
+  document.getElementById("tTopic").textContent = next==="ja" ? TOPIC : (TOPIC_TX[TOPIC] || TOPIC);
+  // Tell the backend so future teacher/judge messages switch language too
+  if(sessionId){
+    fetch("/api/live/"+sessionId+"/lang",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({lang: next}),
+    }).catch(()=>{});
+  }
+}
 
 let sessionId = null;
 let studentName = "Student";
@@ -216,6 +316,20 @@ function typeInto(el, text, cps){
 }
 
 // ── Show teacher message ─────────────────────────
+function splitQuestion(text){
+  const lines = text.split("\n");
+  const bodyLines = [];
+  const qLines = [];
+  for(const line of lines){
+    if(line.trim().startsWith("▶")){
+      qLines.push(line.trim().replace(/^▶\s*/, ""));
+    } else {
+      bodyLines.push(line);
+    }
+  }
+  return { body: bodyLines.join("\n").trim(), question: qLines.join("\n").trim() };
+}
+
 async function showTeacherMsg(text, phaseName){
   const chat = document.getElementById("chat");
   const wrap = document.createElement("div");
@@ -229,7 +343,17 @@ async function showTeacherMsg(text, phaseName){
   wrap.appendChild(bubble);
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
-  await typeInto(bubble, text, 70);
+
+  const { body, question } = splitQuestion(text);
+  if(body){
+    await typeInto(bubble, body, 70);
+  }
+  if(question){
+    const qBox = document.createElement("span");
+    qBox.className = "question-box";
+    bubble.appendChild(qBox);
+    await typeInto(qBox, question, 70);
+  }
 }
 
 function showStudentMsg(text){
@@ -263,10 +387,10 @@ function showComplete(delta, finalProf){
   const card = document.createElement("div");
   card.className = "complete-card";
   card.innerHTML = '<div class="complete-mark">✓</div>'+
-    '<div class="complete-title">Session Complete</div>'+
-    '<div class="complete-delta">'+(delta>=0?"+":"")+delta+' points</div>'+
-    '<div class="complete-sub">Well done, '+studentName+'! Your proficiency is now at '+finalProf+'.</div>'+
-    '<a href="/learn" class="complete-btn">Continue Learning</a>';
+    '<div class="complete-title">'+t("complete_title")+'</div>'+
+    '<div class="complete-delta">'+(delta>=0?"+":"")+delta+' '+t("complete_points")+'</div>'+
+    '<div class="complete-sub">'+t("complete_sub")(studentName, finalProf)+'</div>'+
+    '<a href="/learn" class="complete-btn">'+t("continue_learning")+'</a>';
   chat.appendChild(card);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -283,12 +407,12 @@ async function initSession(){
   } catch(e){}
 
   // Header
-  const t = TEACHERS.find(x=>x.teacher_id===TEACHER_ID) || {};
-  teacherName = t.name || "Teacher";
+  const tConfig = TEACHERS.find(x=>x.teacher_id===TEACHER_ID) || {};
+  teacherName = tConfig.name || "Teacher";
   const initials = (teacherName).replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase() || "T";
   document.getElementById("tAvatar").textContent = initials;
   document.getElementById("tLabel").textContent = teacherName;
-  document.getElementById("tTopic").textContent = TOPIC_TX[TOPIC] || TOPIC;
+  document.getElementById("tTopic").textContent = curLang==="ja" ? TOPIC : (TOPIC_TX[TOPIC] || TOPIC);
 
   // Start live session
   document.getElementById("statusDot").className = "status-dot active";
@@ -297,14 +421,14 @@ async function initSession(){
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         teacher_id: TEACHER_ID, topic: TOPIC, depth: DEPTH,
-        grade: GRADE, subject: SUBJECT, lang: "en",
+        grade: GRADE, subject: SUBJECT, lang: curLang,
         student_name: studentName,
       }),
     });
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"start failed");
     sessionId = d.session_id;
-    showPhase("Check");
+    showPhase(t("phase_check"));
     await showTeacherMsg(d.teacher_message);
     // Enable input
     document.getElementById("inputField").disabled = false;
@@ -331,17 +455,17 @@ function showReview(d){
 
   let reviewHTML = '<div class="complete-card" style="max-width:520px;text-align:left">';
   reviewHTML += '<div class="complete-mark" style="text-align:center">✓</div>';
-  reviewHTML += '<div class="complete-title" style="text-align:center">Session Complete</div>';
+  reviewHTML += '<div class="complete-title" style="text-align:center">'+t("complete_title")+'</div>';
 
   // Score comparison
   reviewHTML += '<div style="display:flex;justify-content:center;gap:40px;margin:24px 0">';
-  reviewHTML += '<div style="text-align:center"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">PRE-TEST</div><div style="font-size:28px;font-weight:600">'+preScore+'</div></div>';
+  reviewHTML += '<div style="text-align:center"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">'+t("pre_test")+'</div><div style="font-size:28px;font-weight:600">'+preScore+'</div></div>';
   reviewHTML += '<div style="text-align:center;padding-top:18px;color:var(--muted)">→</div>';
-  reviewHTML += '<div style="text-align:center"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">POST-TEST</div><div style="font-size:28px;font-weight:600;color:var(--success)">'+postScore+'</div></div>';
+  reviewHTML += '<div style="text-align:center"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">'+t("post_test")+'</div><div style="font-size:28px;font-weight:600;color:var(--success)">'+postScore+'</div></div>';
   reviewHTML += '</div>';
 
   if(improvement > 0){
-    reviewHTML += '<div style="text-align:center;font-size:14px;color:var(--success);margin-bottom:24px">+'+improvement+' questions improved!</div>';
+    reviewHTML += '<div style="text-align:center;font-size:14px;color:var(--success);margin-bottom:24px">'+t("questions_improved")(improvement)+'</div>';
   }
 
   // Detailed Q&A review
@@ -356,7 +480,7 @@ function showReview(d){
       const color = q.correct ? "var(--success)" : "var(--muted)";
       h += '<div style="padding:12px 0;border-bottom:1px solid var(--border)">';
       h += '<div style="font-size:13px;font-weight:500;margin-bottom:4px">Q'+(i+1)+': '+escHtml(q.question)+'</div>';
-      h += '<div style="font-size:12px;color:var(--text-secondary)">Your answer: '+escHtml(q.student_answer)+'</div>';
+      h += '<div style="font-size:12px;color:var(--text-secondary)">'+t("your_answer")+escHtml(q.student_answer)+'</div>';
       h += '<div style="font-size:12px;color:'+color+';margin-top:2px">'+mark+' '+(q.explanation||"")+'</div>';
       h += '</div>';
     });
@@ -364,23 +488,23 @@ function showReview(d){
     return h;
   }
 
-  reviewHTML += renderTest("PRE-TEST QUESTIONS", pre);
-  reviewHTML += renderTest("POST-TEST QUESTIONS", post);
+  reviewHTML += renderTest(t("pre_test_questions"), pre);
+  reviewHTML += renderTest(t("post_test_questions"), post);
 
   // Key learning moments
   const moments = d.key_moments || [];
   if(moments.length > 0){
-    reviewHTML += '<div style="margin-top:24px"><div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:10px">KEY LEARNING MOMENTS</div>';
+    reviewHTML += '<div style="margin-top:24px"><div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:10px">'+t("key_moments")+'</div>';
     moments.forEach(m=>{
       reviewHTML += '<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:12px">';
-      reviewHTML += '<div style="color:var(--success);font-weight:500">'+m.phase+' · Turn '+m.turn+' · Δ +'+m.delta+'</div>';
+      reviewHTML += '<div style="color:var(--success);font-weight:500">'+m.phase+' · '+t("turn_label")+' '+m.turn+' · Δ +'+m.delta+'</div>';
       reviewHTML += '<div style="color:var(--text-secondary);margin-top:2px">'+escHtml(m.summary)+'</div>';
       reviewHTML += '</div>';
     });
     reviewHTML += '</div>';
   }
 
-  reviewHTML += '<div style="text-align:center;margin-top:28px"><a href="/learn" class="complete-btn">Continue Learning</a></div>';
+  reviewHTML += '<div style="text-align:center;margin-top:28px"><a href="/learn" class="complete-btn">'+t("continue_learning")+'</a></div>';
   reviewHTML += '</div>';
 
   const card = document.createElement("div");
@@ -405,7 +529,7 @@ async function sendResponse(){
   try {
     const res = await fetch("/api/live/"+sessionId+"/respond",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({text}),
+      body:JSON.stringify({text, lang: curLang}),
     });
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"respond failed");
@@ -427,7 +551,7 @@ async function sendResponse(){
         lastPhase = d.phase;
       }
       if(d.session_phase === "post_test" && lastSessionPhase !== "post_test"){
-        showPhase("Review");
+        showPhase(t("phase_review"));
       }
       lastSessionPhase = d.session_phase;
       await showTeacherMsg(d.teacher_message);
@@ -437,12 +561,60 @@ async function sendResponse(){
       document.getElementById("statusDot").className = "status-dot";
     }
   } catch(e){
-    showTeacherMsg("⚠ "+e.message);
+    showTeacherMsg("⚠ "+t("error_prefix")+e.message);
     input.disabled = false;
     document.getElementById("sendBtn").disabled = false;
   }
 }
 
+// ── Voice input (Web Speech API) ─────────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isListening = false;
+
+function initMic(){
+  const btn = document.getElementById("micBtn");
+  if(!SpeechRecognition){ btn.classList.add("unsupported"); return; }
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = curLang === "ja" ? "ja-JP" : "en-US";
+
+  recognition.onresult = (e) => {
+    const input = document.getElementById("inputField");
+    let transcript = "";
+    for(let i = 0; i < e.results.length; i++){
+      transcript += e.results[i][0].transcript;
+    }
+    input.value = transcript;
+  };
+  recognition.onend = () => {
+    isListening = false;
+    btn.classList.remove("listening");
+  };
+  recognition.onerror = (e) => {
+    isListening = false;
+    btn.classList.remove("listening");
+  };
+}
+
+function toggleMic(){
+  if(!recognition) return;
+  const btn = document.getElementById("micBtn");
+  if(isListening){
+    recognition.stop();
+    isListening = false;
+    btn.classList.remove("listening");
+  } else {
+    recognition.lang = curLang === "ja" ? "ja-JP" : "en-US";
+    recognition.start();
+    isListening = true;
+    btn.classList.add("listening");
+  }
+}
+
+initMic();
+applyLang(curLang);
 initSession();
 </script>
 </body>

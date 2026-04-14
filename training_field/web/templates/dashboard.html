@@ -290,13 +290,13 @@ tbody tr:hover{background:var(--surface-2)}
     <div style="display:flex;gap:16px;margin-top:48px;flex-wrap:wrap">
       <a href="#observatory" class="portal-card" style="flex:1;min-width:260px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-sm);transition:transform .3s var(--ease),box-shadow .3s var(--ease)">
         <div style="font-size:24px;margin-bottom:10px">👀</div>
-        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em">Observatory</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:4px">Watch AI agents teach and learn. Run experiments and compare results.</div>
+        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em" data-i18n="portal_observatory_title">Observatory</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px" data-i18n="portal_observatory_desc">Watch AI agents teach and learn. Run experiments and compare results.</div>
       </a>
       <a href="/learn" class="portal-card" style="flex:1;min-width:260px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-sm);transition:transform .3s var(--ease),box-shadow .3s var(--ease)">
         <div style="font-size:24px;margin-bottom:10px">📚</div>
-        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em">Start Learning</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:4px">Join as a real student. Pick a teacher, choose a topic, and start your session.</div>
+        <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em" data-i18n="portal_learn_title">Start Learning</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px" data-i18n="portal_learn_desc">Join as a real student. Pick a teacher, choose a topic, and start your session.</div>
       </a>
     </div>
   </section>
@@ -381,8 +381,10 @@ tbody tr:hover{background:var(--surface-2)}
 </main>
 
 <script>
-const GRADES = ["小1","小2","小3","小4","小5","小6","中1","中2","中3","高1","高2","高3"];
+const GRADES = ["小6","小1","小2","小3","小4","小5","中1","中2","中3","高1","高2","高3"];
 const SUBJECTS = ["算数","国語","理科","社会","英語"];
+const AVAILABLE_GRADES = new Set(["小6"]);
+const AVAILABLE_SUBJECTS = new Set(["算数"]);
 const I18N = {
   ja: {
     students_label:"生徒エージェント", recent_sessions:"最近のセッション",
@@ -393,6 +395,10 @@ const I18N = {
     title_main:"AIエージェントが教え方を",
     title_faded:"学び、試し、本質を持ち帰るための静かな場。",
     title_sub:"現在、6種類の生徒ペルソナ、6種類のスキル(教え方)、5つの評価軸を備え、エージェントが成長のためのインサイトを得られます。",
+    portal_observatory_title:"オブザーバトリー",
+    portal_observatory_desc:"AIエージェントが教え学ぶ様子を観察。実験を実行して結果を比較できます。",
+    portal_learn_title:"学習を始める",
+    portal_learn_desc:"実際の生徒として参加。先生を選び、単元を決めて、セッションを開始しましょう。",
     topic_分数:"分数", topic_比:"比", topic_速さ:"速さ", topic_比例:"比例", topic_円:"円", topic_場合:"場合の数",
   },
   en: {
@@ -404,6 +410,10 @@ const I18N = {
     title_main:"A calm space for AI agents",
     title_faded:"to learn and experiment with how to teach and get key takeaways.",
     title_sub:"Currently, there are six types of student personas, six types of skills (ways to teach), and five pillars of evaluation feedback for agents to gain insights for growth.",
+    portal_observatory_title:"Observatory",
+    portal_observatory_desc:"Watch AI agents teach and learn. Run experiments and compare results.",
+    portal_learn_title:"Start Learning",
+    portal_learn_desc:"Join as a real student. Pick a teacher, choose a topic, and start your session.",
     topic_分数:"Fractions", topic_比:"Ratios", topic_速さ:"Speed", topic_比例:"Proportion", topic_円:"Circles", topic_場合:"Combinatorics",
   }
 };
@@ -420,19 +430,26 @@ function translateContent(el,l){
 }
 let curLang = localStorage.getItem("tfLang") || "en";
 
-function fillSelect(sel, items, saved){
+function fillSelect(sel, items, saved, available){
   sel.innerHTML = "";
+  const comingSoon = curLang==="ja" ? "（近日対応）" : " (coming soon)";
   items.forEach(v=>{
     const o=document.createElement("option");
-    o.value=v; o.dataset.src=v; o.textContent=tx(v,curLang);
+    o.value=v; o.dataset.src=v;
+    const enabled = !available || available.has(v);
+    o.textContent = tx(v,curLang) + (enabled ? "" : comingSoon);
+    if(!enabled) o.disabled = true;
     sel.appendChild(o);
   });
-  if(saved && items.includes(saved)) sel.value=saved;
+  const savedOk = saved && items.includes(saved) && (!available || available.has(saved));
+  sel.value = savedOk ? saved : items.find(v=>!available || available.has(v));
 }
 const gradeSel=document.getElementById("gradeSel");
 const subjSel=document.getElementById("subjSel");
-fillSelect(gradeSel, GRADES, localStorage.getItem("tfGrade")||"小6");
-fillSelect(subjSel, SUBJECTS, localStorage.getItem("tfSubject")||"算数");
+fillSelect(gradeSel, GRADES, localStorage.getItem("tfGrade")||"小6", AVAILABLE_GRADES);
+fillSelect(subjSel, SUBJECTS, localStorage.getItem("tfSubject")||"算数", AVAILABLE_SUBJECTS);
+localStorage.setItem("tfGrade", gradeSel.value);
+localStorage.setItem("tfSubject", subjSel.value);
 function updateCardLinks(){
   const g=encodeURIComponent(gradeSel.value), s=encodeURIComponent(subjSel.value);
   document.querySelectorAll(".stu-card").forEach(a=>{
@@ -448,8 +465,12 @@ function applyLang(l){
     const k=el.getAttribute("data-i18n");
     if(I18N[l] && I18N[l][k]) el.textContent = I18N[l][k];
   });
-  [gradeSel,subjSel].forEach(sel=>{
-    Array.from(sel.options).forEach(o=>{ o.textContent = tx(o.dataset.src,l); });
+  const comingSoon = l==="ja" ? "（近日対応）" : " (coming soon)";
+  [[gradeSel,AVAILABLE_GRADES],[subjSel,AVAILABLE_SUBJECTS]].forEach(([sel,avail])=>{
+    Array.from(sel.options).forEach(o=>{
+      const enabled = avail.has(o.dataset.src);
+      o.textContent = tx(o.dataset.src,l) + (enabled ? "" : comingSoon);
+    });
   });
   document.querySelectorAll("[data-i18n-tx]").forEach(el=>translateContent(el,l));
   const b=document.getElementById("langbtn"); if(b) b.textContent = l==="ja"?"EN":"JA";

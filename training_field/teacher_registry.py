@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from training_field.teacher_agent import TeacherAgent
+from training_field.teacher_memory import load_memory_prompt
 
 EXTERNAL_DIR = Path(__file__).parent / "field" / "external_teachers"
 
@@ -60,18 +61,26 @@ def list_teachers() -> list[dict]:
 def load_teacher(teacher_id: Optional[str]) -> TeacherAgent:
     """Resolve a teacher_id to a fresh TeacherAgent instance.
     Falls back to Dr. Owen if teacher_id is None or unknown."""
-    if not teacher_id or teacher_id == "t001":
-        return TeacherAgent.create_dr_owen()
-    if teacher_id in _INTERNAL_FACTORIES:
-        return _INTERNAL_FACTORIES[teacher_id]()
-    if EXTERNAL_DIR.exists():
+    tid = teacher_id or "t001"
+    if tid == "t001" or not teacher_id:
+        agent = TeacherAgent.create_dr_owen()
+    elif tid in _INTERNAL_FACTORIES:
+        agent = _INTERNAL_FACTORIES[tid]()
+    elif EXTERNAL_DIR.exists():
+        agent = None
         for path in EXTERNAL_DIR.glob("*.json"):
             try:
                 with open(path, encoding="utf-8") as f:
                     data = json.load(f)
-                if data.get("teacher_id") == teacher_id:
-                    return TeacherAgent.from_json(path)
+                if data.get("teacher_id") == tid:
+                    agent = TeacherAgent.from_json(path)
+                    break
             except Exception:
                 continue
-    # Unknown teacher_id → fail loudly so the caller knows
-    raise ValueError(f"Unknown teacher_id: {teacher_id}")
+        if agent is None:
+            raise ValueError(f"Unknown teacher_id: {tid}")
+    else:
+        raise ValueError(f"Unknown teacher_id: {tid}")
+
+    agent.session_memory = load_memory_prompt(agent.config.teacher_id)
+    return agent
