@@ -338,7 +338,9 @@ async def live_start(body: dict):
     gcode = GRADE_CODES.get(grade_str, 6)
     teacher = load_teacher(teacher_id)
     principal = PrincipalAgent()
-    phases = PHASE_CONFIG[depth]
+    # Live sessions always run unlimited — the human student ends the session
+    # explicitly via /api/live/{id}/end. depth is retained only for metadata.
+    phases = PHASE_CONFIG["unlimited"]
     sid = f"live_{uuid.uuid4().hex[:8]}"
 
     session = LiveSession(
@@ -606,6 +608,46 @@ async def live_respond(session_id: str, body: dict):
         "total_turns": session.total_turns,
         "turns_done": session.total_turns_done,
         "proficiency": round(session.proficiency, 1),
+        "is_complete": False,
+    }
+
+
+@app.post("/api/live/{session_id}/end")
+async def live_end(session_id: str):
+    """Human student explicitly ends the session → jump to post-test."""
+    session = LIVE_SESSIONS.get(session_id)
+    if not session:
+        raise HTTPException(404, "session not found or expired")
+    if session.is_complete:
+        raise HTTPException(400, "session already complete")
+    if session.session_phase not in ("teaching", "pre_test"):
+        raise HTTPException(400, f"cannot end from phase {session.session_phase}")
+
+    from openai import OpenAI
+    client = OpenAI()
+    teacher = session.teacher
+    dtopic = display_topic(session.topic, session.lang)
+
+    session.session_phase = "post_test"
+    session.test_question_num = 1
+    prompt = _test_prompt(
+        teacher.config, dtopic, session.grade, session.subject,
+        session.lang, 1, NUM_TEST_QUESTIONS, session.student_label, is_post=True,
+    )
+    resp = client.chat.completions.create(
+        model="gpt-4o", max_tokens=300,
+        messages=[{"role": "system", "content": prompt},
+                  {"role": "user", "content": f"Ask review question 1 of {NUM_TEST_QUESTIONS}."}],
+    )
+    post_q = resp.choices[0].message.content.strip()
+    session.last_teacher_text = post_q
+    review_intro = ("Great work! Let's see how much you've learned." if session.lang == "en"
+                    else "よく頑張りました！どれだけ学んだか確認しましょう。")
+    return {
+        "teacher_message": f"{review_intro}\n\n{post_q}",
+        "teacher_name": session.teacher_name,
+        "session_phase": "post_test",
+        "test_progress": f"1/{NUM_TEST_QUESTIONS}",
         "is_complete": False,
     }
 

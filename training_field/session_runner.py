@@ -36,6 +36,10 @@ PHASE_CONFIG = {
         {'id':3,'name':'practice','label':'Practice','turns':5,'goal':'Varied problems.'},
         {'id':4,'name':'reflection','label':'Reflection','turns':2,'goal':'Metacognitive reflection.'},
     ],
+    # Live mode — no automatic turn cap. User explicitly ends via /api/live/{id}/end.
+    'unlimited': [
+        {'id':1,'name':'teaching','label':'Teaching','turns':9999,'goal':'Teach until the student is ready to end.'},
+    ],
 }
 PHASE_STYLES = {1:'blue', 2:'yellow', 3:'magenta', 4:'green'}
 
