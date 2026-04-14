@@ -1,0 +1,32 @@
+{
+  "session_id": "sess_0c0c2b06",
+  "student_id": "s004",
+  "teacher_id": "t001",
+  "topic": "円の面積",
+  "grade": 6,
+  "subject": "算数",
+  "depth": "quick",
+  "hallucination_rate": 0.0,
+  "direct_answer_rate": 0.125,
+  "system_stability": true,
+  "avg_zpd_alignment": 0.662,
+  "avg_bloom_level": 2.25,
+  "avg_scaffolding_quality": 0.637,
+  "pre_test_score": null,
+  "post_test_score": null,
+  "proficiency_delta": 5.4,
+  "learning_gain": 0.0,
+  "avg_engagement": 0.787,
+  "frustration_events": 1,
+  "aha_moments": 0,
+  "teacher_compatibility_score": 0.522,
+  "total_tokens_used": 0,
+  "estimated_cost_usd": 0.0,
+  "cost_per_learning_gain": null,
+  "session_grade": {
+    "grade": "×",
+    "status": "fail"
+  },
+  "skills_update_needed": true,
+  "timestamp": "2026-04-08T10:19:28.139420"
+}

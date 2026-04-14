@@ -1,0 +1,32 @@
+{
+  "session_id": "sess_6482c17f",
+  "student_id": "s004",
+  "teacher_id": "t001",
+  "topic": "Multiplication and Division of Fractions",
+  "grade": 6,
+  "subject": "算数",
+  "depth": "standard",
+  "hallucination_rate": 0.0,
+  "direct_answer_rate": 0.0,
+  "system_stability": true,
+  "avg_zpd_alignment": 0.717,
+  "avg_bloom_level": 2.42,
+  "avg_scaffolding_quality": 0.625,
+  "pre_test_score": null,
+  "post_test_score": null,
+  "proficiency_delta": 6.9,
+  "learning_gain": 0.0,
+  "avg_engagement": 0.758,
+  "frustration_events": 1,
+  "aha_moments": 0,
+  "teacher_compatibility_score": 0.543,
+  "total_tokens_used": 0,
+  "estimated_cost_usd": 0.0,
+  "cost_per_learning_gain": null,
+  "session_grade": {
+    "grade": "×",
+    "status": "fail"
+  },
+  "skills_update_needed": false,
+  "timestamp": "2026-04-08T12:01:07.389408"
+}
