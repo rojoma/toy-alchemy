@@ -158,14 +158,6 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
       {% endfor %}
     </select>
   </div>
-  <div class="form-group">
-    <label class="form-label" data-i18n="label_depth">DEPTH</label>
-    <select class="form-select" id="depthSelect">
-      <option value="quick" data-i18n="depth_quick">Quick · 8 turns</option>
-      <option value="standard" selected data-i18n="depth_standard">Standard · 12 turns</option>
-      <option value="deep" data-i18n="depth_deep">Deep · 16 turns</option>
-    </select>
-  </div>
   <button class="btn-primary" onclick="startSession()" data-i18n="start_session">Start Session</button>
 
   <div class="history-list" id="historyList"></div>
@@ -184,8 +176,7 @@ const I18N = {
     onboard_subtitle:"少しだけ自己紹介してください。あなたにぴったりの先生を選びます。",
     label_name:"なまえ", name_placeholder:"例：エマ",
     label_grade:"がくねん", label_subject:"きょうか", label_teacher:"せんせい",
-    label_progress:"これまでの学習", label_topic:"単元", label_depth:"深さ",
-    depth_quick:"クイック · 8ターン", depth_standard:"標準 · 12ターン", depth_deep:"じっくり · 16ターン",
+    label_progress:"これまでの学習", label_topic:"単元",
     lets_go:"はじめる", start_session:"セッション開始", switch_student:"別の生徒に切り替え",
     welcome_back:n=>"おかえりなさい、"+n+"さん！",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" セッション完了",
@@ -198,8 +189,7 @@ const I18N = {
     onboard_subtitle:"Tell us a little about yourself so we can match you with the right teacher.",
     label_name:"YOUR NAME", name_placeholder:"e.g. Emma",
     label_grade:"GRADE", label_subject:"SUBJECT", label_teacher:"TEACHER",
-    label_progress:"YOUR PROGRESS", label_topic:"TOPIC", label_depth:"DEPTH",
-    depth_quick:"Quick · 8 turns", depth_standard:"Standard · 12 turns", depth_deep:"Deep · 16 turns",
+    label_progress:"YOUR PROGRESS", label_topic:"TOPIC",
     lets_go:"Let's Go", start_session:"Start Session", switch_student:"Switch student",
     welcome_back:n=>"Welcome back, "+n+"!",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" sessions completed",
@@ -366,12 +356,10 @@ function startSession(){
   const sid = localStorage.getItem("tfStudentId");
   const teacher = document.getElementById("teacherSelect").value;
   const topic = document.getElementById("topicSelect").value;
-  const depth = document.getElementById("depthSelect").value;
   localStorage.setItem("tfStudentTeacher", teacher);
   window.location.href = "/learn/session?student_id="+sid+
     "&teacher_id="+encodeURIComponent(teacher)+
-    "&topic="+encodeURIComponent(topic)+
-    "&depth="+depth;
+    "&topic="+encodeURIComponent(topic);
 }
 
 function goToSession(profile, teacherId){
@@ -383,8 +371,7 @@ function goToSession(profile, teacherId){
       const topic = (d.topics||[])[0] || "Math";
       window.location.href = "/learn/session?student_id="+profile.student_id+
         "&teacher_id="+encodeURIComponent(teacherId)+
-        "&topic="+encodeURIComponent(topic)+
-        "&depth=standard";
+        "&topic="+encodeURIComponent(topic);
     });
 }
 
