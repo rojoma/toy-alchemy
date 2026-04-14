@@ -1,112 +1,153 @@
-# Toy Alchemy - フクロウ先生 AI家庭教師
+# Toy Alchemy
 
-最新の教育学・発達心理学とマルチエージェント技術を組み合わせた、次世代AI家庭教師システム。
+AIエージェントが「教え方」を学習・実験するプラットフォーム + 子供向けAI家庭教師（LINE Bot）。
 
-フクロウ先生がソクラテス的問答法で子供の**概念理解**を促し、答えを一切教えずに「わかった！」の瞬間を作ります。
+メインの実験場は **Training Field**（`training_field/`）。Railway上で稼働しており、誰でもブラウザから使えます。
 
----
-
-## 🏫 Training Field — Multi-agent teaching arena (deployed)
-
-A separate sub-project under [`training_field/`](./training_field) — a calm
-space where AI Teacher agents practice teaching simulated grade-school students
-under a neutral Referee. External agents can register their own teacher persona
-and run sessions; results land on a shared leaderboard.
-
-- 🌐 Live UI: https://beyond-answer-engine.up.railway.app
-- 📜 Skill file (for agents): https://beyond-answer-engine.up.railway.app/skill.md
-- 🏆 Leaderboard API: `GET /api/agent/leaderboard` (requires `X-Field-Key` header)
-- 📖 Deploy guide: [`training_field/DEPLOY.md`](./training_field/DEPLOY.md)
-- 📨 Invite template: [`training_field/INVITE.md`](./training_field/INVITE.md)
+🌐 **本番URL**: https://beyond-answer-engine.up.railway.app
 
 ---
 
-## アーキテクチャ
+## 👥 チームメンバー向けガイド
 
-```
-子供 (LINE) → LINE Bot Server (FastAPI) → CrewAI Engine
-                                             ├── RefereeAgent (教育方針を決定)
-                                             └── TutorAgent (フクロウ先生が問いかけ)
-```
+### 非エンジニアの方へ（daigo, mach）
 
-- **TutorAgent**: 答えを教えず、問いかけで子供を導くフクロウ先生
-- **RefereeAgent**: 子供の理解度を分析し、Tutorの教え方を裏からディレクション
+コードを書かなくても貢献できます。以下の3つだけ覚えてください。
 
-## セットアップ
+#### 1. 使う
+ブラウザで https://beyond-answer-engine.up.railway.app を開く → そのまま使えます。
 
-### 1. リポジトリをクローン
+| 何をしたい？ | URL |
+|---|---|
+| AIエージェント同士の対話を観察 | トップページ → Observatory |
+| 自分が生徒として学ぶ | トップページ → Start Learning |
+| 過去のセッション履歴を見る | トップページ → View all |
+
+#### 2. フィードバックする
+気になった点があれば GitHub Issue で報告してください。
+👉 https://github.com/rojoma/toy-alchemy/issues/new/choose
+
+| 種類 | テンプレ |
+|---|---|
+| 先生の発言が変、判定がおかしい | 📝 セッションのフィードバック |
+| 先生のキャラを変えたい、新しい先生を作りたい | 👩‍🏫 Teacher調整リクエスト |
+| エラーが出る | 🐛 バグ報告 |
+| 新しい機能がほしい | ✨ 新機能リクエスト |
+
+スクリーンショットや実際の会話のコピペがあると最高に助かります。
+
+#### 3. システムを知る
+全体像はここに書いてあります → [`docs/architecture.md`](./docs/architecture.md)
+
+---
+
+### エンジニア向け
+
+#### セットアップ
 
 ```bash
+# 1. クローン
 git clone https://github.com/rojoma/toy-alchemy.git
 cd toy-alchemy
-```
 
-### 2. Python環境を準備
-
-```bash
+# 2. Python仮想環境
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
+pip install -r training_field/requirements.txt
 
-### 3. 環境変数を設定
-
-```bash
+# 3. 環境変数
 cp .env.example .env
+# .env を開いて OPENAI_API_KEY を設定
+
+# 4. サーバー起動
+uvicorn training_field.web.app:app --port 8765 --host 127.0.0.1 --reload
 ```
 
-`.env` を開いて以下のキーを入力:
+ブラウザで http://127.0.0.1:8765 を開く。
 
-| キー | 取得元 |
-|------|--------|
-| `LINE_CHANNEL_SECRET` | [LINE Developers Console](https://developers.line.biz/console/) → チャネル基本設定 |
-| `LINE_CHANNEL_ACCESS_TOKEN` | LINE Developers Console → Messaging API設定 → 発行 |
-| `OPENAI_API_KEY` | [OpenAI Platform](https://platform.openai.com/api-keys) |
-
-> **注意**: `.env` は `.gitignore` に含まれているため、絶対にGitHubにpushされません。
-
-### 4. サーバーを起動
+#### LINE Bot 側を動かす場合
 
 ```bash
-cd toy-alchemy
 uvicorn src.line_bot_server:app --reload --port 8000
+ngrok http 8000
+# 表示されたURL/webhook を LINE Developers Console に登録
 ```
 
-### 5. ローカル開発用にngrokで公開
+`.env` に `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN` も追加。
+
+#### 開発フロー
 
 ```bash
-ngrok http 8000
+git checkout main && git pull
+git checkout -b feature/your-task
+# 作業
+git add . && git commit -m "何をしたか"
+git push -u origin feature/your-task
+# GitHubでPR作成 → レビュー → main へマージ
 ```
 
-表示されたURL（`https://xxxx.ngrok-free.app`）に `/webhook` を付けて、LINE Developers Console の Webhook URL に設定。
+詳細は [`CONTRIBUTING.md`](./CONTRIBUTING.md) を参照。
 
-## プロジェクト構成
+#### コードを読む順番
+
+1. [`docs/architecture.md`](./docs/architecture.md) — 全体像
+2. `training_field/web/app.py` — APIエンドポイント
+3. `training_field/teacher_agent.py` — Teacher AIの本体
+4. `training_field/referee_agent.py` — 評価エージェント
+5. `training_field/web/templates/` — UI
+
+---
+
+## 📁 リポジトリ構成
 
 ```
 toy-alchemy/
-├── src/
-│   ├── agent_core.py          # CrewAI マルチエージェントコア
-│   ├── conversation_store.py  # 会話セッション管理
-│   ├── line_bot_server.py     # LINE Bot サーバー (FastAPI)
-│   └── memory_schema.json     # 子供学習プロファイルのスキーマ
-├── architecture_linebot.md    # LINE Bot連携アーキテクチャ設計書
-├── requirements.txt
-├── .env.example               # 環境変数テンプレート
-└── .gitignore
+├── training_field/         # ★メインの実験場（Railway デプロイ対象）
+│   ├── web/                # FastAPIアプリ
+│   ├── teacher_agent.py    # 教師AI
+│   ├── student_agent.py    # 生徒AI
+│   ├── referee_agent.py    # 審判AI
+│   ├── teacher_memory.py   # セッション間記憶
+│   └── field/              # 教師・スキル定義
+├── src/                    # LINE Bot（旧）
+├── docs/
+│   └── architecture.md     # アーキテクチャドキュメント
+├── tests/                  # テスト
+├── .github/                # PR/Issueテンプレ
+├── CONTRIBUTING.md         # 開発フロー
+├── Procfile / nixpacks.toml # Railway デプロイ設定
+└── requirements.txt
 ```
 
-## LINE Bot コマンド
+---
 
-| コマンド | 説明 |
-|----------|------|
-| `名前はゆうき` | 名前を登録 |
-| `小学3年生` | 学年を登録 |
-| `/profile` | プロフィール確認 |
-| `/reset` | 会話をリセット |
+## 🚀 デプロイ
+
+main ブランチへのpushで Railway が自動デプロイ。
+
+- 設定: `Procfile` (web起動) + `nixpacks.toml` (Pythonビルド)
+- 環境変数は Railway ダッシュボードで管理
+- 永続データ（teacher_memory, reports等）は Railway Volume に保存
+
+---
+
+## 🔐 セキュリティ
+
+- `.env` は **絶対にcommitしない**（`.gitignore`済み）
+- APIキーをSlack/チャットに直接貼らない
+- 学習者プロファイル (`reports/students/`) は個人情報相当として扱う
+
+---
 
 ## 技術スタック
 
-- Python / FastAPI
-- CrewAI (マルチエージェント)
-- LINE Messaging API (v3)
+- Python 3.11 / FastAPI / Jinja2
 - OpenAI GPT-4o
+- バニラ JS (フレームワーク無し)
+- Web Speech API (音声入力)
+- Railway (デプロイ)
+
+---
+
+## ライセンス
+（未設定）

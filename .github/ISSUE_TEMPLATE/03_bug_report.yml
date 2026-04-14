@@ -1,0 +1,32 @@
+name: "🐛 バグ報告 (Bug)"
+description: エラーや明らかな不具合
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 何が起きたか
+      placeholder: "Error: Failed to fetch がセッション中に表示される"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      placeholder: |
+        1. /learn を開く
+        2. 名前を入力して Let's Go
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 環境
+      placeholder: "Chrome 130 / Mac / Railway 本番"
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ・スクリーンショット (あれば)
+      render: shell

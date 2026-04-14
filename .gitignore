@@ -22,7 +22,14 @@ Thumbs.db
 .idea/
 
 # Training Field runtime data (lives on Railway Volume in production)
+# These are SHARED across the team via Railway Volume — do NOT commit local copies.
 training_field/experiments/experiment_registry.json
 training_field/reports/
 training_field/field/skills/proposals/
+training_field/field/teacher_memory/
 training_field/question_bank/*.db
+
+# Claude Code session artifacts (local-only)
+.claude/
+.serena/
+plans/

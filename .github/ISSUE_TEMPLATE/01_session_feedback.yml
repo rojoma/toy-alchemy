@@ -1,0 +1,50 @@
+name: "📝 セッションのフィードバック"
+description: AIとの学習セッションを使って気づいたこと（先生の発言が不自然、判定がおかしい、UIが分かりにくい等）
+title: "[Feedback] "
+labels: ["feedback", "non-engineer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        実際にアプリを使って気になった点を教えてください。コードの知識は不要です。
+  - type: input
+    id: session_url
+    attributes:
+      label: セッションのURL（あれば）
+      description: ブラウザのアドレスバーの内容をコピペ
+      placeholder: https://beyond-answer-engine.up.railway.app/learn/session?...
+  - type: dropdown
+    id: category
+    attributes:
+      label: カテゴリ
+      multiple: true
+      options:
+        - 先生の発言が不自然・分かりにくい
+        - 答えの判定がおかしい（正解なのに不正解、その逆）
+        - 出題が不適切（難しすぎる/簡単すぎる/関係ない）
+        - UI/操作性の問題
+        - 翻訳がおかしい
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: situation
+    attributes:
+      label: 何が起きたか
+      description: できれば実際の会話をコピペしてください
+      placeholder: |
+        Dr.Owen: 2/3 × 3/4 はいくつ？
+        私: 1/2
+        Dr.Owen: ✗ それは正しくありません ← これが不正解と判定された
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: どうあるべきだったか
+      placeholder: 1/2は正解。✓と判定すべき。
+  - type: input
+    id: env
+    attributes:
+      label: 使った環境
+      placeholder: "Chrome / iPhone Safari / 言語：日本語 など"
