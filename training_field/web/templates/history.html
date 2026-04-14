@@ -11,10 +11,11 @@
   --surface:#ffffff;--surface-2:#f4f4f0;
   --border:rgba(0,0,0,0.06);--border-strong:rgba(0,0,0,0.12);
   --text:#1d1d1f;--text-secondary:#424245;--muted:#86868b;
-  --link:#0071e3;--success:#1f8a4c;--danger:#c1272d;
+  --link:#0071e3;--success:#1f8a4c;--danger:#c1272d;--amber:#b25000;
   --mt-bg:#f0efea;--mt-bd:rgba(0,0,0,0.08);--mt-fg:#1d1d1f;
   --ms-bg:#0071e3;--ms-bd:#0071e3;--ms-fg:#ffffff;
   --shadow-sm:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.05);
   --shadow-lg:0 2px 4px rgba(0,0,0,0.04),0 24px 48px rgba(0,0,0,0.12);
   --radius-md:14px;--radius-lg:22px;--radius-pill:980px;
   --ease:cubic-bezier(0.4,0,0.2,1);
@@ -24,10 +25,11 @@
   --surface:#161618;--surface-2:#1f1f22;
   --border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.16);
   --text:#f5f5f7;--text-secondary:#c7c7cc;--muted:#86868b;
-  --link:#2997ff;--success:#30d158;--danger:#ff453a;
+  --link:#2997ff;--success:#30d158;--danger:#ff453a;--amber:#ff9f0a;
   --mt-bg:#1f1f22;--mt-bd:rgba(255,255,255,0.08);--mt-fg:#f5f5f7;
   --ms-bg:#2997ff;--ms-bd:#2997ff;--ms-fg:#ffffff;
   --shadow-sm:0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.3),0 8px 24px rgba(0,0,0,0.4);
   --shadow-lg:0 1px 2px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.5);
 }
 body{
@@ -53,30 +55,123 @@ body{
   transition:background-color .2s var(--ease);
 }
 .icon-btn:hover{background:var(--surface-2)}
-main{max-width:1280px;margin:0 auto;padding:80px 40px 120px}
-.title{font-size:48px;font-weight:600;letter-spacing:-0.032em;line-height:1.05;margin-bottom:14px}
-.title-sub{font-size:18px;color:var(--muted);margin-bottom:48px}
-.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
-table{width:100%;border-collapse:collapse}
-thead th{font-size:11px;font-weight:500;color:var(--muted);text-align:left;padding:18px 24px;border-bottom:1px solid var(--border)}
-tbody td{font-size:13px;padding:18px 24px;border-bottom:1px solid var(--border)}
-tbody tr:last-child td{border-bottom:none}
-tbody tr{cursor:pointer;transition:background-color .15s var(--ease)}
-tbody tr:hover{background:var(--surface-2)}
-.td-mono{font-feature-settings:"tnum";color:var(--muted);font-size:12px}
-.td-truncate{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.depth-tag{font-size:11px;padding:3px 11px;background:var(--surface-2);color:var(--muted);border-radius:var(--radius-pill);font-weight:500}
-.gain-pos{color:var(--success);font-weight:500;font-feature-settings:"tnum"}
-.gain-neg{color:var(--muted);font-feature-settings:"tnum"}
-.grade-mark{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;font-size:14px;font-weight:600}
-.g-ex{background:rgba(31,138,76,0.12);color:var(--success)}
-.g-pass{background:rgba(0,113,227,0.12);color:var(--link)}
-.g-fail{background:rgba(193,39,45,0.10);color:var(--danger)}
-:root[data-theme="dark"] .g-ex{background:rgba(48,209,88,0.16)}
-:root[data-theme="dark"] .g-pass{background:rgba(41,151,255,0.16)}
-:root[data-theme="dark"] .g-fail{background:rgba(255,69,58,0.16)}
+main{max-width:1280px;margin:0 auto;padding:64px 40px 120px}
+.title{font-size:42px;font-weight:600;letter-spacing:-0.032em;line-height:1.05;margin-bottom:12px}
+.title-sub{font-size:16px;color:var(--muted);margin-bottom:32px}
 
-/* ── Modal ─────────────────────────────────────────── */
+/* ── Toolbar ──────────────────────────────────── */
+.toolbar{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  margin-bottom:28px;padding:12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+}
+.search-input{
+  flex:1;min-width:200px;height:36px;
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  padding:0 16px;font:inherit;font-size:13px;color:var(--text);
+  background:var(--surface);outline:none;
+  transition:border-color .2s var(--ease);
+}
+.search-input:focus{border-color:var(--text)}
+.search-input::placeholder{color:var(--muted)}
+.filter-chip{
+  height:36px;padding:0 16px;font-size:12px;font-weight:500;
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  background:var(--surface);color:var(--text);cursor:pointer;
+  transition:all .2s var(--ease);font-family:inherit;
+}
+.filter-chip:hover{background:var(--surface-2)}
+.filter-chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* ── Card Grid ────────────────────────────────── */
+.grid{
+  display:grid;gap:16px;
+  grid-template-columns:repeat(auto-fill,minmax(360px,1fr));
+}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;
+  box-shadow:var(--shadow-sm);cursor:pointer;
+  transition:transform .15s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);
+  display:flex;flex-direction:column;gap:14px;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--border-strong);
+}
+.card.grade-ex::before{background:var(--success)}
+.card.grade-pass::before{background:var(--link)}
+.card.grade-fail::before{background:var(--danger)}
+.card:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--shadow-md);
+  border-color:var(--border-strong);
+}
+
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.card-topic{
+  font-size:15px;font-weight:600;letter-spacing:-0.015em;
+  line-height:1.35;flex:1;
+}
+.grade-mark{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:50%;
+  font-size:15px;font-weight:700;flex-shrink:0;
+}
+.g-ex{background:rgba(31,138,76,0.14);color:var(--success)}
+.g-pass{background:rgba(0,113,227,0.14);color:var(--link)}
+.g-fail{background:rgba(193,39,45,0.12);color:var(--danger)}
+:root[data-theme="dark"] .g-ex{background:rgba(48,209,88,0.18)}
+:root[data-theme="dark"] .g-pass{background:rgba(41,151,255,0.18)}
+:root[data-theme="dark"] .g-fail{background:rgba(255,69,58,0.18)}
+
+.card-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mode-tag{
+  font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;
+  padding:3px 9px;border-radius:var(--radius-pill);
+}
+.mode-live{background:rgba(178,80,0,0.12);color:var(--amber)}
+.mode-obs{background:rgba(0,113,227,0.10);color:var(--link)}
+:root[data-theme="dark"] .mode-live{background:rgba(255,159,10,0.16)}
+:root[data-theme="dark"] .mode-obs{background:rgba(41,151,255,0.16)}
+.depth-tag{
+  font-size:10px;font-weight:500;padding:3px 9px;
+  background:var(--surface-2);color:var(--muted);border-radius:var(--radius-pill);
+}
+.card-id{font-size:11px;color:var(--muted);font-family:'SF Mono',Consolas,monospace;margin-left:auto}
+
+.card-scores{
+  display:flex;align-items:center;gap:14px;
+  padding:14px;background:var(--surface-2);border-radius:var(--radius-md);
+}
+.score-block{flex:1;text-align:center}
+.score-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px}
+.score-value{font-size:22px;font-weight:600;font-feature-settings:"tnum";letter-spacing:-0.02em}
+.score-arrow{font-size:14px;color:var(--muted)}
+.score-delta{
+  font-size:13px;font-weight:600;font-feature-settings:"tnum";
+  padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap;
+}
+.delta-pos{background:rgba(31,138,76,0.12);color:var(--success)}
+.delta-neutral{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+
+.card-foot{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+  padding-top:10px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--muted);
+}
+.card-foot-item{display:flex;align-items:center;gap:5px}
+.card-foot-item strong{color:var(--text);font-weight:500}
+.card-foot-time{margin-left:auto;font-family:'SF Mono',Consolas,monospace;font-size:11px}
+
+.empty-state{
+  padding:80px 40px;text-align:center;color:var(--muted);
+  background:var(--surface);border:1px dashed var(--border-strong);
+  border-radius:var(--radius-lg);
+}
+
+/* ── Modal (unchanged) ────────────────────────── */
 .modal-backdrop{
   position:fixed;inset:0;background:rgba(0,0,0,0.5);
   display:none;align-items:center;justify-content:center;z-index:200;
@@ -125,8 +220,9 @@ tbody tr:hover{background:var(--surface-2)}
 
 @media(max-width:760px){
   .header-inner{padding:16px 20px}
-  main{padding:56px 20px 80px}
-  .title{font-size:34px}
+  main{padding:40px 20px 80px}
+  .title{font-size:30px}
+  .grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -135,53 +231,82 @@ tbody tr:hover{background:var(--surface-2)}
 
 <header class="header">
   <div class="header-inner">
-    <div class="brand">Training Field<span class="brand-mark"> / Agent</span></div>
+    <div class="brand">Training Field<span class="brand-mark"> / History</span></div>
     <a href="/" class="icon-btn">← Dashboard</a>
   </div>
 </header>
 
 <main>
   <h1 class="title">Session History</h1>
-  <p class="title-sub">{{ sessions|length }} sessions · click any row to replay the conversation</p>
+  <p class="title-sub" id="countLabel">{{ sessions|length }} sessions · click any card to replay the conversation</p>
 
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>Session</th>
-          <th>Time</th>
-          <th>Student</th>
-          <th>Teacher</th>
-          <th>Topic</th>
-          <th>Depth</th>
-          <th>Pre</th>
-          <th>Post</th>
-          <th>Gain</th>
-          <th>Grade</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in sessions %}
-        <tr onclick="openModal('{{ r.exp_id }}')" data-sid="{{ r.exp_id }}">
-          <td class="td-mono">{{ r.exp_id }}</td>
-          <td class="td-mono">{{ r.timestamp[:16].replace('T',' ') if r.timestamp else '—' }}</td>
-          <td>{{ r.student_id }}</td>
-          <td class="td-mono">{{ r.teacher_id }}</td>
-          <td class="td-truncate" data-i18n-tx>{{ r.topic }}</td>
-          <td><span class="depth-tag">{{ r.depth }}</span></td>
-          <td class="td-mono">{{ r.pre_test_score if r.pre_test_score else "—" }}</td>
-          <td class="td-mono">{{ r.post_test_score if r.post_test_score else "—" }}</td>
-          <td class="{% if r.learning_gain > 0 %}gain-pos{% else %}gain-neg{% endif %}">{% if r.learning_gain > 0 %}+{{ r.learning_gain }}{% else %}—{% endif %}</td>
-          <td>
-            {% if r.session_grade == "◎" %}<span class="grade-mark g-ex">◎</span>
-            {% elif r.session_grade == "○" %}<span class="grade-mark g-pass">○</span>
-            {% else %}<span class="grade-mark g-fail">×</span>{% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="toolbar">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search topic, teacher, student…">
+    <button class="filter-chip active" data-filter="all">All</button>
+    <button class="filter-chip" data-filter="live">Live</button>
+    <button class="filter-chip" data-filter="observatory">Observatory</button>
+    <button class="filter-chip" data-filter="passed">◎ ○ Passed</button>
+    <button class="filter-chip" data-filter="failed">× Failed</button>
   </div>
+
+  {% if sessions %}
+  <div class="grid" id="grid">
+    {% for r in sessions %}
+    {% set is_live = r.exp_id.startswith('live_') %}
+    {% set grade_class = 'grade-ex' if r.session_grade == '◎' else ('grade-pass' if r.session_grade == '○' else 'grade-fail') %}
+    {% set grade_passed = r.session_grade in ['◎', '○'] %}
+    <div class="card {{ grade_class }}"
+         data-mode="{{ 'live' if is_live else 'observatory' }}"
+         data-passed="{{ '1' if grade_passed else '0' }}"
+         data-search="{{ (r.topic ~ ' ' ~ r.teacher_id ~ ' ' ~ r.student_id)|lower }}"
+         onclick="openModal('{{ r.exp_id }}')">
+      <div class="card-head">
+        <div class="card-topic" data-i18n-tx>{{ r.topic or '—' }}</div>
+        {% if r.session_grade == '◎' %}<span class="grade-mark g-ex">◎</span>
+        {% elif r.session_grade == '○' %}<span class="grade-mark g-pass">○</span>
+        {% else %}<span class="grade-mark g-fail">×</span>{% endif %}
+      </div>
+
+      <div class="card-meta">
+        {% if is_live %}<span class="mode-tag mode-live">Live</span>
+        {% else %}<span class="mode-tag mode-obs">Observatory</span>{% endif %}
+        <span class="depth-tag">{{ r.depth }}</span>
+        <span class="card-id">{{ r.exp_id[-8:] }}</span>
+      </div>
+
+      {% if r.pre_test_score is not none and r.post_test_score is not none %}
+      <div class="card-scores">
+        <div class="score-block">
+          <div class="score-label">Pre</div>
+          <div class="score-value">{{ r.pre_test_score }}</div>
+        </div>
+        <div class="score-arrow">→</div>
+        <div class="score-block">
+          <div class="score-label">Post</div>
+          <div class="score-value">{{ r.post_test_score }}</div>
+        </div>
+        {% if r.learning_gain > 0 %}
+        <div class="score-delta delta-pos">+{{ r.learning_gain }}</div>
+        {% else %}
+        <div class="score-delta delta-neutral">—</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="card-foot">
+        <div class="card-foot-item">👩‍🏫 <strong>{{ r.teacher_id }}</strong></div>
+        <div class="card-foot-item">🎓 <strong>{{ r.student_id }}</strong></div>
+        <span class="card-foot-time">{{ r.timestamp[:16].replace('T',' ') if r.timestamp else '—' }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    まだセッションがありません。<br>
+    Dashboard からセッションを開始してください。
+  </div>
+  {% endif %}
 </main>
 
 <!-- Modal -->
@@ -207,6 +332,42 @@ document.querySelectorAll("[data-i18n-tx]").forEach(el=>{ el.textContent = tx(el
 
 function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
+// ── Filtering & Search ────────────────────────────
+const searchInput = document.getElementById("searchInput");
+const filterChips = document.querySelectorAll(".filter-chip");
+let activeFilter = "all";
+
+function applyFilter(){
+  const q = searchInput.value.trim().toLowerCase();
+  const cards = document.querySelectorAll(".card");
+  let visible = 0;
+  cards.forEach(c=>{
+    const matchesSearch = !q || (c.dataset.search || "").includes(q) ||
+      (c.querySelector(".card-topic").textContent || "").toLowerCase().includes(q);
+    const matchesFilter =
+      activeFilter === "all" ||
+      (activeFilter === "live" && c.dataset.mode === "live") ||
+      (activeFilter === "observatory" && c.dataset.mode === "observatory") ||
+      (activeFilter === "passed" && c.dataset.passed === "1") ||
+      (activeFilter === "failed" && c.dataset.passed === "0");
+    const show = matchesSearch && matchesFilter;
+    c.style.display = show ? "" : "none";
+    if(show) visible++;
+  });
+  document.getElementById("countLabel").textContent = visible + " sessions · click any card to replay the conversation";
+}
+
+searchInput.addEventListener("input", applyFilter);
+filterChips.forEach(chip=>{
+  chip.addEventListener("click", ()=>{
+    filterChips.forEach(c=>c.classList.remove("active"));
+    chip.classList.add("active");
+    activeFilter = chip.dataset.filter;
+    applyFilter();
+  });
+});
+
+// ── Modal (existing behavior) ─────────────────────
 async function openModal(sid){
   const modal = document.getElementById("modal");
   const body = document.getElementById("mBody");
@@ -233,19 +394,16 @@ async function openModal(sid){
         body.appendChild(p);
         lastPhase = t.phase;
       }
-      // Teacher
       const tw = document.createElement("div"); tw.className = "mwrap";
       tw.style.alignSelf = "flex-start"; tw.style.maxWidth = "78%";
       tw.innerHTML = '<div class="mrole">'+escapeHtml(data.teacher_name||"Teacher")+'</div>'+
         '<div class="msg mt">'+escapeHtml(t.teacher)+'</div>';
       body.appendChild(tw);
-      // Student
       const sw = document.createElement("div"); sw.className = "mwrap";
       sw.style.alignSelf = "flex-end"; sw.style.maxWidth = "78%";
       sw.innerHTML = '<div class="mrole">'+escapeHtml(data.student_id)+'</div>'+
         '<div class="msg ms">'+escapeHtml(t.student)+'</div>';
       body.appendChild(sw);
-      // Referee
       const rw = document.createElement("div"); rw.className = "mwrap"; rw.style.alignSelf = "center"; rw.style.maxWidth = "100%";
       rw.innerHTML = '<div class="msg mr"><span style="font-weight:600;color:var(--text)">Referee</span> '+escapeHtml(t.summary||"")+
         '<div class="rpills">'+

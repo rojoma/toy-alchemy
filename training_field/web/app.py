@@ -294,33 +294,43 @@ def _test_prompt(teacher_config, topic, grade, subject, lang, question_num, tota
     dsubject = display_topic(subject, lang)
     return f"""You are {teacher_config.name}, giving a friendly {test_type} to {student_name}.
 Topic: {dtopic} (Grade {grade} {dsubject}).
-This is question {question_num} of {total_qs}.
+Question {question_num} of {total_qs}.
 
 RULES:
-- Ask ONE clear, specific question about {dtopic} appropriate for grade {grade}.
-- Keep it conversational and encouraging — NOT a formal exam tone.
-- {"Ask about concepts covered in today's lesson." if is_post else "Test their existing knowledge before the lesson."}
-- Each question should test a DIFFERENT aspect of the topic.
-- Reply in {"English" if lang == "en" else "Japanese"}.
-- End your message with the question. Do NOT answer it yourself.
-- Do NOT number the question — just ask it naturally."""
+- Ask ONE short, specific calculation question about {dtopic} for grade {grade}. Use concrete numbers.
+- 1 sentence only. No preamble, no encouragement, no "Let's see..." — just the question.
+- Start the question with ▶ (e.g. "▶ 2/3 × 3/4 はいくつ？").
+- {"Focus on concepts from today's lesson." if is_post else "Test existing knowledge before the lesson."}
+- Each question must test a DIFFERENT aspect.
+- Use plain text for math (e.g. 2/3 × 4/5, not LaTeX). NEVER use \\frac, \\times, \\div, etc.
+- Reply in {"English" if lang == "en" else "Japanese"}."""
 
 
 def _judge_prompt(teacher_config, topic, grade, lang, question_text, student_answer):
     """Build system prompt for judging a test answer."""
     dtopic = display_topic(topic, lang)
-    return f"""You are {teacher_config.name}, evaluating a student's answer.
+    return f"""You are {teacher_config.name}, evaluating a student's answer to a math question.
 
-The question was about "{dtopic}" (Grade {grade}).
+The question was: "{question_text}"
 Student answered: "{student_answer}"
 
 RULES:
-- Determine if the answer is correct, partially correct, or incorrect.
-- Give brief, encouraging feedback (1-2 sentences).
+- First, compute the correct answer yourself step by step.
+- Compare the student's answer to the correct answer.
+- BE LENIENT with format: accept partial answers, missing units, abbreviations, equivalent forms.
+  Examples of answers that MUST be marked correct:
+  - "70" when the answer is "70度" or "70 degrees"
+  - "1/2" when the answer is "0.5" or "2/4"
+  - "6" when the answer is "6cm²"
+  - A single number that matches the core numerical value
+- If the question asks for multiple values and the student gives one correct value, mark correct.
+- When in doubt, mark correct. This is a friendly check, not a strict exam.
+- Feedback: 1 sentence max. If correct, confirm briefly. If wrong, state the correct answer and show the key step.
+- Use plain text for math (e.g. 2/3, 3.14). NEVER use LaTeX (no \\frac, \\times, \\div, etc.).
 - Reply in {"English" if lang == "en" else "Japanese"}.
-- Start with a clear signal: "✓" if correct, "△" if partially correct, "✗" if incorrect.
+- Start with "✓" if correct, "✗" if incorrect.
 - Then on a NEW LINE, add this exact JSON (no code block):
-{{"correct": true_or_false, "question": "the original question you asked", "explanation": "brief correct answer explanation"}}"""
+{{"correct": true_or_false, "question": "{question_text}", "explanation": "the correct answer and one-line explanation"}}"""
 
 LIVE_SESSIONS: dict[str, LiveSession] = {}
 
@@ -395,6 +405,12 @@ async def live_respond(session_id: str, body: dict):
     student_text = body.get("text", "").strip()
     if not student_text:
         raise HTTPException(400, "text is required")
+
+    # Allow client to update language mid-session (so subsequent teacher/judge
+    # messages switch language too).
+    new_lang = body.get("lang")
+    if new_lang in ("en", "ja"):
+        session.lang = new_lang
 
     teacher = session.teacher
     from openai import OpenAI
@@ -481,6 +497,7 @@ async def live_respond(session_id: str, body: dict):
                 student_last_response=None,
                 grade=session.grade, subject=dsubject,
                 turn_number=1, lang=session.lang,
+                session_memory=getattr(teacher, "session_memory", ""),
             )
             session.last_teacher_text = tr["text"]
 
@@ -595,6 +612,7 @@ async def live_respond(session_id: str, body: dict):
         student_last_response=student_text,
         grade=session.grade, subject=dsubject,
         turn_number=session.current_turn, lang=session.lang,
+        session_memory=getattr(teacher, "session_memory", ""),
     )
     session.last_teacher_text = tr["text"]
 
@@ -650,6 +668,19 @@ async def live_end(session_id: str):
         "test_progress": f"1/{NUM_TEST_QUESTIONS}",
         "is_complete": False,
     }
+
+
+@app.post("/api/live/{session_id}/lang")
+async def live_set_lang(session_id: str, body: dict):
+    """Update the active language for an in-progress live session."""
+    session = LIVE_SESSIONS.get(session_id)
+    if not session:
+        raise HTTPException(404, "session not found or expired")
+    new_lang = body.get("lang")
+    if new_lang not in ("en", "ja"):
+        raise HTTPException(400, "lang must be 'en' or 'ja'")
+    session.lang = new_lang
+    return {"ok": True, "lang": session.lang}
 
 
 @app.get("/api/live/{session_id}")
@@ -713,6 +744,12 @@ def _save_live_session(session: LiveSession):
             session_grade="—",
         )
         registry.register(record)
+        from training_field.teacher_memory import extract_session_insights, save_memory
+        insight = extract_session_insights(
+            session.teacher.config.teacher_id, session.session_id,
+            session.turn_evaluations, evaluation, update_check,
+        )
+        save_memory(session.teacher.config.teacher_id, insight)
         transcript = {
             "session_id": session.session_id, "timestamp": session.started_at,
             "student_id": "human", "student_name": session.student_label,
@@ -1000,7 +1037,7 @@ async def run_session(body: dict):
     for phase in phases:
         for turn_num in range(1, phase["turns"] + 1):
             current_prof = student.proficiency_model.topic_proficiencies.get(config.topic, student.proficiency_model.proficiency)
-            tr = await teacher.get_response(topic=config.topic, phase=phase["name"], phase_goal=phase["goal"], student_name=student.name, student_proficiency=current_prof, student_emotional=student.emotional_state.__dict__, student_last_response=last_student_text, grade=config.grade, subject=config.subject, turn_number=turn_num)
+            tr = await teacher.get_response(topic=config.topic, phase=phase["name"], phase_goal=phase["goal"], student_name=student.name, student_proficiency=current_prof, student_emotional=student.emotional_state.__dict__, student_last_response=last_student_text, grade=config.grade, subject=config.subject, turn_number=turn_num, session_memory=getattr(teacher, "session_memory", ""))
             sr = await student.get_response(teacher_message=tr["text"], topic=config.topic, phase=phase["name"])
             ev = await principal.evaluate_turn(teacher_text=tr["text"], student_text=sr["text"], topic=config.topic, phase=phase["name"], student_proficiency=current_prof, grade=config.grade, subject=config.subject)
             turn_evaluations.append(ev)
@@ -1036,6 +1073,12 @@ async def run_session(body: dict):
     evaluator.generate_report(evaluation)
     record = ExperimentRecord(exp_id=session_id, hypothesis_id=None, timestamp=datetime.datetime.now().isoformat(), student_id=config.student_id, teacher_id=teacher.config.teacher_id, topic=config.topic, grade=config.grade, subject=config.subject, depth=config.depth, teaching_style="SOCRATIC", skills_used=teacher.config.selected_skills, pre_test_score=pre_test_score, post_test_score=post_test_score, learning_gain=evaluation.learning_gain, proficiency_delta=evaluation.proficiency_delta, hallucination_rate=evaluation.hallucination_rate, direct_answer_rate=evaluation.direct_answer_rate, avg_zpd_alignment=evaluation.avg_zpd_alignment, avg_bloom_level=evaluation.avg_bloom_level, frustration_events=evaluation.frustration_events, aha_moments=evaluation.aha_moments, teacher_compatibility_score=evaluation.teacher_compatibility_score, total_tokens=evaluation.total_tokens_used, cost_usd=evaluation.estimated_cost_usd, session_grade=grade_result["grade"])
     registry.register(record)
+    from training_field.teacher_memory import extract_session_insights, save_memory
+    _insight = extract_session_insights(
+        teacher.config.teacher_id, session_id,
+        turn_evaluations, evaluation, update_check,
+    )
+    save_memory(teacher.config.teacher_id, _insight)
     transcript = {
         "session_id": session_id, "timestamp": record.timestamp,
         "student_id": config.student_id, "teacher_id": teacher.config.teacher_id,
@@ -1127,6 +1170,7 @@ async def run_session_stream(
                     student_last_response=last_student_text,
                     grade=config.grade, subject=dsubject, turn_number=turn_num,
                     lang=lang,
+                    session_memory=getattr(teacher, "session_memory", ""),
                 )
                 yield f"data: {json.dumps({'type':'teacher','text':tr['text'],'turn':turn_num,'total':total})}\n\n"
                 await asyncio.sleep(0.3)
@@ -1219,6 +1263,12 @@ async def run_session_stream(
                 session_grade=(grade_result or {}).get("grade", "—"),
             )
             registry.register(record)
+            from training_field.teacher_memory import extract_session_insights, save_memory
+            _insight = extract_session_insights(
+                teacher.config.teacher_id, session_id,
+                turn_evaluations, evaluation, update_check,
+            )
+            save_memory(teacher.config.teacher_id, _insight)
             # Save full transcript for the history viewer (turn-by-turn replay)
             transcript = {
                 "session_id": session_id,

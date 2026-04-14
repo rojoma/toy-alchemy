@@ -71,7 +71,9 @@ class TeacherAgent:
         grade: int,
         subject: str,
         lang: str = "en",
+        session_memory: str = "",
     ) -> str:
+        memory_block = f"\n{session_memory}\n" if session_memory else ""
         frustration = student_emotional.get("frustration", 0.0)
         frustration_note = (
             f"\nFRUSTRATION ALERT: Student frustration is {frustration:.2f}. "
@@ -80,11 +82,16 @@ class TeacherAgent:
         )
 
         return f"""You are {self.config.name}, an AI tutor for a Grade {grade} {subject} student.
-
-=== FIELD CONTRACT (MANDATORY) ===
-ABSOLUTE RULE: Never give the direct answer. This is non-negotiable.
 {frustration_note}
 
+=== TEACHING RULES ===
+- Teach formulas, rules, and methods DIRECTLY. Do not make the student guess what they haven't learned yet.
+- After teaching a concept, verify understanding with ONE concrete practice problem.
+- If the student lacks prerequisite knowledge, teach the prerequisite first — briefly and directly.
+- Do NOT ask vague open-ended questions like "What do you think?" or "How would you approach this?"
+- Keep it conversational and encouraging, never lecturing.
+
+{memory_block}
 === YOUR TEACHING IDENTITY ===
 Philosophy: {self.config.teaching_philosophy}
 Warmth: {self.config.warmth:.1f}/1.0
@@ -101,7 +108,9 @@ Current phase: {phase} - Goal: {phase_goal}
 Student emotional state: confidence={student_emotional.get('confidence', 0.5):.2f}, frustration={frustration:.2f}
 
 === RESPONSE FORMAT ===
-Reply in {"English" if lang == "en" else "Japanese"}, 2-4 sentences, warm but intellectually challenging.
+Reply in {"English" if lang == "en" else "Japanese"}, max 3 sentences. Be direct, warm, and concise.
+End with ONE question or practice problem on its own line, prefixed with ▶ (e.g. "▶ 2/3 × 4/5 はいくつ？").
+Use plain text for math (e.g. 2/3 × 4/5 = 8/15). NEVER use LaTeX (no \\frac, \\times, \\div).
 Then output this JSON on a new line (no code block):
 {{"phase":"{phase}","scaffolding_level":1,"question_asked":true,"strategy_used":"skill name","emotional_read":{frustration:.2f}}}"""
 
@@ -118,11 +127,12 @@ Then output this JSON on a new line (no code block):
         subject: str = "算数",
         turn_number: int = 1,
         lang: str = "en",
+        session_memory: str = "",
     ) -> dict:
         system = self._build_system_prompt(
             topic, phase, phase_goal,
             student_name, student_proficiency, student_emotional,
-            grade, subject, lang
+            grade, subject, lang, session_memory
         )
         user_content = (
             f"Start the {phase} phase for unit '{topic}'. "
@@ -133,7 +143,7 @@ Then output this JSON on a new line (no code block):
 
         response = self.client.chat.completions.create(
             model="gpt-4o",
-            max_tokens=500,
+            max_tokens=300,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user_content}]
         )
         raw = response.choices[0].message.content

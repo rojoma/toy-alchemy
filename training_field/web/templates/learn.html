@@ -42,6 +42,13 @@ body{
   padding:8px 16px;border:1px solid var(--border-strong);border-radius:var(--radius-pill);
 }
 .back-link:hover{color:var(--text);background:var(--surface-2)}
+.lang-link{
+  position:absolute;top:24px;right:24px;
+  color:var(--text);background:var(--surface);text-decoration:none;font-size:12px;font-weight:600;
+  padding:8px 16px;border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  cursor:pointer;font-family:inherit;letter-spacing:0.04em;
+}
+.lang-link:hover{background:var(--surface-2)}
 h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
 .subtitle{font-size:15px;color:var(--muted);margin-bottom:36px}
 .welcome{font-size:22px;font-weight:600;margin-bottom:6px;letter-spacing:-0.02em}
@@ -101,45 +108,34 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
 </head>
 <body>
 <script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
-<a href="/" class="back-link">← Training Field</a>
+<a href="/" class="back-link" data-i18n="back_training">← Training Field</a>
+<button class="lang-link" id="langbtn" onclick="toggleLang()">JA</button>
 
 <!-- Onboarding (shown if no saved profile) -->
 <div class="card" id="onboard">
-  <h1>Start Learning</h1>
-  <p class="subtitle">Tell us a little about yourself so we can match you with the right teacher.</p>
+  <h1 data-i18n="start_learning">Start Learning</h1>
+  <p class="subtitle" data-i18n="onboard_subtitle">Tell us a little about yourself so we can match you with the right teacher.</p>
   <div class="form-group">
-    <label class="form-label">YOUR NAME</label>
-    <input type="text" class="form-input" id="nameInput" placeholder="e.g. Emma" autocomplete="given-name">
+    <label class="form-label" data-i18n="label_name">YOUR NAME</label>
+    <input type="text" class="form-input" id="nameInput" placeholder="e.g. Emma" data-i18n-placeholder="name_placeholder" autocomplete="given-name">
   </div>
   <div class="form-group">
-    <label class="form-label">GRADE</label>
-    <select class="form-select" id="gradeInput">
-      <option value="小1">Grade 1</option><option value="小2">Grade 2</option>
-      <option value="小3">Grade 3</option><option value="小4">Grade 4</option>
-      <option value="小5">Grade 5</option><option value="小6" selected>Grade 6</option>
-      <option value="中1">Jr High 1</option><option value="中2">Jr High 2</option><option value="中3">Jr High 3</option>
-      <option value="高1">High 1</option><option value="高2">High 2</option><option value="高3">High 3</option>
-    </select>
+    <label class="form-label" data-i18n="label_grade">GRADE</label>
+    <select class="form-select" id="gradeInput"></select>
   </div>
   <div class="form-group">
-    <label class="form-label">SUBJECT</label>
-    <select class="form-select" id="subjectInput">
-      <option value="算数">Math</option>
-      <option value="国語">Japanese</option>
-      <option value="理科">Science</option>
-      <option value="社会">Social Studies</option>
-      <option value="英語">English</option>
-    </select>
+    <label class="form-label" data-i18n="label_subject">SUBJECT</label>
+    <select class="form-select" id="subjectInput"></select>
   </div>
   <div class="form-group">
-    <label class="form-label">TEACHER</label>
+    <label class="form-label" data-i18n="label_teacher">TEACHER</label>
     <select class="form-select" id="teacherInput">
       {% for t in teachers %}
       <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
       {% endfor %}
     </select>
   </div>
-  <button class="btn-primary" onclick="registerStudent()">Let's Go</button>
+  <button class="btn-primary" onclick="registerStudent()" data-i18n="lets_go">Let's Go</button>
 </div>
 
 <!-- Welcome back (shown if profile exists) -->
@@ -147,15 +143,15 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
   <div class="welcome" id="welcomeMsg">Welcome back!</div>
   <div class="welcome-sub" id="welcomeSub"></div>
 
-  <div class="form-label">YOUR PROGRESS</div>
+  <div class="form-label" data-i18n="label_progress">YOUR PROGRESS</div>
   <div class="prof-grid" id="profGrid"></div>
 
   <div class="form-group">
-    <label class="form-label">TOPIC</label>
+    <label class="form-label" data-i18n="label_topic">TOPIC</label>
     <select class="form-select" id="topicSelect"></select>
   </div>
   <div class="form-group">
-    <label class="form-label">TEACHER</label>
+    <label class="form-label" data-i18n="label_teacher">TEACHER</label>
     <select class="form-select" id="teacherSelect">
       {% for t in teachers %}
       <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
@@ -163,22 +159,116 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
     </select>
   </div>
   <div class="form-group">
-    <label class="form-label">DEPTH</label>
+    <label class="form-label" data-i18n="label_depth">DEPTH</label>
     <select class="form-select" id="depthSelect">
-      <option value="quick">Quick · 8 turns</option>
-      <option value="standard" selected>Standard · 12 turns</option>
-      <option value="deep">Deep · 16 turns</option>
+      <option value="quick" data-i18n="depth_quick">Quick · 8 turns</option>
+      <option value="standard" selected data-i18n="depth_standard">Standard · 12 turns</option>
+      <option value="deep" data-i18n="depth_deep">Deep · 16 turns</option>
     </select>
   </div>
-  <button class="btn-primary" onclick="startSession()">Start Session</button>
+  <button class="btn-primary" onclick="startSession()" data-i18n="start_session">Start Session</button>
 
   <div class="history-list" id="historyList"></div>
-  <a href="#" class="new-session-link" onclick="resetProfile();return false;">Switch student</a>
+  <a href="#" class="new-session-link" onclick="resetProfile();return false;" data-i18n="switch_student">Switch student</a>
 </div>
 
 <script>
 const TEACHERS = {{ teachers|tojson }};
 const TOPIC_TX = {{ topic_tx_en|tojson }};
+
+// ── i18n ─────────────────────────────────────────
+const I18N = {
+  ja: {
+    back_training:"← Training Field",
+    start_learning:"学習を始めよう",
+    onboard_subtitle:"少しだけ自己紹介してください。あなたにぴったりの先生を選びます。",
+    label_name:"なまえ", name_placeholder:"例：エマ",
+    label_grade:"がくねん", label_subject:"きょうか", label_teacher:"せんせい",
+    label_progress:"これまでの学習", label_topic:"単元", label_depth:"深さ",
+    depth_quick:"クイック · 8ターン", depth_standard:"標準 · 12ターン", depth_deep:"じっくり · 16ターン",
+    lets_go:"はじめる", start_session:"セッション開始", switch_student:"別の生徒に切り替え",
+    welcome_back:n=>"おかえりなさい、"+n+"さん！",
+    welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" セッション完了",
+    no_topics_yet:"まだ学習した単元はありません",
+    sessions_completed:"セッション完了",
+  },
+  en: {
+    back_training:"← Training Field",
+    start_learning:"Start Learning",
+    onboard_subtitle:"Tell us a little about yourself so we can match you with the right teacher.",
+    label_name:"YOUR NAME", name_placeholder:"e.g. Emma",
+    label_grade:"GRADE", label_subject:"SUBJECT", label_teacher:"TEACHER",
+    label_progress:"YOUR PROGRESS", label_topic:"TOPIC", label_depth:"DEPTH",
+    depth_quick:"Quick · 8 turns", depth_standard:"Standard · 12 turns", depth_deep:"Deep · 16 turns",
+    lets_go:"Let's Go", start_session:"Start Session", switch_student:"Switch student",
+    welcome_back:n=>"Welcome back, "+n+"!",
+    welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" sessions completed",
+    no_topics_yet:"No topics studied yet",
+    sessions_completed:"sessions completed",
+  }
+};
+let curLang = localStorage.getItem("tfLang") || "en";
+function tr(k){ return (I18N[curLang] && I18N[curLang][k]) || (I18N.en[k]) || k; }
+
+const GRADE_DATA = [
+  {v:"小6",ja:"小学6年",en:"Grade 6",available:true},
+  {v:"小1",ja:"小学1年",en:"Grade 1"},{v:"小2",ja:"小学2年",en:"Grade 2"},
+  {v:"小3",ja:"小学3年",en:"Grade 3"},{v:"小4",ja:"小学4年",en:"Grade 4"},
+  {v:"小5",ja:"小学5年",en:"Grade 5"},
+  {v:"中1",ja:"中学1年",en:"Jr High 1"},{v:"中2",ja:"中学2年",en:"Jr High 2"},{v:"中3",ja:"中学3年",en:"Jr High 3"},
+  {v:"高1",ja:"高校1年",en:"High 1"},{v:"高2",ja:"高校2年",en:"High 2"},{v:"高3",ja:"高校3年",en:"High 3"},
+];
+const SUBJECT_DATA = [
+  {v:"算数",ja:"算数",en:"Math",available:true},
+  {v:"国語",ja:"国語",en:"Japanese"},{v:"理科",ja:"理科",en:"Science"},
+  {v:"社会",ja:"社会",en:"Social Studies"},{v:"英語",ja:"英語",en:"English"},
+];
+function fillGradeSubject(l){
+  const cs = l==="ja" ? "（近日対応）" : " (coming soon)";
+  [["gradeInput",GRADE_DATA],["subjectInput",SUBJECT_DATA]].forEach(([id,data])=>{
+    const sel = document.getElementById(id);
+    const prev = sel.value;
+    sel.innerHTML = "";
+    data.forEach(d=>{
+      const o = document.createElement("option");
+      o.value = d.v;
+      o.textContent = d[l] + (d.available ? "" : cs);
+      if(!d.available) o.disabled = true;
+      sel.appendChild(o);
+    });
+    if(prev) sel.value = prev;
+  });
+}
+function refreshTopicLabels(l){
+  const topicSel = document.getElementById("topicSelect");
+  if(!topicSel) return;
+  Array.from(topicSel.options).forEach(o=>{
+    if(o.dataset.ja) o.textContent = l==="ja" ? o.dataset.ja : o.dataset.en;
+  });
+}
+function applyLang(l){
+  curLang = l;
+  localStorage.setItem("tfLang", l);
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k = el.getAttribute("data-i18n");
+    if(I18N[l] && I18N[l][k]) el.textContent = I18N[l][k];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>{
+    const k = el.getAttribute("data-i18n-placeholder");
+    if(I18N[l] && I18N[l][k]) el.placeholder = I18N[l][k];
+  });
+  const b = document.getElementById("langbtn");
+  if(b) b.textContent = (l==="ja") ? "EN" : "JA";
+  fillGradeSubject(l);
+  refreshTopicLabels(l);
+  // Re-render dynamic welcome strings if visible
+  const wel = document.getElementById("welcome");
+  if(wel && wel.style.display !== "none" && window._lastProfile){
+    showWelcome(window._lastProfile);
+  }
+}
+function toggleLang(){ applyLang(curLang==="ja" ? "en" : "ja"); }
 
 // Check for saved profile
 const savedId = localStorage.getItem("tfStudentId");
@@ -217,17 +307,18 @@ async function loadProfile(sid){
 }
 
 function showWelcome(profile){
+  window._lastProfile = profile;
   document.getElementById("onboard").style.display = "none";
   document.getElementById("welcome").style.display = "block";
-  document.getElementById("welcomeMsg").textContent = "Welcome back, "+profile.name+"!";
-  document.getElementById("welcomeSub").textContent = profile.grade+" · "+profile.subject+" · "+profile.sessions_completed+" sessions completed";
+  document.getElementById("welcomeMsg").textContent = tr("welcome_back")(profile.name);
+  document.getElementById("welcomeSub").textContent = tr("welcome_sub")(profile.grade, profile.subject, profile.sessions_completed);
 
   // Proficiency chips
   const grid = document.getElementById("profGrid");
   grid.innerHTML = "";
   const profs = profile.proficiency || {};
   if(Object.keys(profs).length === 0){
-    grid.innerHTML = '<span class="prof-chip">No topics studied yet</span>';
+    grid.innerHTML = '<span class="prof-chip">'+tr("no_topics_yet")+'</span>';
   } else {
     for(const [topic, score] of Object.entries(profs)){
       const label = TOPIC_TX[topic] || topic;
@@ -243,9 +334,11 @@ function showWelcome(profile){
   topicSel.innerHTML = "";
   fetch("/api/topics?grade="+encodeURIComponent(profile.grade)+"&subject="+encodeURIComponent(profile.subject))
     .then(r=>r.json()).then(d=>{
-      (d.topics||[]).forEach(t=>{
-        const o=document.createElement("option");o.value=t;
-        o.textContent=TOPIC_TX[t]||t;
+      (d.topics||[]).forEach(tp=>{
+        const o=document.createElement("option");o.value=tp;
+        o.textContent = curLang==="ja" ? tp : (TOPIC_TX[tp]||tp);
+        o.dataset.ja = tp;
+        o.dataset.en = TOPIC_TX[tp]||tp;
         topicSel.appendChild(o);
       });
     });
@@ -294,6 +387,8 @@ function goToSession(profile, teacherId){
         "&depth=standard";
     });
 }
+
+applyLang(curLang);
 
 function resetProfile(){
   localStorage.removeItem("tfStudentId");
