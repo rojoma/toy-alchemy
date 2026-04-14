@@ -71,11 +71,12 @@ lose `experiment_registry.json`, all reports, and the question bank DB.
 > If you mounted only a subdir like `/app/training_field/experiments`, that
 > works too — repeat for `reports/` and `question_bank/`. Mounting the whole
 > `training_field/` is simpler but means redeploys won't update the codebase
-> inside it. **Better**: mount the three runtime subdirs individually:
+> inside it. **Better**: mount the runtime subdirs individually:
 > - `/app/training_field/experiments`
 > - `/app/training_field/reports`
 > - `/app/training_field/question_bank`
 > - `/app/training_field/field/skills/proposals`
+> - `/app/training_field/field/teacher_memory`  ← セッション間記憶（追加）
 
 ## Step 5 — Generate a public domain
 

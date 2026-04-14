@@ -1,0 +1,44 @@
+name: "👩‍🏫 Teacher / Skill 調整リクエスト"
+description: 先生（Teacher Agent）の人格・スキルの追加・調整リクエスト
+title: "[Teacher] "
+labels: ["teacher-tuning", "non-engineer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先生の人格やスキルを変えたい/新しい先生を作りたい時に使ってください。
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 種類
+      options:
+        - 既存Teacherの調整 (warmth, patience等のパラメータ変更)
+        - 既存Skillの内容修正 (.md ファイル)
+        - 新しいTeacherを追加
+        - 新しいSkillを追加
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: 対象
+      description: Teacher名 or Skill名（既存の場合）
+      placeholder: "Dr. Owen / socratic_questioning.md など"
+  - type: textarea
+    id: change
+    attributes:
+      label: 変更内容
+      description: どう変えたいか具体的に
+      placeholder: |
+        - patience_threshold を 3 → 5 に上げたい
+        - 理由：すぐ次に行きすぎて子供が置いていかれている
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: 期待する振る舞いの例
+      placeholder: |
+        生徒「分からない」
+        → 現状: すぐ別の問題に切り替える
+        → 期待: 「もう一度ゆっくり説明するね」と同じ問題で粘る
