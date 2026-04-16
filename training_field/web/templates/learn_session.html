@@ -689,9 +689,18 @@ function quickSend(kind){
   sendResponse();
 }
 
-// ── Send with 5s Undo ────────────────────────────
-const UNDO_SECONDS = 5;
+// ── Send with phase-aware Undo ───────────────────
+// Tests are graded → give a longer (5s) safety net.
+// Teaching is conversational → keep it snappy (3s).
+const UNDO_SECONDS_TEST = 5;
+const UNDO_SECONDS_TEACHING = 3;
 let pendingSend = null;  // { text, bubbleWrap, timeout, countdown }
+
+function currentUndoSeconds(){
+  return (lastSessionPhase === "pre_test" || lastSessionPhase === "post_test")
+    ? UNDO_SECONDS_TEST
+    : UNDO_SECONDS_TEACHING;
+}
 
 function sendResponse(){
   const input = document.getElementById("inputField");
@@ -704,11 +713,12 @@ function sendResponse(){
   document.getElementById("sendBtn").disabled = true;
   const bubbleWrap = showStudentMsg(text, true);
 
+  const totalSeconds = currentUndoSeconds();
   const bar = document.getElementById("undoBar");
   const countEl = document.getElementById("undoBarCount");
   document.getElementById("undoBarText").textContent = t("undo_bar_text");
   bar.classList.add("visible");
-  let secondsLeft = UNDO_SECONDS;
+  let secondsLeft = totalSeconds;
   countEl.textContent = secondsLeft;
   const countdown = setInterval(() => {
     secondsLeft -= 1;
@@ -719,7 +729,7 @@ function sendResponse(){
     clearInterval(countdown);
     bar.classList.remove("visible");
     finalizeSend(text, bubbleWrap);
-  }, UNDO_SECONDS * 1000);
+  }, totalSeconds * 1000);
 
   pendingSend = { text, bubbleWrap, timeout, countdown };
 }
