@@ -112,11 +112,36 @@ body{
   border-radius:var(--radius-lg) var(--radius-lg) 6px var(--radius-lg);
 }
 
-/* Phase divider (subtle) */
+/* Phase divider (subtle, teaching) */
 .phase-divider{
   text-align:center;font-size:10px;font-weight:600;letter-spacing:0.14em;
   text-transform:uppercase;color:var(--muted);padding:8px 0;opacity:0.6;
 }
+
+/* Test banner (prominent, pre-test / post-test) */
+.test-banner{
+  display:flex;align-items:center;gap:14px;
+  margin:8px auto 4px;max-width:520px;
+  padding:16px 20px;
+  background:linear-gradient(135deg, rgba(0,113,227,0.08), rgba(178,80,0,0.08));
+  border:1px solid var(--link);border-radius:var(--radius-md);
+}
+.test-banner.post{
+  background:linear-gradient(135deg, rgba(31,138,76,0.10), rgba(0,113,227,0.08));
+  border-color:var(--success);
+}
+.test-banner-icon{font-size:28px;flex-shrink:0;line-height:1}
+.test-banner-title{font-size:14px;font-weight:700;letter-spacing:-0.01em;margin-bottom:2px}
+.test-banner-sub{font-size:12px;color:var(--muted);line-height:1.4}
+
+/* Test progress badge (inside teacher bubble during tests) */
+.test-badge{
+  display:inline-block;margin-bottom:8px;
+  padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:0.04em;
+  background:var(--link);color:#fff;border-radius:var(--radius-pill);
+  text-transform:uppercase;
+}
+.test-badge.post{background:var(--success)}
 
 /* Typing indicator */
 .typing{display:flex;align-items:center;gap:4px;padding:16px 20px}
@@ -193,6 +218,46 @@ body{
 }
 .end-session-btn:hover{background:var(--surface-2);color:var(--text)}
 .end-session-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* Pending student bubble (waiting for undo timeout) */
+.bubble-wrap.pending .bubble.student{opacity:0.45}
+
+/* Undo send bar */
+.undo-bar{
+  display:none;position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
+  z-index:60;padding:10px 8px 10px 18px;
+  background:var(--text);color:var(--bg);border-radius:var(--radius-pill);
+  box-shadow:var(--shadow-sm);align-items:center;gap:12px;font-size:13px;font-weight:500;
+  animation:fadeUp .2s var(--ease);
+}
+.undo-bar.visible{display:inline-flex}
+.undo-bar-count{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;
+  background:rgba(255,255,255,0.15);font-feature-settings:"tnum";font-size:11px;font-weight:700;
+}
+.undo-btn{
+  background:rgba(255,255,255,0.15);color:var(--bg);border:none;
+  padding:6px 14px;border-radius:var(--radius-pill);
+  font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .15s var(--ease);
+}
+.undo-btn:hover{background:rgba(255,255,255,0.25)}
+
+/* Quick-action buttons (above input bar, teaching phase only) */
+.quick-actions{
+  display:none;flex-wrap:wrap;gap:8px;justify-content:center;
+  max-width:720px;width:100%;margin:0 auto 6px;padding:0 28px;
+}
+.quick-actions.visible{display:flex}
+.quick-btn{
+  padding:7px 14px;font-size:12px;font-weight:500;font-family:inherit;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  cursor:pointer;transition:all .15s var(--ease);
+}
+.quick-btn:hover{background:var(--surface-2);border-color:var(--text)}
+.quick-btn:disabled{opacity:0.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -212,6 +277,18 @@ body{
 </div>
 
 <div class="chat" id="chat"></div>
+
+<div class="undo-bar" id="undoBar">
+  <span id="undoBarText">送信中…</span>
+  <span class="undo-bar-count" id="undoBarCount">5</span>
+  <button class="undo-btn" id="undoBtn" onclick="undoSend()" data-i18n="undo_btn">Undo</button>
+</div>
+
+<div class="quick-actions" id="quickActions">
+  <button class="quick-btn" onclick="quickSend('explain_again')" data-i18n="qa_explain">Explain again</button>
+  <button class="quick-btn" onclick="quickSend('hint')" data-i18n="qa_hint">Give me a hint</button>
+  <button class="quick-btn" onclick="quickSend('next')" data-i18n="qa_next">Next problem</button>
+</div>
 
 <button class="end-session-btn" id="endSessionBtn" onclick="endSession()" data-i18n="end_session_btn" disabled>End Session</button>
 
@@ -256,6 +333,22 @@ const I18N = {
     key_moments:"重要な学びの瞬間",
     turn_label:"ターン",
     error_prefix:"エラー：",
+    test_banner_pre_title:"事前テスト",
+    test_banner_pre_sub:"これから3問、今の理解度を確認する問題を出します。分からなくても大丈夫！",
+    test_banner_post_title:"事後テスト",
+    test_banner_post_sub:"学んだことを3問で確認しましょう。",
+    test_banner_teaching_title:"授業スタート",
+    test_banner_teaching_sub:"ここからは先生と一緒に学んでいきます。",
+    test_badge_pre:"事前テスト",
+    test_badge_post:"事後テスト",
+    undo_btn:"取り消し",
+    undo_bar_text:"送信中…",
+    qa_explain:"もう一度説明して",
+    qa_hint:"ヒントちょうだい",
+    qa_next:"次の問題",
+    qa_send_explain:"もう一度説明してもらえますか？",
+    qa_send_hint:"ヒントをください",
+    qa_send_next:"次の問題に進んでください",
   },
   en: {
     back:"← Back",
@@ -274,6 +367,22 @@ const I18N = {
     key_moments:"KEY LEARNING MOMENTS",
     turn_label:"Turn",
     error_prefix:"Error: ",
+    test_banner_pre_title:"Pre-Test",
+    test_banner_pre_sub:"3 quick questions to see where you stand. It's OK if you don't know!",
+    test_banner_post_title:"Post-Test",
+    test_banner_post_sub:"3 review questions to see what you learned.",
+    test_banner_teaching_title:"Let's Learn",
+    test_banner_teaching_sub:"Now you'll learn together with your teacher.",
+    test_badge_pre:"PRE-TEST",
+    test_badge_post:"POST-TEST",
+    undo_btn:"Undo",
+    undo_bar_text:"Sending…",
+    qa_explain:"Explain again",
+    qa_hint:"Give me a hint",
+    qa_next:"Next problem",
+    qa_send_explain:"Can you explain that again?",
+    qa_send_hint:"Give me a hint please.",
+    qa_send_next:"Let's move to the next problem.",
   }
 };
 let curLang = localStorage.getItem("tfLang") || "en";
@@ -344,7 +453,8 @@ function splitQuestion(text){
   return { body: bodyLines.join("\n").trim(), question: qLines.join("\n").trim() };
 }
 
-async function showTeacherMsg(text, phaseName){
+async function showTeacherMsg(text, opts){
+  opts = opts || {};
   const chat = document.getElementById("chat");
   const wrap = document.createElement("div");
   wrap.className = "bubble-wrap teacher";
@@ -353,6 +463,15 @@ async function showTeacherMsg(text, phaseName){
   sender.textContent = teacherName;
   const bubble = document.createElement("div");
   bubble.className = "bubble teacher";
+  // Test progress badge (pre-test / post-test only)
+  if(opts.testKind && opts.testProgress){
+    const badge = document.createElement("span");
+    badge.className = "test-badge" + (opts.testKind === "post" ? " post" : "");
+    const kindLabel = t(opts.testKind === "post" ? "test_badge_post" : "test_badge_pre");
+    badge.textContent = kindLabel + "  " + opts.testProgress;
+    bubble.appendChild(badge);
+    bubble.appendChild(document.createElement("br"));
+  }
   wrap.appendChild(sender);
   wrap.appendChild(bubble);
   chat.appendChild(wrap);
@@ -360,7 +479,9 @@ async function showTeacherMsg(text, phaseName){
 
   const { body, question } = splitQuestion(text);
   if(body){
-    await typeInto(bubble, body, 70);
+    const bodyNode = document.createElement("span");
+    bubble.appendChild(bodyNode);
+    await typeInto(bodyNode, body, 70);
   }
   if(question){
     const qBox = document.createElement("span");
@@ -370,10 +491,24 @@ async function showTeacherMsg(text, phaseName){
   }
 }
 
-function showStudentMsg(text){
+function showTestBanner(kind){
+  // kind: "pre" | "post" | "teaching"
+  const chat = document.getElementById("chat");
+  const banner = document.createElement("div");
+  banner.className = "test-banner" + (kind === "post" ? " post" : "");
+  const icon = kind === "teaching" ? "🎓" : "📝";
+  const title = t("test_banner_" + kind + "_title");
+  const sub = t("test_banner_" + kind + "_sub");
+  banner.innerHTML = '<div class="test-banner-icon">'+icon+'</div>'+
+    '<div><div class="test-banner-title">'+title+'</div><div class="test-banner-sub">'+sub+'</div></div>';
+  chat.appendChild(banner);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showStudentMsg(text, pending){
   const chat = document.getElementById("chat");
   const wrap = document.createElement("div");
-  wrap.className = "bubble-wrap student";
+  wrap.className = "bubble-wrap student" + (pending ? " pending" : "");
   const sender = document.createElement("div");
   sender.className = "bubble-sender";
   sender.textContent = studentName;
@@ -384,6 +519,7 @@ function showStudentMsg(text){
   wrap.appendChild(bubble);
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
+  return wrap;
 }
 
 function showPhase(label){
@@ -442,8 +578,8 @@ async function initSession(){
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"start failed");
     sessionId = d.session_id;
-    showPhase(t("phase_check"));
-    await showTeacherMsg(d.teacher_message);
+    showTestBanner("pre");
+    await showTeacherMsg(d.teacher_message, {testKind: "pre", testProgress: d.test_progress});
     // Enable input
     document.getElementById("inputField").disabled = false;
     document.getElementById("sendBtn").disabled = false;
@@ -530,15 +666,93 @@ function showReview(d){
 
 function escHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 
-async function sendResponse(){
+// ── Quick actions (teaching phase) ───────────────
+function updateQuickActions(){
+  const qa = document.getElementById("quickActions");
+  const inTeaching = lastSessionPhase === "teaching";
+  if(inTeaching) qa.classList.add("visible");
+  else qa.classList.remove("visible");
+}
+
+function quickSend(kind){
+  if(!sessionId || pendingSend) return;
+  const input = document.getElementById("inputField");
+  if(input.disabled) return;
+  const map = {
+    explain_again: "qa_send_explain",
+    hint: "qa_send_hint",
+    next: "qa_send_next",
+  };
+  const key = map[kind];
+  if(!key) return;
+  input.value = t(key);
+  sendResponse();
+}
+
+// ── Send with phase-aware Undo ───────────────────
+// Tests are graded → give a longer (5s) safety net.
+// Teaching is conversational → keep it snappy (3s).
+const UNDO_SECONDS_TEST = 5;
+const UNDO_SECONDS_TEACHING = 3;
+let pendingSend = null;  // { text, bubbleWrap, timeout, countdown }
+
+function currentUndoSeconds(){
+  return (lastSessionPhase === "pre_test" || lastSessionPhase === "post_test")
+    ? UNDO_SECONDS_TEST
+    : UNDO_SECONDS_TEACHING;
+}
+
+function sendResponse(){
   const input = document.getElementById("inputField");
   const text = input.value.trim();
   if(!text || !sessionId) return;
+  if(pendingSend) return;  // already pending
 
   input.value = "";
   input.disabled = true;
   document.getElementById("sendBtn").disabled = true;
-  showStudentMsg(text);
+  const bubbleWrap = showStudentMsg(text, true);
+
+  const totalSeconds = currentUndoSeconds();
+  const bar = document.getElementById("undoBar");
+  const countEl = document.getElementById("undoBarCount");
+  document.getElementById("undoBarText").textContent = t("undo_bar_text");
+  bar.classList.add("visible");
+  let secondsLeft = totalSeconds;
+  countEl.textContent = secondsLeft;
+  const countdown = setInterval(() => {
+    secondsLeft -= 1;
+    countEl.textContent = secondsLeft > 0 ? secondsLeft : 0;
+  }, 1000);
+
+  const timeout = setTimeout(() => {
+    clearInterval(countdown);
+    bar.classList.remove("visible");
+    finalizeSend(text, bubbleWrap);
+  }, totalSeconds * 1000);
+
+  pendingSend = { text, bubbleWrap, timeout, countdown };
+}
+
+function undoSend(){
+  if(!pendingSend) return;
+  clearTimeout(pendingSend.timeout);
+  clearInterval(pendingSend.countdown);
+  pendingSend.bubbleWrap.remove();
+  const input = document.getElementById("inputField");
+  input.value = pendingSend.text;
+  pendingSend = null;
+  document.getElementById("undoBar").classList.remove("visible");
+  input.disabled = false;
+  document.getElementById("sendBtn").disabled = false;
+  input.focus();
+}
+
+async function finalizeSend(text, bubbleWrap){
+  pendingSend = null;
+  const input = document.getElementById("inputField");
+  // Un-gray the student bubble (send is now committed)
+  if(bubbleWrap) bubbleWrap.classList.remove("pending");
   document.getElementById("statusDot").className = "status-dot active";
 
   try {
@@ -561,16 +775,24 @@ async function sendResponse(){
       showReview(d);
     } else {
       // Phase or session_phase transition
+      if(d.session_phase === "teaching" && lastSessionPhase !== "teaching"){
+        showTestBanner("teaching");
+      }
       if(d.session_phase === "teaching" && d.phase && d.phase !== lastPhase){
         showPhase(d.phase_label);
         lastPhase = d.phase;
       }
       if(d.session_phase === "post_test" && lastSessionPhase !== "post_test"){
-        showPhase(t("phase_review"));
+        showTestBanner("post");
         document.getElementById("endSessionBtn").disabled = true;
       }
       lastSessionPhase = d.session_phase;
-      await showTeacherMsg(d.teacher_message);
+      updateQuickActions();
+      // Build teacher message options (test badge if in test phase)
+      const teacherOpts = {};
+      if(d.session_phase === "pre_test") { teacherOpts.testKind = "pre"; teacherOpts.testProgress = d.test_progress; }
+      else if(d.session_phase === "post_test") { teacherOpts.testKind = "post"; teacherOpts.testProgress = d.test_progress; }
+      await showTeacherMsg(d.teacher_message, teacherOpts);
       input.disabled = false;
       document.getElementById("sendBtn").disabled = false;
       input.focus();
@@ -603,9 +825,10 @@ async function endSession(){
     });
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"end failed");
-    showPhase(t("phase_review"));
+    showTestBanner("post");
     lastSessionPhase = "post_test";
-    await showTeacherMsg(d.teacher_message);
+    updateQuickActions();
+    await showTeacherMsg(d.teacher_message, {testKind: "post", testProgress: d.test_progress});
     input.disabled = false;
     sendBtn.disabled = false;
     input.focus();
