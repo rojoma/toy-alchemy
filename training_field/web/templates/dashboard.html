@@ -187,6 +187,41 @@ main{max-width:1280px;margin:0 auto;padding:96px 40px 140px}
   font-feature-settings:"tnum";font-weight:500;
 }
 
+/* ── Teacher cards (memory viz) ─────────────────── */
+.teacher-card{
+  display:flex;flex-direction:column;gap:14px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;
+  box-shadow:var(--shadow-sm);
+}
+.tc-head{display:flex;align-items:center;gap:14px}
+.tc-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;
+}
+.tc-name{font-size:15px;font-weight:600;letter-spacing:-0.015em}
+.tc-origin{font-size:11px;color:var(--muted)}
+.tc-params{display:flex;gap:14px;font-size:11px;color:var(--muted)}
+.tc-params strong{color:var(--text);font-weight:600;font-feature-settings:"tnum"}
+.tc-memory-title{
+  font-size:10px;font-weight:600;letter-spacing:0.06em;
+  color:var(--muted);text-transform:uppercase;
+  padding-top:12px;border-top:1px solid var(--border);
+}
+.tc-memory-empty{font-size:12px;color:var(--muted);font-style:italic}
+.tc-memory-list{display:flex;flex-direction:column;gap:6px}
+.tc-memory-item{
+  font-size:12px;line-height:1.4;color:var(--text-secondary);
+  padding:8px 12px;background:var(--surface-2);border-radius:8px;
+  display:flex;gap:8px;align-items:flex-start;
+}
+.tc-memory-item-count{
+  flex-shrink:0;font-size:10px;font-weight:600;color:var(--muted);
+  padding:2px 6px;background:var(--surface);border-radius:10px;white-space:nowrap;
+}
+
 .sc-foot{
   display:flex;align-items:center;justify-content:space-between;
   padding-top:18px;border-top:1px solid var(--border);
@@ -344,6 +379,15 @@ tbody tr:hover{background:var(--surface-2)}
 
   <section class="section">
     <div class="section-head">
+      <div class="section-title">
+        <span data-i18n="teachers_label">Teacher Agents</span>
+      </div>
+    </div>
+    <div class="cards-grid" id="teacherGrid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
       <div class="section-title" data-i18n="recent_sessions">Recent Sessions</div>
       <a href="/history" class="pill-select" style="text-decoration:none;background-image:none;padding:8px 18px" data-i18n="view_all">View all →</a>
     </div>
@@ -387,7 +431,9 @@ const AVAILABLE_GRADES = new Set(["小6"]);
 const AVAILABLE_SUBJECTS = new Set(["算数"]);
 const I18N = {
   ja: {
-    students_label:"生徒エージェント", recent_sessions:"最近のセッション",
+    students_label:"生徒エージェント", teachers_label:"先生エージェント", recent_sessions:"最近のセッション",
+    tc_recent_lessons:"最近の学び", tc_no_memory:"まだ学習記録はありません",
+    tc_patience:"忍耐", tc_warmth:"温かさ", tc_sessions:"セッション",
     total_sessions:"総セッション数", avg_gain:"平均ゲイン", pass_rate:"合格率",
     th_session:"セッション", th_student:"生徒", th_topic:"単元", th_depth:"深さ",
     th_pre:"事前", th_post:"事後", th_gain:"ゲイン", th_grade:"評価", th_delta:"Δ習熟",
@@ -402,7 +448,9 @@ const I18N = {
     topic_分数:"分数", topic_比:"比", topic_速さ:"速さ", topic_比例:"比例", topic_円:"円", topic_場合:"場合の数",
   },
   en: {
-    students_label:"Student Agents", recent_sessions:"Recent Sessions",
+    students_label:"Student Agents", teachers_label:"Teacher Agents", recent_sessions:"Recent Sessions",
+    tc_recent_lessons:"Recent lessons learned", tc_no_memory:"No session memory yet",
+    tc_patience:"Patience", tc_warmth:"Warmth", tc_sessions:"sessions",
     total_sessions:"total sessions", avg_gain:"avg gain", pass_rate:"pass rate",
     th_session:"Session", th_student:"Student", th_topic:"Topic", th_depth:"Depth",
     th_pre:"Pre", th_post:"Post", th_gain:"Gain", th_grade:"Grade", th_delta:"Δ Prof",
@@ -477,8 +525,82 @@ function applyLang(l){
   curLang=l; localStorage.setItem("tfLang",l);
   document.documentElement.lang = l;
 }
-function toggleLang(){ applyLang(curLang==="ja"?"en":"ja"); }
+function toggleLang(){ applyLang(curLang==="ja"?"en":"ja"); renderTeacherCards(); }
 applyLang(curLang);
+
+// ── Teacher Agents with Memory (Issue #14) ──────────
+const PARAM_KEY_EN = { warmth:"Warmth", patience_threshold:"Patience" };
+async function renderTeacherCards(){
+  const grid = document.getElementById("teacherGrid");
+  if(!grid) return;
+  let teachers = [];
+  try {
+    const r = await fetch("/api/teachers");
+    const d = await r.json();
+    teachers = d.teachers || [];
+  } catch(e){ return; }
+
+  // Fetch memory for each teacher in parallel
+  const memoryByTeacher = {};
+  await Promise.all(teachers.map(async (t)=>{
+    try {
+      const r = await fetch("/api/teacher/"+encodeURIComponent(t.teacher_id)+"/memory");
+      const d = await r.json();
+      memoryByTeacher[t.teacher_id] = d;
+    } catch(e){ memoryByTeacher[t.teacher_id] = {sessions:[]}; }
+  }));
+
+  const ja = curLang === "ja";
+  const T = (k)=> (I18N[curLang] && I18N[curLang][k]) || I18N.en[k] || k;
+  grid.innerHTML = "";
+  teachers.forEach(t => {
+    const mem = memoryByTeacher[t.teacher_id] || {sessions:[]};
+    const sessions = mem.sessions || [];
+    const n = sessions.length;
+    // Aggregate directives across sessions
+    const counts = {};
+    sessions.forEach(s => (s.directives||[]).forEach(d => { counts[d] = (counts[d]||0) + 1; }));
+    const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+    const card = document.createElement("div");
+    card.className = "teacher-card";
+    const initials = (t.name||"--").replace(/[^A-Za-z]/g,"").slice(0,2).toUpperCase() || "--";
+    const originLabel = t.origin === "internal" ? (ja?"内製":"Internal") : (ja?"外部":"External");
+    const warmth = typeof t.warmth === "number" ? t.warmth.toFixed(1) : "—";
+    const patience = t.patience_threshold ?? "—";
+
+    let html = '<div class="tc-head">';
+    html += '<div class="tc-avatar">'+initials+'</div>';
+    html += '<div style="flex:1"><div class="tc-name">'+escapeHtml(t.name||"")+'</div>';
+    html += '<div class="tc-origin">'+originLabel+'</div></div></div>';
+    html += '<div class="tc-params">';
+    html += '<span>'+T("tc_warmth")+' <strong>'+warmth+'</strong></span>';
+    html += '<span>'+T("tc_patience")+' <strong>'+patience+'</strong></span>';
+    html += '<span><strong>'+n+'</strong> '+T("tc_sessions")+'</span>';
+    html += '</div>';
+    html += '<div class="tc-memory-title">'+T("tc_recent_lessons")+'</div>';
+    if(top.length === 0){
+      html += '<div class="tc-memory-empty">'+T("tc_no_memory")+'</div>';
+    } else {
+      html += '<div class="tc-memory-list">';
+      top.forEach(([directive, count]) => {
+        html += '<div class="tc-memory-item">';
+        html += '<span class="tc-memory-item-count">'+count+'/'+n+'</span>';
+        html += '<span>'+escapeHtml(directive)+'</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+renderTeacherCards();
 </script>
 </body>
 </html>

@@ -683,6 +683,44 @@ async def live_set_lang(session_id: str, body: dict):
     return {"ok": True, "lang": session.lang}
 
 
+FEEDBACK_DIR = Path(__file__).parent.parent / "reports" / "feedback"
+
+
+@app.post("/api/live/{session_id}/feedback")
+async def live_feedback(session_id: str, body: dict):
+    """Record a student's per-turn feedback on a teacher message.
+    body: {turn: int, rating: "up"|"down"|"confused", message?: str}
+    Appends to reports/feedback/{session_id}.json.
+    """
+    session = LIVE_SESSIONS.get(session_id)
+    # Don't require the session to be live — allow feedback on already-saved sessions too.
+    rating = body.get("rating")
+    if rating not in ("up", "down", "confused"):
+        raise HTTPException(400, "rating must be 'up', 'down', or 'confused'")
+    turn = body.get("turn")
+    if not isinstance(turn, int):
+        raise HTTPException(400, "turn (int) is required")
+
+    FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    path = FEEDBACK_DIR / f"{session_id}.json"
+    log = {"session_id": session_id, "entries": []}
+    if path.exists():
+        try:
+            log = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    log["entries"].append({
+        "turn": turn,
+        "rating": rating,
+        "message": (body.get("message") or "")[:500],
+        "teacher_id": session.teacher.config.teacher_id if session else None,
+        "topic": session.topic if session else None,
+        "timestamp": datetime.datetime.now().isoformat(),
+    })
+    path.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"ok": True, "count": len(log["entries"])}
+
+
 @app.get("/api/live/{session_id}")
 async def live_status(session_id: str):
     """Get current state of a live session."""
@@ -883,6 +921,21 @@ async def session_page(request: Request, student_id: str, grade: str = "小6", s
 @app.get("/api/teachers")
 async def api_teachers():
     return {"teachers": list_teachers()}
+
+
+@app.get("/api/teacher/{teacher_id}/memory")
+async def api_teacher_memory(teacher_id: str):
+    """Return a teacher's accumulated Session Memory (what they've learned from past sessions)."""
+    from training_field.teacher_memory import MEMORY_DIR, load_memory_prompt
+    path = MEMORY_DIR / f"{teacher_id}.json"
+    if not path.exists():
+        return {"teacher_id": teacher_id, "sessions": [], "prompt": ""}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"teacher_id": teacher_id, "sessions": [], "prompt": ""}
+    data["prompt"] = load_memory_prompt(teacher_id)
+    return data
 
 @app.get("/api/history")
 async def api_history(limit: int = 100, student_id: str | None = None):
