@@ -140,6 +140,26 @@ body{
 :root[data-theme="dark"] .question-box{
   background:var(--surface-2);border-color:var(--link);
 }
+
+/* Feedback buttons (per teacher bubble) */
+.fb-row{
+  display:flex;gap:6px;margin-top:6px;padding-left:6px;opacity:0;
+  transition:opacity .2s var(--ease);
+}
+.bubble-wrap.teacher:hover .fb-row,.fb-row.active{opacity:1}
+.fb-btn{
+  width:26px;height:26px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border-strong);
+  font-size:12px;cursor:pointer;padding:0;font-family:inherit;
+  transition:all .15s var(--ease);line-height:1;
+}
+.fb-btn:hover{background:var(--surface-2);transform:scale(1.1)}
+.fb-btn.selected.up{background:rgba(31,138,76,0.15);border-color:var(--success);color:var(--success)}
+.fb-btn.selected.down{background:rgba(193,39,45,0.12);border-color:var(--danger);color:var(--danger)}
+.fb-btn.selected.confused{background:rgba(178,80,0,0.12);border-color:var(--amber,#b25000);color:var(--amber,#b25000)}
+.fb-btn:disabled{cursor:not-allowed;opacity:0.5}
+
 .bubble.student{
   background:var(--student-bg);color:var(--student-fg);
   border-radius:var(--radius-lg) var(--radius-lg) 6px var(--radius-lg);
@@ -387,6 +407,9 @@ const I18N = {
     qa_send_explain:"もう一度説明してもらえますか？",
     qa_send_hint:"ヒントをください",
     qa_send_next:"次の問題に進んでください",
+    fb_up_title:"わかりやすかった",
+    fb_confused_title:"よくわからない",
+    fb_down_title:"わかりにくい",
     progress_turn:"ターン",
     milestone_icon:"🎯",
     milestone_title:(n)=>n+"ターン続いたよ！順調です。",
@@ -427,6 +450,9 @@ const I18N = {
     qa_send_explain:"Can you explain that again?",
     qa_send_hint:"Give me a hint please.",
     qa_send_next:"Let's move to the next problem.",
+    fb_up_title:"Clear and helpful",
+    fb_confused_title:"Not sure I follow",
+    fb_down_title:"Not helpful",
     progress_turn:"Turn",
     milestone_icon:"🎯",
     milestone_title:(n)=>"You've talked for "+n+" turns — great job!",
@@ -539,6 +565,46 @@ async function showTeacherMsg(text, opts){
     bubble.appendChild(qBox);
     await typeInto(qBox, question, 70);
   }
+  // Feedback buttons — only for non-test teaching messages
+  if(!opts.testKind){
+    appendFeedbackRow(wrap);
+  }
+}
+
+// ── Feedback row (Issue #13) ─────────────────────
+let teacherTurnCounter = 0;
+function appendFeedbackRow(bubbleWrap){
+  teacherTurnCounter += 1;
+  const turnId = teacherTurnCounter;
+  const row = document.createElement("div");
+  row.className = "fb-row";
+  row.innerHTML =
+    '<button class="fb-btn" data-rating="up" title="'+t("fb_up_title")+'">👍</button>'+
+    '<button class="fb-btn" data-rating="confused" title="'+t("fb_confused_title")+'">❓</button>'+
+    '<button class="fb-btn" data-rating="down" title="'+t("fb_down_title")+'">👎</button>';
+  row.querySelectorAll(".fb-btn").forEach(btn => {
+    btn.addEventListener("click", () => submitFeedback(row, btn, turnId));
+  });
+  bubbleWrap.appendChild(row);
+}
+
+async function submitFeedback(row, btn, turn){
+  if(!sessionId) return;
+  const rating = btn.dataset.rating;
+  // Disable other buttons, mark selected
+  row.querySelectorAll(".fb-btn").forEach(b => {
+    b.disabled = true;
+    b.classList.remove("selected", "up", "down", "confused");
+  });
+  btn.classList.add("selected", rating);
+  row.classList.add("active");
+  try {
+    await fetch("/api/live/"+sessionId+"/feedback", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({turn, rating}),
+    });
+  } catch(e){ /* silent — UI already reflects choice */ }
 }
 
 function showTestBanner(kind){
