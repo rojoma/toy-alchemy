@@ -108,22 +108,46 @@ class QuestionBank:
 以下のJSON形式のみで返答（コードブロックなし）:
 {{"question_text":"問題文","correct_answer":"正解","explanation":"解説","question_type":"選択|記述|複合","estimated_cognitive_level":2}}"""
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
-            max_tokens=600,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": f"単元「{unit}」の{difficulty}レベルの問題を1問作成してください。"}]
-        )
-        raw = response.choices[0].message.content.strip()
+        # Default fallback question in case of API errors
+        fallback_data = {
+            "question_text": f"{unit}に関する{difficulty}問題: この単元の基本的な計算問題を解いてください。",
+            "correct_answer": "解答例",
+            "explanation": "解説: この問題は基本的な概念の理解を確認します。",
+            "question_type": "記述",
+            "estimated_cognitive_level": bloom_map.get(difficulty, 2)
+        }
+
         try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                max_tokens=600,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": f"単元「{unit}」の{difficulty}レベルの問題を1問作成してください。"}
+                ]
+            )
+            raw = response.choices[0].message.content.strip()
+            
+            # Try to parse JSON, handling potential code blocks
+            if raw.startswith("```"):
+                # Extract JSON from code block
+                lines = raw.split("\n")
+                json_lines = [l for l in lines if not l.startswith("```")]
+                raw = "\n".join(json_lines)
+            
             data = json.loads(raw)
-        except json.JSONDecodeError:
-            data = {
-                "question_text": f"{unit}に関する{difficulty}問題",
-                "correct_answer": "解答例",
-                "explanation": "解説",
-                "question_type": "記述",
-                "estimated_cognitive_level": bloom_map[difficulty]
-            }
+            
+            # Validate required fields exist
+            if not data.get("question_text") or not data.get("correct_answer"):
+                print(f"[QuestionBank] Generated question missing required fields, using fallback")
+                data = fallback_data
+                
+        except json.JSONDecodeError as e:
+            print(f"[QuestionBank] JSON parse error: {e}, using fallback question")
+            data = fallback_data
+        except Exception as e:
+            print(f"[QuestionBank] OpenAI API error: {e}, using fallback question")
+            data = fallback_data
 
         q = Question(
             id=Question.make_id(data["question_text"]),
@@ -133,11 +157,11 @@ class QuestionBank:
             unit=unit,
             question_text=data["question_text"],
             correct_answer=data["correct_answer"],
-            explanation=data["explanation"],
+            explanation=data.get("explanation", "解説"),
             difficulty_b=difficulty_b_map.get(difficulty, 0.0),
             discrimination_a=1.0,
-            question_type=data["question_type"],
-            cognitive_level=data.get("estimated_cognitive_level", bloom_map[difficulty]),
+            question_type=data.get("question_type", "記述"),
+            cognitive_level=data.get("estimated_cognitive_level", bloom_map.get(difficulty, 2)),
             nakatsu_style=(style == "nakatsu"),
             pisa_style=(style == "pisa"),
         )
@@ -165,43 +189,116 @@ class QuestionBank:
         style: str = "nakatsu",
         exclude_ids: Optional[list] = None,
     ) -> list:
-        await self.init_db()
+        try:
+            await self.init_db()
+        except Exception as e:
+            print(f"[QuestionBank] Database init failed: {e}")
+            # Return generated questions without DB caching
+            return await self._generate_fallback_questions(grade, subject, unit, num_questions, style)
+        
         exclude_ids = exclude_ids or []
+        questions = []
 
-        async with aiosqlite.connect(self.DB_PATH) as db:
-            if exclude_ids:
-                placeholders = ",".join("?" * len(exclude_ids))
-                query = f"""SELECT * FROM questions
-                    WHERE grade=? AND subject=? AND unit=?
-                    AND id NOT IN ({placeholders})
-                    ORDER BY times_used ASC, RANDOM() LIMIT ?"""
-                params = [grade, subject, unit] + exclude_ids + [num_questions]
-            else:
-                query = """SELECT * FROM questions
-                    WHERE grade=? AND subject=? AND unit=?
-                    ORDER BY times_used ASC, RANDOM() LIMIT ?"""
-                params = [grade, subject, unit, num_questions]
+        try:
+            async with aiosqlite.connect(self.DB_PATH) as db:
+                if exclude_ids:
+                    placeholders = ",".join("?" * len(exclude_ids))
+                    query = f"""SELECT * FROM questions
+                        WHERE grade=? AND subject=? AND unit=?
+                        AND id NOT IN ({placeholders})
+                        ORDER BY times_used ASC, RANDOM() LIMIT ?"""
+                    params = [grade, subject, unit] + exclude_ids + [num_questions]
+                else:
+                    query = """SELECT * FROM questions
+                        WHERE grade=? AND subject=? AND unit=?
+                        ORDER BY times_used ASC, RANDOM() LIMIT ?"""
+                    params = [grade, subject, unit, num_questions]
 
-            async with db.execute(query, params) as cursor:
-                rows = await cursor.fetchall()
+                async with db.execute(query, params) as cursor:
+                    rows = await cursor.fetchall()
 
-        questions = [self._row_to_question(r) for r in rows]
+            questions = [self._row_to_question(r) for r in rows]
+        except Exception as e:
+            print(f"[QuestionBank] Database query failed: {e}")
+            # Continue with empty questions list, will generate below
 
         if len(questions) < num_questions:
             difficulty_cycle = ["基本", "応用", "発展", "基本", "応用"]
             for i in range(num_questions - len(questions)):
                 diff = difficulty_cycle[i % len(difficulty_cycle)]
-                q = await self.generate_question(grade, subject, unit, diff, style)
-                questions.append(q)
+                try:
+                    q = await self.generate_question(grade, subject, unit, diff, style)
+                    questions.append(q)
+                except Exception as e:
+                    print(f"[QuestionBank] Question generation failed: {e}")
+                    # Create a minimal fallback question
+                    q = Question(
+                        id=Question.make_id(f"{unit}_{i}_{diff}"),
+                        source_style=style,
+                        grade=grade,
+                        subject=subject,
+                        unit=unit,
+                        question_text=f"{unit}の{diff}問題: 基本的な問題を解いてください。",
+                        correct_answer="解答を確認してください",
+                        explanation="この問題は基本概念の確認です。",
+                        difficulty_b=0.0,
+                        discrimination_a=1.0,
+                        question_type="記述",
+                        cognitive_level=2,
+                        nakatsu_style=(style == "nakatsu"),
+                        pisa_style=(style == "pisa"),
+                    )
+                    questions.append(q)
 
-        async with aiosqlite.connect(self.DB_PATH) as db:
-            for q in questions:
-                await db.execute(
-                    "UPDATE questions SET times_used=times_used+1 WHERE id=?", (q.id,)
-                )
-            await db.commit()
+        # Update usage counts (best effort)
+        try:
+            async with aiosqlite.connect(self.DB_PATH) as db:
+                for q in questions:
+                    await db.execute(
+                        "UPDATE questions SET times_used=times_used+1 WHERE id=?", (q.id,)
+                    )
+                await db.commit()
+        except Exception as e:
+            print(f"[QuestionBank] Failed to update usage counts: {e}")
 
         return questions[:num_questions]
+
+    async def _generate_fallback_questions(
+        self,
+        grade: int,
+        subject: str,
+        unit: str,
+        num_questions: int,
+        style: str,
+    ) -> list:
+        """Generate questions without database caching (fallback mode)."""
+        questions = []
+        difficulty_cycle = ["基本", "応用", "発展", "基本", "応用"]
+        for i in range(num_questions):
+            diff = difficulty_cycle[i % len(difficulty_cycle)]
+            try:
+                q = await self.generate_question(grade, subject, unit, diff, style)
+                questions.append(q)
+            except Exception as e:
+                print(f"[QuestionBank] Fallback generation failed: {e}")
+                q = Question(
+                    id=Question.make_id(f"fallback_{unit}_{i}"),
+                    source_style=style,
+                    grade=grade,
+                    subject=subject,
+                    unit=unit,
+                    question_text=f"{unit}の問題: この単元の基本を確認しましょう。",
+                    correct_answer="解答を確認",
+                    explanation="基本概念の確認問題です。",
+                    difficulty_b=0.0,
+                    discrimination_a=1.0,
+                    question_type="記述",
+                    cognitive_level=2,
+                    nakatsu_style=(style == "nakatsu"),
+                    pisa_style=(style == "pisa"),
+                )
+                questions.append(q)
+        return questions
 
     def _row_to_question(self, row) -> Question:
         return Question(
