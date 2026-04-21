@@ -143,15 +143,31 @@ class Evaluator:
         avg_engagement = sum(e.motivation_climate for e in turn_evaluations) / n
 
         learning_gain = (post_score - pre_score) if (pre_score is not None and post_score is not None) else 0.0
+        proficiency_delta = final_proficiency - initial_proficiency
         cost = cost_tracker.total_cost_usd()
         cpg = (cost / learning_gain) if learning_gain > 0 else None
 
-        if (post_score or 0) >= 90:
-            session_grade = {"grade": "◎", "status": "excellent"}
-        elif (post_score or 0) >= 70:
-            session_grade = {"grade": "○", "status": "pass"}
+        # Grade session based on post_test_score if available, otherwise use proficiency delta
+        if post_score is not None:
+            # Test-based grading
+            if post_score >= 90:
+                session_grade = {"grade": "◎", "status": "excellent", "basis": "post_test"}
+            elif post_score >= 70:
+                session_grade = {"grade": "○", "status": "pass", "basis": "post_test"}
+            else:
+                session_grade = {"grade": "×", "status": "fail", "basis": "post_test"}
         else:
-            session_grade = {"grade": "×", "status": "fail"}
+            # Proficiency-based grading when no tests are run
+            # Also consider quality metrics (hallucination, direct answers, ZPD)
+            quality_ok = halluc_rate < 0.1 and direct_rate < 0.1 and avg_zpd >= 0.6
+            if proficiency_delta >= 5 and quality_ok:
+                session_grade = {"grade": "◎", "status": "excellent", "basis": "proficiency_delta"}
+            elif proficiency_delta >= 2 and quality_ok:
+                session_grade = {"grade": "○", "status": "pass", "basis": "proficiency_delta"}
+            elif proficiency_delta >= 0 and quality_ok:
+                session_grade = {"grade": "△", "status": "marginal", "basis": "proficiency_delta"}
+            else:
+                session_grade = {"grade": "×", "status": "fail", "basis": "proficiency_delta"}
 
         return EvaluationResult(
             session_id=session_id,

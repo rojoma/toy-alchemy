@@ -68,11 +68,44 @@ body{
 }
 .teacher-label{font-size:15px;font-weight:600;letter-spacing:-0.015em}
 .teacher-topic{font-size:12px;color:var(--muted)}
+.progress-pill{
+  display:none;align-items:center;gap:10px;
+  padding:5px 12px;margin-left:auto;
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+  font-size:11px;color:var(--muted);font-feature-settings:"tnum";font-weight:500;
+  white-space:nowrap;
+}
+.progress-pill.visible{display:inline-flex}
+.progress-pill strong{color:var(--text);font-weight:600}
+.progress-pill .progress-sep{opacity:0.4}
 .status-dot{
   width:8px;height:8px;border-radius:50%;background:var(--muted);
-  margin-left:auto;flex-shrink:0;transition:background .3s;
+  flex-shrink:0;transition:background .3s;
 }
 .status-dot.active{background:var(--success);animation:blink 1.4s infinite}
+
+/* Milestone card (every N teaching turns) */
+.milestone-card{
+  max-width:520px;margin:12px auto;
+  padding:16px 20px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius-md);
+  display:flex;align-items:center;gap:14px;
+  box-shadow:var(--shadow-sm);animation:fadeUp .3s var(--ease);
+}
+.milestone-icon{font-size:24px;flex-shrink:0}
+.milestone-body{flex:1;font-size:13px;line-height:1.5;color:var(--text)}
+.milestone-body strong{color:var(--text);font-weight:600}
+.milestone-actions{display:flex;gap:8px;flex-shrink:0}
+.milestone-btn{
+  padding:6px 14px;font-size:12px;font-weight:500;font-family:inherit;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border-strong);border-radius:var(--radius-pill);
+  cursor:pointer;transition:all .15s var(--ease);
+}
+.milestone-btn:hover{background:var(--surface-2)}
+.milestone-btn.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+.milestone-btn.primary:hover{opacity:0.85}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── Chat ─────────────────────────────────────── */
@@ -292,6 +325,11 @@ body{
       <div class="teacher-topic" id="tTopic"></div>
     </div>
   </div>
+  <div class="progress-pill" id="progressPill" title="Session progress">
+    <span><span data-i18n="progress_turn">Turn</span> <strong id="progressTurn">0</strong></span>
+    <span class="progress-sep">·</span>
+    <span><strong id="progressTime">0:00</strong></span>
+  </div>
   <div class="status-dot" id="statusDot"></div>
   <button class="header-lang" id="langbtn" onclick="toggleLang()">JA</button>
 </div>
@@ -372,6 +410,12 @@ const I18N = {
     fb_up_title:"わかりやすかった",
     fb_confused_title:"よくわからない",
     fb_down_title:"わかりにくい",
+    progress_turn:"ターン",
+    milestone_icon:"🎯",
+    milestone_title:(n)=>n+"ターン続いたよ！順調です。",
+    milestone_sub:"もう少し学んでいく？それとも復習テストに進む？",
+    milestone_continue:"続ける",
+    milestone_end:"テストに進む",
   },
   en: {
     back:"← Back",
@@ -409,6 +453,12 @@ const I18N = {
     fb_up_title:"Clear and helpful",
     fb_confused_title:"Not sure I follow",
     fb_down_title:"Not helpful",
+    progress_turn:"Turn",
+    milestone_icon:"🎯",
+    milestone_title:(n)=>"You've talked for "+n+" turns — great job!",
+    milestone_sub:"Keep going or move on to the review test?",
+    milestone_continue:"Keep going",
+    milestone_end:"Go to test",
   }
 };
 let curLang = localStorage.getItem("tfLang") || "en";
@@ -597,6 +647,7 @@ function showPhase(label){
 }
 
 function showComplete(delta, finalProf){
+  stopProgressTracking();
   const chat = document.getElementById("chat");
   document.getElementById("inputBar").style.display = "none";
   document.getElementById("statusDot").className = "status-dot";
@@ -644,6 +695,7 @@ async function initSession(){
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"start failed");
     sessionId = d.session_id;
+    startProgressTracking();
     showTestBanner("pre");
     await showTeacherMsg(d.teacher_message, {testKind: "pre", testProgress: d.test_progress});
     // Enable input
@@ -661,7 +713,71 @@ async function initSession(){
 let lastPhase = null;
 let lastSessionPhase = "pre_test";
 
+// ── Progress tracking (Issue #17) ────────────────
+let sessionStartMs = null;
+let teachingTurnCount = 0;
+let progressTimer = null;
+const MILESTONE_EVERY = 5;  // show milestone card every N teaching turns
+let lastMilestoneShownAt = 0;
+
+function startProgressTracking(){
+  sessionStartMs = Date.now();
+  document.getElementById("progressPill").classList.add("visible");
+  updateProgressPill();
+  if(progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(updateProgressPill, 1000);
+}
+
+function stopProgressTracking(){
+  if(progressTimer){ clearInterval(progressTimer); progressTimer = null; }
+}
+
+function updateProgressPill(){
+  if(!sessionStartMs) return;
+  const secs = Math.floor((Date.now() - sessionStartMs) / 1000);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  const mmss = m + ":" + String(s).padStart(2, "0");
+  document.getElementById("progressTime").textContent = mmss;
+  document.getElementById("progressTurn").textContent = teachingTurnCount;
+}
+
+function maybeShowMilestone(){
+  if(lastSessionPhase !== "teaching") return;
+  if(teachingTurnCount === 0) return;
+  if(teachingTurnCount % MILESTONE_EVERY !== 0) return;
+  if(teachingTurnCount === lastMilestoneShownAt) return;
+  lastMilestoneShownAt = teachingTurnCount;
+  showMilestoneCard(teachingTurnCount);
+}
+
+function showMilestoneCard(n){
+  const chat = document.getElementById("chat");
+  const card = document.createElement("div");
+  card.className = "milestone-card";
+  card.innerHTML =
+    '<div class="milestone-icon">'+t("milestone_icon")+'</div>'+
+    '<div class="milestone-body"><strong></strong><div></div></div>'+
+    '<div class="milestone-actions">'+
+      '<button class="milestone-btn" data-action="continue"></button>'+
+      '<button class="milestone-btn primary" data-action="end"></button>'+
+    '</div>';
+  card.querySelector(".milestone-body strong").textContent = t("milestone_title")(n);
+  card.querySelector(".milestone-body div").textContent = t("milestone_sub");
+  const btns = card.querySelectorAll(".milestone-btn");
+  btns[0].textContent = t("milestone_continue");
+  btns[1].textContent = t("milestone_end");
+  btns[0].addEventListener("click", ()=> card.remove());
+  btns[1].addEventListener("click", ()=>{
+    card.remove();
+    endSession();
+  });
+  chat.appendChild(card);
+  chat.scrollTop = chat.scrollHeight;
+}
+
 function showReview(d){
+  stopProgressTracking();
   const chat = document.getElementById("chat");
   document.getElementById("inputBar").style.display = "none";
   document.getElementById("statusDot").className = "status-dot";
@@ -854,11 +970,17 @@ async function finalizeSend(text, bubbleWrap){
       }
       lastSessionPhase = d.session_phase;
       updateQuickActions();
+      // Count teaching turns for progress / milestone
+      if(d.session_phase === "teaching"){
+        teachingTurnCount += 1;
+        updateProgressPill();
+      }
       // Build teacher message options (test badge if in test phase)
       const teacherOpts = {};
       if(d.session_phase === "pre_test") { teacherOpts.testKind = "pre"; teacherOpts.testProgress = d.test_progress; }
       else if(d.session_phase === "post_test") { teacherOpts.testKind = "post"; teacherOpts.testProgress = d.test_progress; }
       await showTeacherMsg(d.teacher_message, teacherOpts);
+      maybeShowMilestone();
       input.disabled = false;
       document.getElementById("sendBtn").disabled = false;
       input.focus();
