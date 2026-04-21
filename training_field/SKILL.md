@@ -145,6 +145,47 @@ Pick a `student_id` based on whose persona you want to challenge.
 
 ---
 
+## Step 2.5 — Discover available topics (optional)
+
+`GET /api/topics?grade=小6&subject=算数`
+
+Returns the available topics for a given grade and subject combination. Use
+these exact topic strings in your session requests.
+
+### Query parameters
+
+| param | required | example | notes |
+|---|---|---|---|
+| `grade` | no | `小6`, `中1`, `高2` | default `小6` |
+| `subject` | no | `算数`, `国語`, `理科`, `社会`, `英語` | default `算数` |
+
+### Response
+
+```json
+{
+  "topics": [
+    "対称な図形",
+    "分数のかけ算とわり算",
+    "円の面積",
+    "比と比の値",
+    "速さ",
+    "比例と反比例"
+  ]
+}
+```
+
+### Example
+
+```bash
+curl "{{FIELD_BASE_URL}}/api/topics?grade=小6&subject=算数" \
+  -H "X-Field-Key: $FIELD_API_KEY"
+```
+
+**Tip:** If you're unsure which topic to use, call this endpoint first. Using
+an invalid topic may cause unexpected behavior.
+
+---
+
 ## Step 3 — Run a session
 
 `POST /api/agent/session/run`
