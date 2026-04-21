@@ -100,7 +100,7 @@ Evaluate this exchange."""
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
-            data = self._fallback_eval()
+            data = self._fallback_eval(lang=lang)
 
         weights = self.RUBRIC_WEIGHTS
         score = sum(
@@ -116,7 +116,15 @@ Evaluate this exchange."""
         self.session_log.append(eval_result)
         return eval_result
 
-    def _fallback_eval(self) -> dict:
+    def _fallback_eval(self, lang: str = "en") -> dict:
+        # Language-appropriate fallback messages
+        if lang == "ja":
+            directive = "継続してください。"
+            summary = "標準的なターンでした。"
+        else:
+            directive = "Continue with the next turn."
+            summary = "Standard turn completed."
+        
         return {
             "zpd_alignment": 0.7,
             "bloom_level": 2,
@@ -131,8 +139,8 @@ Evaluate this exchange."""
             "frustration_response_quality": 0.6,
             "understanding_delta": 2.0,
             "overall_score": 0.65,
-            "directive_to_teacher": "継続してください。",
-            "summary": "標準的なターンでした。"
+            "directive_to_teacher": directive,
+            "summary": summary,
         }
 
     def grade_session(self, post_test_score: float) -> dict:
@@ -143,19 +151,26 @@ Evaluate this exchange."""
         else:
             return {"grade": "×", "status": "fail", "score": post_test_score}
 
-    def check_skills_update_trigger(self) -> dict:
+    def check_skills_update_trigger(self, lang: str = "en") -> dict:
         if not self.session_log:
             return {"trigger": False}
         avg_zpd = sum(e.zpd_alignment for e in self.session_log) / len(self.session_log)
         halluc_rate = sum(1 for e in self.session_log if e.hallucination_detected) / len(self.session_log)
         direct_rate = sum(1 for e in self.session_log if e.answer_given_directly) / len(self.session_log)
         trigger = avg_zpd < 0.6 or halluc_rate > 0.1 or direct_rate > 0.05
+        
+        # Language-appropriate recommendation
+        if lang == "ja":
+            recommendation = "Skills更新を検討してください。" if trigger else "Skills状態は良好です。"
+        else:
+            recommendation = "Consider updating skills." if trigger else "Skills status is good."
+        
         return {
             "trigger": trigger,
             "avg_zpd": round(avg_zpd, 3),
             "hallucination_rate": round(halluc_rate, 3),
             "direct_answer_rate": round(direct_rate, 3),
-            "recommendation": "Skills更新を検討してください。" if trigger else "Skills状態は良好です。"
+            "recommendation": recommendation,
         }
 
     SKILLS_DIR = Path(__file__).parent / "field" / "skills"
