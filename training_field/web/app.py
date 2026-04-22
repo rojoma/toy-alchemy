@@ -1121,8 +1121,8 @@ async def run_session(body: dict):
                "topic": config.topic, "selected_skills": teacher.config.selected_skills}
         proposal = principal.generate_skills_proposal(update_check, ctx)
         proposal_path = str(principal.write_proposal(proposal, update_check, ctx))
-    grade_result = principal.grade_session(post_test_score or 0)
     evaluation = evaluator.evaluate(session_id=session_id, turn_evaluations=turn_evaluations, pre_score=pre_test_score, post_score=post_test_score, student_id=config.student_id, teacher_id=teacher.config.teacher_id, topic=config.topic, grade=config.grade, subject=config.subject, depth=config.depth, initial_proficiency=initial_prof, final_proficiency=final_prof, cost_tracker=cost_tracker, principal_update_check=update_check)
+    grade_result = evaluation.session_grade
     evaluator.generate_report(evaluation)
     record = ExperimentRecord(exp_id=session_id, hypothesis_id=None, timestamp=datetime.datetime.now().isoformat(), student_id=config.student_id, teacher_id=teacher.config.teacher_id, topic=config.topic, grade=config.grade, subject=config.subject, depth=config.depth, teaching_style="SOCRATIC", skills_used=teacher.config.selected_skills, pre_test_score=pre_test_score, post_test_score=post_test_score, learning_gain=evaluation.learning_gain, proficiency_delta=evaluation.proficiency_delta, hallucination_rate=evaluation.hallucination_rate, direct_answer_rate=evaluation.direct_answer_rate, avg_zpd_alignment=evaluation.avg_zpd_alignment, avg_bloom_level=evaluation.avg_bloom_level, frustration_events=evaluation.frustration_events, aha_moments=evaluation.aha_moments, teacher_compatibility_score=evaluation.teacher_compatibility_score, total_tokens=evaluation.total_tokens_used, cost_usd=evaluation.estimated_cost_usd, session_grade=grade_result["grade"])
     registry.register(record)
@@ -1270,7 +1270,6 @@ async def run_session_stream(
             post_test_score = round(correct/len(qs)*100)
             yield f"data: {json.dumps({'type':'test_score','which':'post','score':post_test_score})}\n\n"
         final_prof = student.proficiency_model.topic_proficiencies.get(topic, 0)
-        grade_result = principal.grade_session(post_test_score or 0) if post_test else None
         # Skills semi-auto: generate proposal if trigger fires
         update_check = principal.check_skills_update_trigger()
         proposal_path = None
@@ -1283,6 +1282,7 @@ async def run_session_stream(
             await asyncio.sleep(0)
 
         # ── Persist session (mirror batch path) ────────────────────
+        grade_result = None
         try:
             evaluation = evaluator.evaluate(
                 session_id=session_id, turn_evaluations=turn_evaluations,
@@ -1293,6 +1293,7 @@ async def run_session_stream(
                 final_proficiency=final_prof, cost_tracker=cost_tracker,
                 principal_update_check=update_check,
             )
+            grade_result = evaluation.session_grade
             evaluator.generate_report(evaluation)
             record = ExperimentRecord(
                 exp_id=session_id, hypothesis_id=None,

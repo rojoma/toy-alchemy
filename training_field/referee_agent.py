@@ -144,6 +144,8 @@ Evaluate this exchange."""
         }
 
     def grade_session(self, post_test_score: float) -> dict:
+        # DEPRECATED: use Evaluator.evaluate(...).session_grade instead.
+        # Only considers post_test_score; returns "×"/fail for test-less sessions.
         if post_test_score >= 90:
             return {"grade": "◎", "status": "excellent", "score": post_test_score}
         elif post_test_score >= 70:
