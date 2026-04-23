@@ -275,6 +275,9 @@ class LiveSession:
     key_moments: list = _field(default_factory=list)  # [{turn, delta, summary}] — biggest learning moments
     is_complete: bool = False
     started_at: str = ""
+    # per-session flags (see #34): default True keeps existing behavior
+    run_pre_test: bool = True
+    run_post_test: bool = True
 
     @property
     def total_turns(self):
@@ -336,7 +339,13 @@ LIVE_SESSIONS: dict[str, LiveSession] = {}
 
 @app.post("/api/live/start")
 async def live_start(body: dict):
-    """Start a live (human-student) session. Begins with pre-test."""
+    """Start a live (human-student) session.
+
+    By default the session begins with a pre-test. Callers can skip either
+    test by passing `run_pre_test: false` or `run_post_test: false` in the
+    body — see #34 (test-less path is meant for light conversation modes
+    and for the homework-scope flow planned in #28).
+    """
     teacher_id = body.get("teacher_id", "t001")
     topic = body.get("topic", "分数のかけ算とわり算")
     depth = body.get("depth", "quick")
@@ -344,6 +353,8 @@ async def live_start(body: dict):
     subject = body.get("subject", "算数")
     lang = body.get("lang", "en")
     student_label = body.get("student_name", "You")
+    run_pre_test = bool(body.get("run_pre_test", True))
+    run_post_test = bool(body.get("run_post_test", True))
 
     gcode = GRADE_CODES.get(grade_str, 6)
     teacher = load_teacher(teacher_id)
@@ -353,6 +364,7 @@ async def live_start(body: dict):
     phases = PHASE_CONFIG["unlimited"]
     sid = f"live_{uuid.uuid4().hex[:8]}"
 
+    initial_phase = "pre_test" if run_pre_test else "teaching"
     session = LiveSession(
         session_id=sid,
         teacher=teacher,
@@ -362,33 +374,50 @@ async def live_start(body: dict):
         depth=depth, lang=lang,
         teacher_name=teacher.config.name,
         student_label=student_label,
-        session_phase="pre_test",
-        test_question_num=1,
+        session_phase=initial_phase,
+        test_question_num=1 if run_pre_test else 0,
         proficiency=50.0, initial_proficiency=50.0,
         started_at=datetime.datetime.now().isoformat(),
+        run_pre_test=run_pre_test,
+        run_post_test=run_post_test,
     )
     LIVE_SESSIONS[sid] = session
 
-    # Generate first pre-test question
-    prompt = _test_prompt(teacher.config, topic, gcode, subject, lang, 1, NUM_TEST_QUESTIONS, student_label, is_post=False)
-    from openai import OpenAI
-    client = OpenAI()
-    resp = client.chat.completions.create(
-        model="gpt-4o", max_tokens=300,
-        messages=[{"role": "system", "content": prompt},
-                  {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {display_topic(topic, lang)}."}],
+    if run_pre_test:
+        # Generate first pre-test question
+        prompt = _test_prompt(teacher.config, topic, gcode, subject, lang, 1, NUM_TEST_QUESTIONS, student_label, is_post=False)
+        from openai import OpenAI
+        client = OpenAI()
+        resp = client.chat.completions.create(
+            model="gpt-4o", max_tokens=300,
+            messages=[{"role": "system", "content": prompt},
+                      {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {display_topic(topic, lang)}."}],
+        )
+        first_q = resp.choices[0].message.content.strip()
+        session.last_teacher_text = first_q
+        greeting = "Let's start with a quick check!" if lang == "en" else "まずは軽いチェックから始めましょう！"
+        return {
+            "session_id": sid,
+            "teacher_name": teacher.config.name,
+            "teacher_message": f"{greeting}\n\n{first_q}",
+            "session_phase": "pre_test",
+            "test_progress": f"1/{NUM_TEST_QUESTIONS}",
+            "is_complete": False,
+        }
+
+    # No pre-test: open with a teaching greeting and let the student speak first.
+    greeting = (
+        f"Hi! I'm {teacher.config.name}. What would you like to work on for {display_topic(topic, lang)}?"
+        if lang == "en"
+        else f"こんにちは！{teacher.config.name}です。{display_topic(topic, lang)}について、どこから始めましょうか？"
     )
-    first_q = resp.choices[0].message.content.strip()
-    session.last_teacher_text = first_q
-
-    greeting = "Let's start with a quick check!" if lang == "en" else "まずは軽いチェックから始めましょう！"
-
+    session.last_teacher_text = greeting
     return {
         "session_id": sid,
         "teacher_name": teacher.config.name,
-        "teacher_message": f"{greeting}\n\n{first_q}",
-        "session_phase": "pre_test",
-        "test_progress": f"1/{NUM_TEST_QUESTIONS}",
+        "teacher_message": greeting,
+        "session_phase": "teaching",
+        "test_progress": None,
         "is_complete": False,
     }
 
@@ -632,7 +661,11 @@ async def live_respond(session_id: str, body: dict):
 
 @app.post("/api/live/{session_id}/end")
 async def live_end(session_id: str):
-    """Human student explicitly ends the session → jump to post-test."""
+    """Human student explicitly ends the session.
+
+    Default path: jump to post-test. If the session was started with
+    `run_post_test: false` (#34), skip post-test and complete immediately.
+    """
     session = LIVE_SESSIONS.get(session_id)
     if not session:
         raise HTTPException(404, "session not found or expired")
@@ -640,6 +673,33 @@ async def live_end(session_id: str):
         raise HTTPException(400, "session already complete")
     if session.session_phase not in ("teaching", "pre_test"):
         raise HTTPException(400, f"cannot end from phase {session.session_phase}")
+
+    # Skip post-test path
+    if not session.run_post_test:
+        session.is_complete = True
+        session.session_phase = "complete"
+        if session.turns_log:
+            sorted_turns = sorted(session.turns_log, key=lambda t: t.get("delta", 0), reverse=True)
+            session.key_moments = [
+                {"turn": t["turn"], "phase": t["phase_label"], "delta": t["delta"], "summary": t["summary"]}
+                for t in sorted_turns[:3] if t.get("delta", 0) > 0
+            ]
+        _save_live_session(session)
+        pre_score = sum(1 for r in session.pre_test_results if r["correct"])
+        farewell = ("Nice work today!" if session.lang == "en"
+                    else "今日もよく頑張りました！")
+        return {
+            "teacher_message": farewell,
+            "session_phase": "complete",
+            "is_complete": True,
+            "pre_test": session.pre_test_results,
+            "post_test": [],
+            "pre_score": f"{pre_score}/{NUM_TEST_QUESTIONS}" if session.run_pre_test else None,
+            "post_score": None,
+            "improvement": None,
+            "key_moments": session.key_moments,
+            "proficiency_delta": round(session.proficiency - session.initial_proficiency, 1),
+        }
 
     from openai import OpenAI
     client = OpenAI()
