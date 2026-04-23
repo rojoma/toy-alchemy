@@ -415,6 +415,16 @@ const I18N = {
     fb_up_title:"わかりやすかった",
     fb_confused_title:"よくわからない",
     fb_down_title:"わかりにくい",
+    fb_session_title:"今日の先生はどうでしたか？",
+    fb_tag_clarity:"説明がわかりやすい",
+    fb_tag_pace:"ペースがちょうどよい",
+    fb_tag_difficulty:"難易度がちょうどよい",
+    fb_tag_tone:"話し方が好き",
+    fb_tag_patience:"待ってくれる",
+    fb_placeholder:"もっと書きたいことがあれば（任意）",
+    fb_submit:"フィードバック送信",
+    fb_skip:"スキップ",
+    fb_thanks:"ありがとう！参考にします。",
     progress_turn:"ターン",
     milestone_icon:"🎯",
     milestone_title:(n)=>n+"ターン続いたよ！順調です。",
@@ -458,6 +468,16 @@ const I18N = {
     fb_up_title:"Clear and helpful",
     fb_confused_title:"Not sure I follow",
     fb_down_title:"Not helpful",
+    fb_session_title:"How was your teacher today?",
+    fb_tag_clarity:"Clear explanations",
+    fb_tag_pace:"Good pace",
+    fb_tag_difficulty:"Right difficulty",
+    fb_tag_tone:"Liked the tone",
+    fb_tag_patience:"Patient with me",
+    fb_placeholder:"Anything else you want to share? (optional)",
+    fb_submit:"Send feedback",
+    fb_skip:"Skip",
+    fb_thanks:"Thanks! We'll use this.",
     progress_turn:"Turn",
     milestone_icon:"🎯",
     milestone_title:(n)=>"You've talked for "+n+" turns — great job!",
@@ -850,6 +870,27 @@ function showReview(d){
     reviewHTML += '</div>';
   }
 
+  // Session feedback form (#29): let the student rate how the teacher taught
+  reviewHTML += '<div class="session-fb" style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">';
+  reviewHTML += '<div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:10px">'+t("fb_session_title")+'</div>';
+  reviewHTML += '<div class="fb-stars" style="display:flex;gap:6px;margin-bottom:12px;justify-content:center">';
+  for(let i=1;i<=5;i++){
+    reviewHTML += '<button class="fb-star" data-val="'+i+'" type="button" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--border-strong);transition:color .15s">☆</button>';
+  }
+  reviewHTML += '</div>';
+  reviewHTML += '<div class="fb-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;justify-content:center">';
+  ["fb_tag_clarity","fb_tag_pace","fb_tag_difficulty","fb_tag_tone","fb_tag_patience"].forEach(key=>{
+    reviewHTML += '<button class="fb-tag" data-key="'+key+'" type="button" style="font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border-strong);background:none;color:var(--text-secondary);cursor:pointer">'+t(key)+'</button>';
+  });
+  reviewHTML += '</div>';
+  reviewHTML += '<textarea class="fb-note" placeholder="'+t("fb_placeholder")+'" style="width:100%;min-height:60px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-family:inherit;font-size:13px;resize:vertical"></textarea>';
+  reviewHTML += '<div class="fb-actions" style="display:flex;gap:10px;justify-content:center;margin-top:14px">';
+  reviewHTML += '<button class="fb-submit complete-btn" type="button">'+t("fb_submit")+'</button>';
+  reviewHTML += '<button class="fb-skip" type="button" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer">'+t("fb_skip")+'</button>';
+  reviewHTML += '</div>';
+  reviewHTML += '<div class="fb-thanks" style="display:none;text-align:center;font-size:13px;color:var(--success);margin-top:10px">'+t("fb_thanks")+'</div>';
+  reviewHTML += '</div>';
+
   reviewHTML += '<div style="text-align:center;margin-top:28px"><a href="/learn" class="complete-btn">'+t("continue_learning")+'</a></div>';
   reviewHTML += '</div>';
 
@@ -857,9 +898,70 @@ function showReview(d){
   card.innerHTML = reviewHTML;
   chat.appendChild(card.firstChild);
   chat.scrollTop = chat.scrollHeight;
+  wireSessionFeedback(chat);
 }
 
 function escHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+// ── Session feedback (#29) ───────────────────────
+function wireSessionFeedback(scope){
+  const root = scope.querySelector(".session-fb");
+  if(!root) return;
+  let rating = 0;
+  const tags = new Set();
+  const stars = root.querySelectorAll(".fb-star");
+  stars.forEach(btn=>{
+    btn.onclick = ()=>{
+      rating = parseInt(btn.dataset.val, 10);
+      stars.forEach(s=>{
+        const v = parseInt(s.dataset.val, 10);
+        s.textContent = v <= rating ? "★" : "☆";
+        s.style.color = v <= rating ? "#f59e0b" : "var(--border-strong)";
+      });
+    };
+  });
+  root.querySelectorAll(".fb-tag").forEach(btn=>{
+    btn.onclick = ()=>{
+      const k = btn.dataset.key;
+      if(tags.has(k)){
+        tags.delete(k);
+        btn.style.background = "none";
+        btn.style.color = "var(--text-secondary)";
+      } else {
+        tags.add(k);
+        btn.style.background = "var(--link-bg, rgba(0,113,227,0.12))";
+        btn.style.color = "var(--link, #2997ff)";
+      }
+    };
+  });
+  const thanks = root.querySelector(".fb-thanks");
+  const actions = root.querySelector(".fb-actions");
+  const submit = root.querySelector(".fb-submit");
+  const skip = root.querySelector(".fb-skip");
+  const note = root.querySelector(".fb-note");
+  async function finalize(reason){
+    // hide form, show thanks (or nothing on pure skip)
+    if(actions) actions.style.display = "none";
+    stars.forEach(s=>s.disabled = true);
+    root.querySelectorAll(".fb-tag").forEach(t=>t.disabled = true);
+    if(note) note.disabled = true;
+    if(reason === "submit" && thanks) thanks.style.display = "block";
+    try {
+      await fetch("/api/live/"+sessionId+"/session-feedback", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          rating: rating || null,
+          tags: Array.from(tags),
+          note: (note && note.value || "").trim(),
+          action: reason,
+        }),
+      });
+    } catch(e){ /* best-effort; don't block navigation */ }
+  }
+  if(submit) submit.onclick = ()=>finalize("submit");
+  if(skip) skip.onclick = ()=>finalize("skip");
+}
 
 // ── Quick actions (teaching phase) ───────────────
 function updateQuickActions(){
