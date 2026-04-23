@@ -970,15 +970,67 @@ async def student_register(body: dict):
 
 @app.get("/api/student/{student_id}")
 async def student_get(student_id: str):
-    """Get a real student's profile + session history."""
+    """Get a real student's profile + session history + computed stats (#8)."""
     path = STUDENT_PROFILES_DIR / f"{student_id}.json"
     if not path.exists():
         raise HTTPException(404, "student not found")
     profile = json.loads(path.read_text(encoding="utf-8"))
     reg = ExperimentRegistry()
-    history = reg.query(filter_by={"student_id": student_id}, limit=20)
+    history = reg.query(filter_by={"student_id": student_id}, limit=50)
     profile["history"] = history
+    profile["stats"] = _compute_student_stats(history)
     return profile
+
+
+def _compute_student_stats(history: list) -> dict:
+    """Compute streak + per-topic progress deltas from session history."""
+    # Streak: count distinct calendar days (descending from most recent) where
+    # at least one session exists, stopping at the first gap of >1 day.
+    days = set()
+    for h in history:
+        ts = h.get("timestamp") or ""
+        day = ts[:10]  # YYYY-MM-DD
+        if day:
+            days.add(day)
+    sorted_days = sorted(days, reverse=True)
+    streak = 0
+    if sorted_days:
+        try:
+            cur = datetime.date.fromisoformat(sorted_days[0])
+            today = datetime.date.today()
+            # Only count streak if most recent day is today or yesterday.
+            if (today - cur).days <= 1:
+                for d_str in sorted_days:
+                    d = datetime.date.fromisoformat(d_str)
+                    if d == cur:
+                        streak += 1
+                        cur -= datetime.timedelta(days=1)
+                    elif d < cur:
+                        break
+        except (ValueError, TypeError):
+            streak = 0
+
+    # Per-topic delta trend: last 5 sessions grouped by topic, showing
+    # proficiency_delta each time. Useful for spark-line display.
+    topic_trend: dict[str, list] = {}
+    for h in reversed(history):  # oldest first
+        topic = h.get("topic")
+        delta = h.get("proficiency_delta")
+        if topic and delta is not None:
+            topic_trend.setdefault(topic, []).append(round(delta, 1))
+    for t in topic_trend:
+        topic_trend[t] = topic_trend[t][-5:]  # keep last 5 per topic
+
+    total_delta = sum(
+        h.get("proficiency_delta") or 0 for h in history
+    )
+    return {
+        "streak_days": streak,
+        "sessions_total": len(history),
+        "total_proficiency_gain": round(total_delta, 1),
+        "topic_trend": topic_trend,
+        "last_session_at": history[0].get("timestamp") if history else None,
+    }
 
 @app.post("/api/student/{student_id}/update-proficiency")
 async def student_update_prof(student_id: str, body: dict):
