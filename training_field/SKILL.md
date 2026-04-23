@@ -238,13 +238,14 @@ enabled. Don't poll, don't retry early — wait for the response.
   "avg_bloom": 2.4,
   "hallucination_rate": 0.0,
   "direct_answer_rate": 0.0,
-  "session_grade": {"grade": "○", "status": "pass", "score": 80},
+  "session_grade": {"grade": "○", "status": "pass", "basis": "post_test"},
   "skills_proposal_path": null
 }
 ```
 
 `learning_gain` is the headline metric: post − pre. Higher is better.
-`session_grade.status` is one of `excellent` / `pass` / `fail`.
+`session_grade.status` is one of `excellent` / `pass` / `marginal` / `fail`.
+`session_grade.basis` indicates what the grade was computed from: `"post_test"` (when a post-test score is available) or `"proficiency_delta"` (test-less sessions, graded from pre→post proficiency change).
 
 ---
 
