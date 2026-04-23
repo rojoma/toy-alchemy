@@ -194,6 +194,57 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
 .teacher-card.selected .teacher-trait{
   background:var(--surface);
 }
+
+/* Recommender quiz */
+.quiz-intro{
+  font-size:13px;color:var(--text-secondary);
+  margin-bottom:12px;line-height:1.5;
+}
+.quiz-q{margin-bottom:18px}
+.quiz-q-label{
+  display:block;font-size:13px;font-weight:600;
+  color:var(--text);margin-bottom:8px;
+}
+.quiz-options{display:flex;flex-direction:column;gap:6px}
+.quiz-opt{
+  display:flex;align-items:center;gap:10px;
+  border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;cursor:pointer;
+  background:var(--surface);font-size:13px;color:var(--text);
+  transition:border-color .15s var(--ease), background .15s var(--ease);
+}
+.quiz-opt:hover{border-color:var(--border-strong)}
+.quiz-opt.selected{
+  border-color:var(--text);
+  background:var(--surface-2);
+}
+.quiz-opt input{display:none}
+.quiz-opt .radio-dot{
+  width:14px;height:14px;border-radius:50%;
+  border:1.5px solid var(--border-strong);flex-shrink:0;
+  transition:border-color .15s, background .15s;
+}
+.quiz-opt.selected .radio-dot{
+  border-color:var(--text);
+  background:radial-gradient(circle, var(--text) 0 40%, transparent 45%);
+}
+
+/* Recommended badge on teacher card */
+.teacher-card{position:relative}
+.rec-badge{
+  position:absolute;top:10px;right:10px;
+  font-size:10px;font-weight:600;letter-spacing:0.02em;
+  background:var(--text);color:var(--bg);
+  padding:3px 8px;border-radius:10px;
+}
+
+/* Subtle "retake the quiz" link */
+.quiz-retake{
+  font-size:12px;color:var(--muted);
+  text-decoration:underline;cursor:pointer;
+  background:none;border:none;padding:0;font-family:inherit;
+}
+.quiz-retake:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -217,6 +268,58 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
     <label class="form-label" data-i18n="label_subject">SUBJECT</label>
     <select class="form-select" id="subjectInput"></select>
   </div>
+
+  <!-- Recommender quiz (#54) — maps answers to teachers we already have. -->
+  <div class="form-group" id="quizGroup">
+    <label class="form-label" data-i18n="label_quiz">FIND MY MATCH</label>
+    <p class="quiz-intro" data-i18n="quiz_intro">
+      Answer 2 quick questions and we'll recommend a teacher. You can still pick any teacher after.
+    </p>
+
+    <div class="quiz-q" data-q="style">
+      <div class="quiz-q-label" data-i18n="quiz_q1">How do you like to be taught?</div>
+      <div class="quiz-options">
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_style" value="socratic">
+          <span data-i18n="quiz_q1_a">Ask me questions — I'll figure it out.</span>
+        </label>
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_style" value="stepwise">
+          <span data-i18n="quiz_q1_b">Walk me through it step by step.</span>
+        </label>
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_style" value="concrete">
+          <span data-i18n="quiz_q1_c">Show me a concrete example first.</span>
+        </label>
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_style" value="challenge">
+          <span data-i18n="quiz_q1_d">Push me to think harder.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="quiz-q" data-q="stuck">
+      <div class="quiz-q-label" data-i18n="quiz_q2">When you get stuck, what helps most?</div>
+      <div class="quiz-options">
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_stuck" value="patient">
+          <span data-i18n="quiz_q2_a">Someone patient who waits for me.</span>
+        </label>
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_stuck" value="direct">
+          <span data-i18n="quiz_q2_b">Someone quick and direct.</span>
+        </label>
+        <label class="quiz-opt"><span class="radio-dot"></span>
+          <input type="radio" name="quiz_stuck" value="reframe">
+          <span data-i18n="quiz_q2_c">A different angle or analogy.</span>
+        </label>
+      </div>
+    </div>
+
+    <button type="button" class="quiz-retake" id="quizReset" onclick="resetQuiz()"
+            style="display:none" data-i18n="quiz_retake">Reset answers</button>
+  </div>
+
   <div class="form-group">
     <label class="form-label" data-i18n="label_teacher">TEACHER</label>
     <div class="teacher-picker" id="teacherPickerOnboard" role="radiogroup">
@@ -337,6 +440,19 @@ const I18N = {
     scope_placeholder:"例：「教科書p.42の例題」「分数の割り算だけ」",
     scope_hint:"自分で単元を入力するか写真をアップロードすると、事前テストをスキップしてすぐに解説が始まります。",
     or_divider:"— または —",
+    label_quiz:"先生を診断",
+    quiz_intro:"2つの質問に答えると、ぴったりな先生を推薦します。推薦後も他の先生を自由に選べます。",
+    quiz_q1:"どんな教え方が好き？",
+    quiz_q1_a:"質問してほしい。自分で答えを見つけたい。",
+    quiz_q1_b:"一歩ずつ、ていねいに説明してほしい。",
+    quiz_q1_c:"まず具体例を見せてほしい。",
+    quiz_q1_d:"しっかり考えさせてほしい。",
+    quiz_q2:"つまずいた時、何が一番助かる？",
+    quiz_q2_a:"待ってくれる、辛抱強い先生。",
+    quiz_q2_b:"サクサク答えてくれる、ズバリ型の先生。",
+    quiz_q2_c:"別の角度・たとえで教えてくれる先生。",
+    quiz_retake:"回答をリセット",
+    rec_badge:"おすすめ",
     stat_streak:"連続日数",
     stat_sessions:"セッション数",
     stat_total_gain:"累計の伸び",
@@ -363,6 +479,19 @@ const I18N = {
     scope_placeholder:'e.g. "textbook p.42 word problems"',
     scope_hint:"If you describe your own topic or upload a photo, the session skips the pre-test and jumps straight into teaching.",
     or_divider:"— or —",
+    label_quiz:"FIND MY MATCH",
+    quiz_intro:"Answer 2 quick questions and we'll recommend a teacher. You can still pick any teacher after.",
+    quiz_q1:"How do you like to be taught?",
+    quiz_q1_a:"Ask me questions — I'll figure it out.",
+    quiz_q1_b:"Walk me through it step by step.",
+    quiz_q1_c:"Show me a concrete example first.",
+    quiz_q1_d:"Push me to think harder.",
+    quiz_q2:"When you get stuck, what helps most?",
+    quiz_q2_a:"Someone patient who waits for me.",
+    quiz_q2_b:"Someone quick and direct.",
+    quiz_q2_c:"A different angle or analogy.",
+    quiz_retake:"Reset answers",
+    rec_badge:"Recommended",
     stat_streak:"Day streak",
     stat_sessions:"Sessions",
     stat_total_gain:"Total gain",
@@ -689,6 +818,115 @@ applyLang(curLang);
 // is loaded. Both share selectedTeacherId, but clicks are scoped to the
 // container they live in.
 initTeacherPicker("teacherPickerOnboard", {mirrorSelectId: "teacherInput"});
+initRecommenderQuiz();
+
+// ── Recommender quiz (#54) ───────────────────────────────
+// Frontend-only rule-based scorer. Maps quiz answers to teachers we
+// already have (data on window via the TEACHERS const — same shape as
+// list_teachers()). Tops teacher gets a "Recommended" badge and is
+// auto-selected. Student can still pick any other teacher.
+function initRecommenderQuiz(){
+  document.querySelectorAll('#quizGroup input[type="radio"]').forEach(inp=>{
+    inp.addEventListener("change", onQuizChange);
+  });
+  document.querySelectorAll("#quizGroup .quiz-opt").forEach(opt=>{
+    opt.addEventListener("click", ()=>{
+      const inp = opt.querySelector("input");
+      if(inp){ inp.checked = true; inp.dispatchEvent(new Event("change")); }
+    });
+  });
+}
+function onQuizChange(){
+  // Reflect selected visual state.
+  document.querySelectorAll("#quizGroup .quiz-opt").forEach(opt=>{
+    const inp = opt.querySelector("input");
+    opt.classList.toggle("selected", !!(inp && inp.checked));
+  });
+  const style = (document.querySelector('input[name="quiz_style"]:checked')||{}).value;
+  const stuck = (document.querySelector('input[name="quiz_stuck"]:checked')||{}).value;
+  const reset = document.getElementById("quizReset");
+  if(reset) reset.style.display = (style || stuck) ? "" : "none";
+  if(!style && !stuck) return;  // need at least one answer to rank
+  const topId = scoreTeachers(style, stuck);
+  applyRecommendation(topId);
+}
+function resetQuiz(){
+  document.querySelectorAll('#quizGroup input[type="radio"]').forEach(i=>{i.checked=false});
+  document.querySelectorAll("#quizGroup .quiz-opt").forEach(o=>o.classList.remove("selected"));
+  document.querySelectorAll(".rec-badge").forEach(b=>b.remove());
+  const reset = document.getElementById("quizReset");
+  if(reset) reset.style.display = "none";
+}
+function scoreTeachers(style, stuck){
+  // Weight table — keeps the mapping easy to tune.
+  // Each (answer, attribute) contributes to matching teachers.
+  const scores = {};
+  TEACHERS.forEach(t => { scores[t.teacher_id] = 0; });
+
+  const addSkill = (skill, w) => TEACHERS.forEach(t=>{
+    if((t.selected_skills||[]).includes(skill)) scores[t.teacher_id] += w;
+  });
+  const byWarmth = (cmp, w) => TEACHERS.forEach(t=>{
+    if(cmp(t.warmth ?? 0.5)) scores[t.teacher_id] += w;
+  });
+  const byPatience = (cmp, w) => TEACHERS.forEach(t=>{
+    if(cmp(t.patience_threshold ?? 3)) scores[t.teacher_id] += w;
+  });
+
+  if(style === "socratic"){
+    addSkill("socratic_questioning", 3);
+    addSkill("metacognitive_prompting", 1);
+  } else if(style === "stepwise"){
+    addSkill("stepwise_decomposition", 3);
+    byPatience(p=>p>=4, 1);
+  } else if(style === "concrete"){
+    addSkill("concrete_examples", 3);
+  } else if(style === "challenge"){
+    byWarmth(w=>w<0.5, 2);   // cool teachers push harder
+    addSkill("metacognitive_prompting", 1);
+  }
+
+  if(stuck === "patient"){
+    byPatience(p=>p>=4, 2);
+    byWarmth(w=>w>=0.7, 2);
+  } else if(stuck === "direct"){
+    byWarmth(w=>w<0.5, 2);
+    byPatience(p=>p<=3, 1);
+  } else if(stuck === "reframe"){
+    addSkill("error_reframing", 3);
+    addSkill("concrete_examples", 1);
+  }
+
+  // Pick the top teacher, break ties by the teacher's position in TEACHERS
+  // for determinism.
+  let topId = TEACHERS[0] ? TEACHERS[0].teacher_id : null;
+  let topScore = -Infinity;
+  TEACHERS.forEach(t=>{
+    if(scores[t.teacher_id] > topScore){
+      topScore = scores[t.teacher_id];
+      topId = t.teacher_id;
+    }
+  });
+  return topScore > 0 ? topId : null;  // no confident winner => no recommendation
+}
+function applyRecommendation(topId){
+  const container = document.getElementById("teacherPickerOnboard");
+  if(!container) return;
+  // Clear previous badges
+  container.querySelectorAll(".rec-badge").forEach(b=>b.remove());
+  if(!topId) return;
+  const card = container.querySelector('.teacher-card[data-teacher-id="'+topId+'"]');
+  if(!card) return;
+  const badge = document.createElement("span");
+  badge.className = "rec-badge";
+  badge.textContent = (curLang==="ja" ? "おすすめ" : "Recommended");
+  badge.setAttribute("data-i18n", "rec_badge");
+  card.appendChild(badge);
+  // Auto-select the recommended teacher (but let the student change it).
+  if(typeof selectTeacherIn === "function"){
+    selectTeacherIn(container, card, {mirrorSelectId: "teacherInput"});
+  }
+}
 
 function resetProfile(){
   localStorage.removeItem("tfStudentId");
