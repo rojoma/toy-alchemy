@@ -956,6 +956,26 @@ async def learn_session_page(request: Request):
         "topic_tx_en": TOPIC_TX_EN,
     })
 
+
+# ── Legal pages (#7) ──────────────────────────────────────────
+# Privacy / terms-of-service skeletons. Japanese is authoritative;
+# English is a convenience summary. Marked as draft pending legal review.
+LEGAL_CONTACT_EMAIL = os.environ.get("TOY_ALCHEMY_CONTACT_EMAIL", "")
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    return templates.TemplateResponse(request, "legal/privacy.html", {
+        "contact_email": LEGAL_CONTACT_EMAIL,
+    })
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    return templates.TemplateResponse(request, "legal/terms.html", {
+        "contact_email": LEGAL_CONTACT_EMAIL,
+    })
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     reg = ExperimentRegistry()

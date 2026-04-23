@@ -1,0 +1,113 @@
+{% extends "legal/base.html" %}
+{% set page_title = "プライバシーポリシー / Privacy Policy" %}
+{% block content %}
+
+<div class="legal-banner">
+  <strong>⚠ ドラフト / Draft status.</strong>
+  本書はエンジニアによる初稿であり、法律家のレビューを受けていません。公開前に弁護士または教育法務の専門家による確認が必要です。内容の最終責任は Toy Alchemy プロジェクト運営者にあります。
+</div>
+
+<h1>プライバシーポリシー</h1>
+<p class="last-updated">最終更新: 2026-04-23（ドラフト v0.1）</p>
+
+<p>Toy Alchemy（以下「本サービス」）は、利用者の個人情報を以下の方針に基づき取り扱います。本サービスは学習目的のAI家庭教師プラットフォームであり、未成年の利用を想定しているため、特に慎重な取り扱いを心がけます。</p>
+
+<h2>1. 運営者</h2>
+<p>MIT MAS.664 AI Studio Spring 2026 — Team Toy Alchemy（{{ contact_email or "TBD: 運営代表メールアドレスを記載" }}）</p>
+
+<h2>2. 収集する情報</h2>
+
+<h3>2.1 生徒が直接入力する情報</h3>
+<ul>
+  <li>名前またはニックネーム（生徒が自由に設定）</li>
+  <li>学年（小1〜高3）</li>
+  <li>教科（算数／国語／理科／社会／英語）</li>
+  <li>学習したい単元・学習範囲（自由記述）</li>
+  <li>セッション中の発言（先生への質問、回答など）</li>
+  <li>セッション終了後の任意フィードバック（5段階評価、タグ、自由記述）</li>
+  <li>ターンごとの任意フィードバック（👍／❓／👎）</li>
+</ul>
+
+<h3>2.2 利用に伴い自動生成される情報</h3>
+<ul>
+  <li>セッションID（ランダム生成）</li>
+  <li>習熟度スコア（単元ごとに算出）</li>
+  <li>AI評価指標（ZPD整合性、Bloom レベル、説明の明瞭度など）</li>
+  <li>セッション履歴のタイムスタンプ</li>
+  <li>教師側の記憶（Teacher Memory：生徒ごとの観察メモ）</li>
+</ul>
+
+<h3>2.3 ブラウザに保存される情報（LocalStorage）</h3>
+<ul>
+  <li>生徒ID（匿名ID）</li>
+  <li>選択中の教師ID</li>
+  <li>言語設定（ja / en）</li>
+  <li>テーマ設定（light / dark）</li>
+</ul>
+<p>これらは利用者のブラウザに保存され、サーバーには送信されない場合があります。ブラウザの設定で削除可能です。</p>
+
+<h2>3. 利用目的</h2>
+<ul>
+  <li>AIによる個別最適化された学習指導の提供</li>
+  <li>生徒の学習進捗の可視化</li>
+  <li>教師AIの教え方の改善（品質向上のための集計・分析）</li>
+  <li>研究成果の発表（MIT MAS.664 AI Studio 授業および学術的な発表。公表時は個人を特定できない形に加工します）</li>
+  <li>サービス運営上のバグ調査・品質改善</li>
+</ul>
+
+<h2>4. 第三者提供</h2>
+<p>以下の外部サービス（データ処理業務委託先）に、サービス運営上必要な範囲で情報を提供します。</p>
+<ul>
+  <li><strong>OpenAI</strong>（米国）：セッション中の対話テキストをAIモデルの推論のために送信します。OpenAIは同データをモデル学習には使用しない契約（API利用）で運用しています。</li>
+  <li><strong>Railway</strong>（米国）：本サービスのホスティングおよびデータ永続化を提供します。</li>
+</ul>
+<p>上記以外の第三者に個人情報を提供することはありません（法令に基づく開示請求を除く）。</p>
+
+<h2>5. 国外への移転</h2>
+<p>前項の通り、データは米国所在のサービスに送信・保存されます。利用者はこの国外移転に同意の上、本サービスを利用するものとします。</p>
+
+<h2>6. 保存期間</h2>
+<p>以下のデータは、削除依頼を受けるまで保存します。</p>
+<ul>
+  <li>生徒プロフィール</li>
+  <li>セッション履歴・評価レポート</li>
+  <li>フィードバック記録</li>
+</ul>
+<p>TBD: 具体的な保存期間（例: 1年、卒業まで）を運営方針で決定する必要があります。</p>
+
+<h2>7. 削除・開示請求</h2>
+<p>生徒本人または保護者は、以下の請求ができます。</p>
+<ul>
+  <li>登録されている情報の開示請求</li>
+  <li>情報の訂正・削除請求</li>
+  <li>サービス利用停止の請求</li>
+</ul>
+<p>請求は {{ contact_email or "TBD: 運営代表メールアドレス" }} にご連絡ください。本人確認の後、合理的な期間内に対応します。</p>
+
+<h2>8. 未成年の利用と保護者の同意</h2>
+<p>本サービスは未成年（18歳未満）の利用を想定しています。</p>
+<p>TBD: 保護者同意フローの実装時期と方式（同意画面、メール確認、書面など）を決定する必要があります。現状のドラフトでは、「保護者の同意を得た上で利用してください」という告知にとどまっています。</p>
+
+<h2>9. セキュリティ</h2>
+<ul>
+  <li>APIキーなどの認証情報は環境変数で管理し、リポジトリにコミットしません。</li>
+  <li>通信はHTTPSで暗号化しています（Railway標準）。</li>
+  <li>データベースへのアクセスは、運営者および本サービスのプロセスに限定しています。</li>
+</ul>
+
+<h2>10. クッキー等</h2>
+<p>本サービスは認証セッションを保持するためにCookieまたはLocalStorageを使用します。利用者はブラウザ設定で無効化できますが、その場合一部機能が利用できなくなります。</p>
+
+<h2>11. 本ポリシーの変更</h2>
+<p>本ポリシーは、法令改正やサービス内容の変更に応じて改訂することがあります。重要な変更がある場合は本ページで告知します。</p>
+
+<h2>12. お問い合わせ</h2>
+<p>{{ contact_email or "TBD: 運営代表メールアドレスを記載" }}</p>
+
+<hr />
+
+<h2 id="english">English (summary)</h2>
+<p><em>This English summary is for convenience only. The Japanese version above is authoritative.</em></p>
+<p>Toy Alchemy is an AI tutoring platform built for MIT MAS.664 AI Studio, Spring 2026. Data we collect includes: student nickname, grade/subject, session dialogue with the AI tutor, proficiency scores, and optional feedback. Data is sent to OpenAI (AI inference) and stored on Railway (US hosting). Data is not sold or shared beyond these service providers. Users may request disclosure, correction, or deletion of their data by emailing us. This service is intended for minors; parental consent is expected. This is a <strong>draft document pending legal review</strong>.</p>
+
+{% endblock %}
