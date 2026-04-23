@@ -78,144 +78,36 @@ STUDENTS = {
 
 TOPICS = ["分数のかけ算・わり算","比と比の値","速さ・時間・距離","比例と反比例","円の面積","場合の数"]
 
-# Curriculum: (grade_code, subject) -> topics. grade_code: 小1=1..小6=6, 中1=7..中3=9, 高1=10..高3=12
-CURRICULUM = {
-    (1, "算数"): ["10までのかず","いくつといくつ","たしざん","ひきざん","20までのかず","とけい"],
-    (1, "国語"): ["ひらがな","カタカナ","かんじ","おおきなかぶ","くちばし","ものの名まえ"],
-    (1, "理科"): ["がっこうたんけん","はるをさがそう","あさがおをそだてよう","むしとなかよし","あきとあそぼう","ふゆをたのしもう"],
-    (1, "社会"): ["がっこうだいすき","つうがくろたんけん","こうえんであそぼう","やさいをそだてよう","まちのひとびと","かぞくとわたし"],
-    (1, "英語"): ["あいさつ","アルファベット","かず","いろ","くだもの","どうぶつ"],
-    (2, "算数"): ["ひょうとグラフ","たし算とひき算の筆算","長さのたんい","かけ算九九","三角形と四角形","分数のはじめ"],
-    (2, "国語"): ["ふきのとう","スイミー","お手紙","漢字の読み書き","主語と述語","かん字の組み立て"],
-    (2, "理科"): ["やさいをそだてよう","生きものをさがそう","まちたんけん","おもちゃランド","きせつとあそぼう","大きくなったわたし"],
-    (2, "社会"): ["まちたんけん","お店のしごと","公共しせつ","はたらく人びと","むかしのくらし","わたしの成長"],
-    (2, "英語"): ["あいさつ","すきなもの","かぞく","たべもの","スポーツ","天気"],
-    (3, "算数"): ["かけ算","わり算","大きい数","長さと重さ","分数","三角形と角"],
-    (3, "国語"): ["ちいちゃんのかげおくり","すがたをかえる大豆","ローマ字","こそあど言葉","国語辞典の使い方","ことわざ"],
-    (3, "理科"): ["植物のつくり","こん虫のかんさつ","太陽とかげ","光とかがみ","じしゃくのふしぎ","電気の通り道"],
-    (3, "社会"): ["わたしたちのまち","お店ではたらく人","農家のしごと","工場のしごと","火事をふせぐ","市のうつりかわり"],
-    (3, "英語"): ["あいさつと自己紹介","数字1-20","色と形","好きなもの","アルファベット","動物"],
-    (4, "算数"): ["大きな数","わり算の筆算","垂直と平行","がい数","小数のかけ算とわり算","分数のたし算とひき算"],
-    (4, "国語"): ["ごんぎつね","白いぼうし","慣用句","漢字辞典の使い方","段落と要約","新聞をつくろう"],
-    (4, "理科"): ["季節と生き物","天気と気温","月と星","電気のはたらき","水のすがた","もののあたたまり方"],
-    (4, "社会"): ["わたしたちの県","水はどこから","ごみのしょり","自然災害","きょう土の伝統","県内の特色ある地いき"],
-    (4, "英語"): ["曜日と月","天気","文房具","時刻","身の回りのもの","一日の生活"],
-    (5, "算数"): ["整数と小数","体積","合同な図形","倍数と約数","分数のたし算とひき算","割合と百分率"],
-    (5, "国語"): ["大造じいさんとガン","注文の多い料理店","敬語","古文に親しむ","意見文を書く","和語・漢語・外来語"],
-    (5, "理科"): ["天気の変化","植物の発芽と成長","メダカのたんじょう","流れる水のはたらき","もののとけ方","ふりこのきまり"],
-    (5, "社会"): ["日本の国土","日本の気候","農業と米づくり","水産業","工業生産","情報産業とくらし"],
-    (5, "英語"): ["自己紹介","時間割","誕生日","行きたい国","道案内","一日の生活"],
-    (6, "算数"): ["対称な図形","分数のかけ算とわり算","円の面積","比と比の値","速さ","比例と反比例"],
-    (6, "国語"): ["やまなし","海の命","漢字の成り立ち","敬語の使い方","討論をしよう","古典を読もう"],
-    (6, "理科"): ["ものの燃え方","人の体のつくり","植物の養分と水","月と太陽","土地のつくり","てこのはたらき"],
-    (6, "社会"): ["日本の歴史","縄文~弥生","平安~鎌倉","江戸時代","明治維新","日本国憲法と政治"],
-    (6, "英語"): ["自己紹介","夏休みの思い出","行きたい国","将来の夢","小学校の思い出","中学校生活"],
-    (7, "算数"): ["正負の数","文字と式","一次方程式","比例と反比例","平面図形","空間図形"],
-    (7, "国語"): ["少年の日の思い出","竹取物語","故事成語","文法（自立語）","漢字の部首","詩の鑑賞"],
-    (7, "理科"): ["身近な生物の観察","植物のつくり","物質の性質","気体の性質","光と音","火山と地震"],
-    (7, "社会"): ["世界の姿","世界の気候","アジア州","ヨーロッパ州","古代文明","飛鳥~平安時代"],
-    (7, "英語"): ["be動詞","一般動詞","疑問詞","複数形","canの文","現在進行形"],
-    (8, "算数"): ["式の計算","連立方程式","一次関数","図形の合同","三角形と四角形","確率"],
-    (8, "国語"): ["走れメロス","枕草子","平家物語","文法（用言の活用）","敬語","論説文の読解"],
-    (8, "理科"): ["化学変化と原子・分子","生物の体のつくり","動物の分類","電流とその利用","天気とその変化","気象観測"],
-    (8, "社会"): ["日本の地域的特色","日本の諸地域","鎌倉時代","室町時代","安土桃山時代","江戸時代"],
-    (8, "英語"): ["過去形","未来形（will/be going to）","助動詞","不定詞","動名詞","比較級・最上級"],
-    (9, "算数"): ["式の展開と因数分解","平方根","二次方程式","関数 y=ax²","相似な図形","三平方の定理"],
-    (9, "国語"): ["故郷","おくのほそ道","論語","文法のまとめ","俳句と短歌","評論文の読解"],
-    (9, "理科"): ["イオンと電池","酸・アルカリと中和","遺伝の規則性","生物のふえ方","運動とエネルギー","天体の動き"],
-    (9, "社会"): ["明治維新","大正デモクラシー","第二次世界大戦","現代社会","日本国憲法","国会と内閣"],
-    (9, "英語"): ["受動態","現在完了","関係代名詞","間接疑問文","分詞の形容詞的用法","仮定法"],
-    (10, "算数"): ["数と式","二次関数","図形と計量","データの分析","場合の数と確率","集合と命題"],
-    (10, "国語"): ["評論文読解","小説読解","古文入門","漢文入門","現代文の語彙","敬語と表現"],
-    (10, "理科"): ["物理基礎：運動","物理基礎：エネルギー","化学基礎：物質の構成","化学基礎：化学反応","生物基礎：細胞","地学基礎：地球"],
-    (10, "社会"): ["地理総合：地図","地理総合：気候","歴史総合：近代化","歴史総合：国際秩序","公共：青年期","公共：民主政治"],
-    (10, "英語"): ["5文型","時制","助動詞","受動態","不定詞・動名詞","関係詞"],
-    (11, "算数"): ["三角関数","指数・対数関数","微分法","積分法","数列","ベクトル"],
-    (11, "国語"): ["近代評論","近代小説","古文（源氏物語）","漢文（史記）","和歌・俳句","論述表現"],
-    (11, "理科"): ["物理：力学","物理：波動","化学：理論化学","化学：無機化学","生物：代謝","地学：宇宙"],
-    (11, "社会"): ["世界史：中世","世界史：近世","日本史：古代","日本史：中世","地理：産業","倫理：西洋思想"],
-    (11, "英語"): ["仮定法","分詞構文","関係副詞","比較表現","話法","長文読解"],
-    (12, "算数"): ["複素数平面","式と曲線","極限","微分法の応用","積分法の応用","確率分布と統計"],
-    (12, "国語"): ["評論文演習","小説演習","古文演習","漢文演習","記述対策","小論文"],
-    (12, "理科"): ["物理：電磁気","物理：原子","化学：有機化学","化学：高分子","生物：遺伝子","生物：生態系"],
-    (12, "社会"): ["世界史：現代","日本史：近代","日本史：現代","地理：地誌","政治経済","倫理：現代思想"],
-    (12, "英語"): ["長文総合読解","英作文","リスニング","語彙・イディオム","文法総合","自由英作文"],
-}
-GRADE_CODES = {"小1":1,"小2":2,"小3":3,"小4":4,"小5":5,"小6":6,"中1":7,"中2":8,"中3":9,"高1":10,"高2":11,"高3":12}
+# Curriculum: (grade_code, subject) -> topics.
+# Data lives in training_field/data/curriculum.json — see that file's schema
+# and training_field/data/README.md for how non-engineers can contribute (#9).
+_CURRICULUM_JSON = Path(__file__).parent.parent / "data" / "curriculum.json"
+try:
+    _curriculum_doc = json.loads(_CURRICULUM_JSON.read_text(encoding="utf-8"))
+except Exception as _e:
+    raise RuntimeError(f"failed to load {_CURRICULUM_JSON}: {_e}") from _e
+
+GRADE_CODES: dict[str, int] = {}
+CURRICULUM: dict[tuple[int, str], list[str]] = {}
+CURRICULUM_EN: dict[tuple[int, str], list[str]] = {}
+for _label, _grade_block in _curriculum_doc.get("grades", {}).items():
+    _code = _grade_block["code"]
+    GRADE_CODES[_label] = _code
+    for _subject, _lists in _grade_block.get("subjects", {}).items():
+        CURRICULUM[(_code, _subject)] = list(_lists.get("ja", []))
+        CURRICULUM_EN[(_code, _subject)] = list(_lists.get("en", []))
+
 
 def topics_for(grade_code: int, subject: str) -> list[str]:
     return CURRICULUM.get((grade_code, subject)) or [f"{subject} - 単元1", f"{subject} - 単元2", f"{subject} - 単元3"]
 
-# English translations parallel to CURRICULUM (same key order, same list order).
-CURRICULUM_EN = {
-    (1, "算数"): ["Numbers to 10","Number Composition","Addition","Subtraction","Numbers to 20","Telling Time"],
-    (1, "国語"): ["Hiragana","Katakana","Basic Kanji","The Giant Turnip","Beaks","Names of Things"],
-    (1, "理科"): ["School Exploration","Finding Spring","Growing Morning Glories","Friends with Bugs","Playing in Autumn","Enjoying Winter"],
-    (1, "社会"): ["I Love School","School Route Exploration","Playing at the Park","Growing Vegetables","People in Town","Family and Me"],
-    (1, "英語"): ["Greetings","Alphabet","Numbers","Colors","Fruits","Animals"],
-    (2, "算数"): ["Tables and Graphs","Written Addition and Subtraction","Units of Length","Multiplication Tables","Triangles and Quadrilaterals","Introduction to Fractions"],
-    (2, "国語"): ["Fukinotou","Swimmy","The Letter","Reading and Writing Kanji","Subject and Predicate","Kanji Structure"],
-    (2, "理科"): ["Growing Vegetables","Searching for Living Things","Town Exploration","Toy Land","Playing with Seasons","How I Have Grown"],
-    (2, "社会"): ["Town Exploration","Shop Work","Public Facilities","Working People","Life Long Ago","My Growth"],
-    (2, "英語"): ["Greetings","Favorite Things","Family","Food","Sports","Weather"],
-    (3, "算数"): ["Multiplication","Division","Large Numbers","Length and Weight","Fractions","Triangles and Angles"],
-    (3, "国語"): ["Chiichan's Shadow Play","Soybean Transformations","Romaji","Demonstratives","Using a Dictionary","Proverbs"],
-    (3, "理科"): ["Plant Structure","Observing Insects","Sun and Shadows","Light and Mirrors","Magnet Mysteries","Electric Circuits"],
-    (3, "社会"): ["Our Town","Shop Workers","Farming Work","Factory Work","Fire Prevention","Changes in the City"],
-    (3, "英語"): ["Greetings and Self-Introduction","Numbers 1-20","Colors and Shapes","Favorite Things","Alphabet","Animals"],
-    (4, "算数"): ["Large Numbers","Long Division","Perpendicular and Parallel","Approximate Numbers","Decimal Multiplication and Division","Adding and Subtracting Fractions"],
-    (4, "国語"): ["Gon the Fox","The White Cap","Idioms","Using Kanji Dictionaries","Paragraphs and Summaries","Making a Newspaper"],
-    (4, "理科"): ["Seasons and Living Things","Weather and Temperature","Moon and Stars","How Electricity Works","States of Water","How Things Heat Up"],
-    (4, "社会"): ["Our Prefecture","Where Water Comes From","Garbage Disposal","Natural Disasters","Local Traditions","Distinctive Areas in the Prefecture"],
-    (4, "英語"): ["Days and Months","Weather","Stationery","Telling Time","Everyday Objects","Daily Life"],
-    (5, "算数"): ["Integers and Decimals","Volume","Congruent Figures","Multiples and Divisors","Adding and Subtracting Fractions","Ratio and Percentage"],
-    (5, "国語"): ["Old Man Ozo and the Geese","The Restaurant of Many Orders","Honorifics","Introduction to Classical Japanese","Writing Opinion Essays","Native, Sino, and Loan Words"],
-    (5, "理科"): ["Weather Changes","Plant Germination and Growth","Birth of Medaka Fish","How Water Flows","How Things Dissolve","Pendulum Rules"],
-    (5, "社会"): ["Japan's Land","Japan's Climate","Agriculture and Rice Farming","Fisheries","Industrial Production","Information Industry and Life"],
-    (5, "英語"): ["Self-Introduction","Class Schedule","Birthdays","Countries to Visit","Giving Directions","Daily Life"],
-    (6, "算数"): ["Symmetric Figures","Multiplying and Dividing Fractions","Area of Circles","Ratios","Speed","Proportion and Inverse Proportion"],
-    (6, "国語"): ["Yamanashi","Life of the Sea","Origins of Kanji","Using Honorifics","Holding Debates","Reading Classics"],
-    (6, "理科"): ["How Things Burn","Human Body Structure","Plant Nutrients and Water","Moon and Sun","Land Formation","How Levers Work"],
-    (6, "社会"): ["Japanese History","Jomon to Yayoi","Heian to Kamakura","Edo Period","Meiji Restoration","Constitution and Politics"],
-    (6, "英語"): ["Self-Introduction","Summer Memories","Countries to Visit","Future Dreams","Elementary School Memories","Junior High Life"],
-    (7, "算数"): ["Positive and Negative Numbers","Letters and Expressions","Linear Equations","Proportion and Inverse Proportion","Plane Figures","Solid Figures"],
-    (7, "国語"): ["Memories of Boyhood","The Tale of the Bamboo Cutter","Chinese Idioms","Grammar (Independent Words)","Kanji Radicals","Appreciating Poetry"],
-    (7, "理科"): ["Observing Familiar Organisms","Plant Structure","Properties of Matter","Properties of Gases","Light and Sound","Volcanoes and Earthquakes"],
-    (7, "社会"): ["The World","World Climates","Asia","Europe","Ancient Civilizations","Asuka to Heian Period"],
-    (7, "英語"): ["Be Verbs","General Verbs","Question Words","Plural Forms","Can","Present Progressive"],
-    (8, "算数"): ["Algebraic Expressions","Simultaneous Equations","Linear Functions","Congruence of Figures","Triangles and Quadrilaterals","Probability"],
-    (8, "国語"): ["Run, Melos","The Pillow Book","The Tale of the Heike","Grammar (Conjugation)","Honorifics","Reading Argumentative Texts"],
-    (8, "理科"): ["Chemical Changes and Atoms","Body Structure of Organisms","Animal Classification","Electric Currents","Weather Changes","Weather Observation"],
-    (8, "社会"): ["Regional Features of Japan","Regions of Japan","Kamakura Period","Muromachi Period","Azuchi-Momoyama Period","Edo Period"],
-    (8, "英語"): ["Past Tense","Future Tense","Modal Verbs","Infinitives","Gerunds","Comparatives and Superlatives"],
-    (9, "算数"): ["Expansion and Factoring","Square Roots","Quadratic Equations","Function y=ax²","Similar Figures","Pythagorean Theorem"],
-    (9, "国語"): ["My Old Home","The Narrow Road to the Deep North","The Analects","Grammar Review","Haiku and Tanka","Reading Critical Essays"],
-    (9, "理科"): ["Ions and Batteries","Acids, Bases, and Neutralization","Laws of Heredity","Reproduction of Organisms","Motion and Energy","Movement of Celestial Bodies"],
-    (9, "社会"): ["Meiji Restoration","Taisho Democracy","World War II","Modern Society","Constitution of Japan","Diet and Cabinet"],
-    (9, "英語"): ["Passive Voice","Present Perfect","Relative Pronouns","Indirect Questions","Participles as Adjectives","Subjunctive Mood"],
-    (10, "算数"): ["Numbers and Expressions","Quadratic Functions","Geometry and Measurement","Data Analysis","Counting and Probability","Sets and Propositions"],
-    (10, "国語"): ["Reading Critical Essays","Reading Novels","Introduction to Classical Japanese","Introduction to Classical Chinese","Modern Vocabulary","Honorifics and Expression"],
-    (10, "理科"): ["Physics: Motion","Physics: Energy","Chemistry: Composition of Matter","Chemistry: Chemical Reactions","Biology: Cells","Earth Science: The Earth"],
-    (10, "社会"): ["Geography: Maps","Geography: Climate","History: Modernization","History: International Order","Civics: Adolescence","Civics: Democracy"],
-    (10, "英語"): ["Five Sentence Patterns","Tenses","Modal Verbs","Passive Voice","Infinitives and Gerunds","Relatives"],
-    (11, "算数"): ["Trigonometric Functions","Exponential and Logarithmic Functions","Differentiation","Integration","Sequences","Vectors"],
-    (11, "国語"): ["Modern Critical Essays","Modern Novels","Tale of Genji","Records of the Grand Historian","Waka and Haiku","Argumentative Writing"],
-    (11, "理科"): ["Physics: Mechanics","Physics: Waves","Chemistry: Theoretical","Chemistry: Inorganic","Biology: Metabolism","Earth Science: Universe"],
-    (11, "社会"): ["World History: Medieval","World History: Early Modern","Japanese History: Ancient","Japanese History: Medieval","Geography: Industry","Ethics: Western Thought"],
-    (11, "英語"): ["Subjunctive Mood","Participial Constructions","Relative Adverbs","Comparative Expressions","Reported Speech","Reading Long Passages"],
-    (12, "算数"): ["Complex Plane","Equations and Curves","Limits","Applications of Differentiation","Applications of Integration","Probability Distributions and Statistics"],
-    (12, "国語"): ["Critical Essay Practice","Novel Practice","Classical Japanese Practice","Classical Chinese Practice","Descriptive Writing","Short Essays"],
-    (12, "理科"): ["Physics: Electromagnetism","Physics: Atomic","Chemistry: Organic","Chemistry: Polymers","Biology: Genes","Biology: Ecosystems"],
-    (12, "社会"): ["World History: Modern","Japanese History: Modern","Japanese History: Contemporary","Geography: Regional","Politics and Economics","Ethics: Modern Thought"],
-    (12, "英語"): ["Comprehensive Reading","English Composition","Listening","Vocabulary and Idioms","Comprehensive Grammar","Free Composition"],
-}
-
-# Flat ja→en topic map, generated by zipping parallel lists. Robust to colon-style mismatches.
+# Flat ja->en topic map, generated by zipping parallel lists.
 TOPIC_TX_EN: dict[str, str] = {}
 for _k, _ja_list in CURRICULUM.items():
     _en_list = CURRICULUM_EN.get(_k, [])
     for _ja, _en in zip(_ja_list, _en_list):
         TOPIC_TX_EN[_ja] = _en
+
 
 # Legacy / alternate topic strings present in older registry records that don't
 # match the current CURRICULUM keys. Extend this dict whenever an untranslated
