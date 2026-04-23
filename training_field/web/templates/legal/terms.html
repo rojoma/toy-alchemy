@@ -1,0 +1,85 @@
+{% extends "legal/base.html" %}
+{% set page_title = "利用規約 / Terms of Service" %}
+{% block content %}
+
+<div class="legal-banner">
+  <strong>⚠ ドラフト / Draft status.</strong>
+  本書はエンジニアによる初稿であり、法律家のレビューを受けていません。公開前に弁護士または教育法務の専門家による確認が必要です。
+</div>
+
+<h1>利用規約</h1>
+<p class="last-updated">最終更新: 2026-04-23（ドラフト v0.1）</p>
+
+<h2>1. 目的</h2>
+<p>本規約は、Toy Alchemy（以下「本サービス」）の利用条件を定めるものです。利用者は本サービスを利用することにより、本規約に同意したものとみなされます。</p>
+
+<h2>2. 運営者</h2>
+<p>MIT MAS.664 AI Studio Spring 2026 — Team Toy Alchemy（{{ contact_email or "TBD: 運営代表メールアドレスを記載" }}）</p>
+
+<h2>3. 本サービスの内容</h2>
+<p>本サービスは、AIエージェントが家庭教師役として、主に算数科目を中心とした学習指導をオンラインで提供するものです。本サービスは教育研究プロジェクトの一環であり、学校教育を代替するものではありません。</p>
+
+<h2>4. 対象年齢と保護者の同意</h2>
+<p>本サービスは未成年の利用を想定していますが、18歳未満の利用者は保護者の同意を得た上で利用してください。</p>
+<p>TBD: 保護者同意フロー（同意画面、同意確認メール、書面など）の実装時期・方式を運営方針で決定する必要があります。</p>
+
+<h2>5. 利用料金</h2>
+<p>現時点では本サービスは無償で提供されています。将来的に有償化する場合は、事前に利用者へ告知します。</p>
+
+<h2>6. AIによる指導の性質</h2>
+<p>本サービスはAI（大規模言語モデル）による自動応答で指導を行います。以下の点について、利用者は予め了承のうえご利用ください。</p>
+<ul>
+  <li>AIの回答には誤りや不適切な内容が含まれる可能性があります。</li>
+  <li>学校の授業や教科書の内容と完全に一致するとは限りません。</li>
+  <li>重要な学習判断は保護者・学校教員の確認の上で行ってください。</li>
+  <li>本サービスで得られた学習成果は、学校の成績や資格を保証するものではありません。</li>
+</ul>
+
+<h2>7. 利用者の責任</h2>
+<p>利用者は以下の事項を遵守してください。</p>
+<ul>
+  <li>他の利用者や運営者を誹謗中傷する発言を入力しない。</li>
+  <li>第三者の個人情報・著作権を侵害する情報を送信しない。</li>
+  <li>本サービスを商用目的で再配布しない（本リポジトリ自体のMITライセンスは別途適用）。</li>
+  <li>本サービスを不正アクセス・過度な負荷をかける目的で利用しない。</li>
+</ul>
+
+<h2>8. 禁止事項</h2>
+<p>以下の行為は禁止します。</p>
+<ul>
+  <li>本サービスの運営を妨害する行為</li>
+  <li>他の利用者のデータの不正取得</li>
+  <li>法令または公序良俗に反する行為</li>
+  <li>本サービスをリバースエンジニアリングして脆弱性を悪用する行為（責任ある脆弱性報告は歓迎します）</li>
+</ul>
+
+<h2>9. 知的財産</h2>
+<p>本サービスのソースコードは<a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a>で公開されています。AI生成コンテンツ（AI教師の発言）に関する権利は、各生成時点での生成AIサービスの利用規約に準じます。</p>
+
+<h2>10. 免責事項</h2>
+<ul>
+  <li>本サービスはAI研究・教育目的で提供されており、商用レベルの SLA は保証しません。</li>
+  <li>本サービスの利用により生じたいかなる損害（直接・間接を問わず）についても、運営者は責任を負いません。</li>
+  <li>本サービスは予告なく停止・変更される場合があります。</li>
+</ul>
+
+<h2>11. データの取り扱い</h2>
+<p>利用者データの取り扱いは<a href="/privacy">プライバシーポリシー</a>に従います。</p>
+
+<h2>12. 規約の変更</h2>
+<p>本規約は、必要に応じて改訂することがあります。重要な変更がある場合は本ページで告知します。</p>
+
+<h2>13. 準拠法・管轄</h2>
+<p>本規約は日本法に準拠するものとし、本サービスに関する紛争は東京地方裁判所を第一審の専属的合意管轄とします。</p>
+<p>TBD: 米国での利用も視野に入れる場合は、管轄条項の再検討が必要です（#7 決定メモ参照）。</p>
+
+<h2>14. お問い合わせ</h2>
+<p>{{ contact_email or "TBD: 運営代表メールアドレスを記載" }}</p>
+
+<hr />
+
+<h2 id="english">English (summary)</h2>
+<p><em>This English summary is for convenience only. The Japanese version above is authoritative.</em></p>
+<p>Toy Alchemy is an AI tutoring service for educational research. The service is free, may contain errors typical of AI-generated content, and is not a substitute for formal education. Users under 18 should use with parental consent. Governing law: Japan. Data handling follows our <a href="/privacy">Privacy Policy</a>. This is a <strong>draft document pending legal review</strong>.</p>
+
+{% endblock %}
