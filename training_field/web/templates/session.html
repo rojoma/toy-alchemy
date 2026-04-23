@@ -373,25 +373,11 @@ body{
 .mode-btn.active{background:var(--text);color:var(--bg)}
 .mode-btn:not(.active):hover{background:var(--surface-2);color:var(--text)}
 
-.measure-toggle{
-  display:flex;align-items:center;gap:10px;
-  font-size:13px;color:var(--text-secondary);font-weight:500;
-  cursor:pointer;user-select:none;letter-spacing:-0.01em;
-  padding:0 8px;
+.measure-note{
+  display:flex;align-items:center;
+  font-size:12px;color:var(--text-muted, var(--text-secondary));
+  font-style:italic;padding:0 8px;letter-spacing:-0.01em;
 }
-.measure-toggle input{position:absolute;opacity:0;pointer-events:none}
-.measure-box{
-  width:20px;height:20px;border-radius:6px;
-  border:1.5px solid var(--border-strong);
-  background:var(--surface);
-  display:flex;align-items:center;justify-content:center;
-  transition:background-color .2s var(--ease),border-color .2s var(--ease);
-  color:var(--bg);
-}
-.measure-box svg{width:12px;height:12px;opacity:0;transition:opacity .15s var(--ease)}
-.measure-toggle input:checked + .measure-box{background:var(--text);border-color:var(--text)}
-.measure-toggle input:checked + .measure-box svg{opacity:1}
-.measure-toggle:hover .measure-box{border-color:var(--text)}
 
 /* ── Skills chips ─────────────────────────────────── */
 .sk{
@@ -538,11 +524,9 @@ select:hover{border-color:var(--text)}
     </div>
   </div>
   <div class="bbar">
-    <label class="measure-toggle" id="measureWrap">
-      <input type="checkbox" id="measureChk">
-      <span class="measure-box"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span data-i18n="measure_learning">Measure learning (pre/post test)</span>
-    </label>
+    <div class="measure-note" id="measureNote">
+      <span data-i18n="measure_always_on">Pre/Post tests always run (required to compare teachers — see #34)</span>
+    </div>
     <button class="btn-run" id="brun" onclick="runSession()" data-i18n="start_session">Start Session</button>
   </div>
 </div>
@@ -618,7 +602,7 @@ const I18N = {
     eval_axes:"評価軸", ax_system:"システム", ax_prof:"習熟度", ax_dialog:"対話品質", ax_goal:"目標達成", ax_pass:"合格点",
     sys_metrics:"システム指標", halluc_rate:"幻覚発生率", direct_rate:"直接回答率", avg_zpd:"平均ZPD", avg_bloom:"平均Bloom",
     session_hist:"セッション履歴", no_sessions:"セッションなし",
-    select_unit:"単元を選択してセッションを開始", start_session:"セッション開始", run_test:"テスト実施", measure_learning:"学習効果を測定 (pre/post test)",
+    select_unit:"単元を選択してセッションを開始", start_session:"セッション開始", run_test:"テスト実施", measure_always_on:"事前・事後テストは常に実施（比較のため必須）",
     topic:"単元", depth:"深さ", skills_lib:"スキルライブラリ",
     teacher_agent:"教師エージェント", student_agent:"生徒エージェント", referee:"審判",
     neutral_eval:"中立評価 — 全Agentに適用",
@@ -630,7 +614,7 @@ const I18N = {
     eval_axes:"Evaluation Axes", ax_system:"System", ax_prof:"Proficiency", ax_dialog:"Dialog Quality", ax_goal:"Goal Achieved", ax_pass:"Pass Score",
     sys_metrics:"System Metrics", halluc_rate:"Hallucination Rate", direct_rate:"Direct Answer Rate", avg_zpd:"avg ZPD", avg_bloom:"avg Bloom",
     session_hist:"Session History", no_sessions:"No sessions yet",
-    select_unit:"Select a topic to start a session", start_session:"Start Session", run_test:"Run Test", measure_learning:"Measure learning (pre/post test)",
+    select_unit:"Select a topic to start a session", start_session:"Start Session", run_test:"Run Test", measure_always_on:"Pre/post tests always run (required to compare teachers)",
     topic:"Topic", depth:"Depth", skills_lib:"Skills Library",
     teacher_agent:"Teacher Agent", student_agent:"Student Agent", referee:"Referee",
     neutral_eval:"Neutral evaluation — applied to all Agents",
@@ -885,15 +869,17 @@ function setMode(m){
   sessionMode = m;
   document.getElementById("modeAI").className = "mode-btn" + (m==="ai"?" active":"");
   document.getElementById("modeLive").className = "mode-btn" + (m==="live"?" active":"");
-  document.getElementById("measureWrap").style.display = m==="ai"?"flex":"none";
+  const note = document.getElementById("measureNote");
+  if(note) note.style.display = m==="ai"?"flex":"none";
 }
 
 function runSession(){
   if(sessionMode === "live") return startLiveSession();
-  const measure = document.getElementById("measureChk").checked;
+  // Observatory (agent vs agent) sessions always run pre/post tests
+  // so results are comparable across teachers. See #34.
   startStream({
-    pre_test: measure, post_test: measure,
-    statusKey: measure ? "status_test" : "status_running",
+    pre_test: true, post_test: true,
+    statusKey: "status_test",
   });
 }
 
