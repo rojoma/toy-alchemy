@@ -802,6 +802,50 @@ async def live_feedback(session_id: str, body: dict):
     return {"ok": True, "count": len(log["entries"])}
 
 
+@app.post("/api/live/{session_id}/session-feedback")
+async def live_session_feedback(session_id: str, body: dict):
+    """Record the student's end-of-session feedback on the teacher (#29).
+
+    body: {rating?: 1-5, tags?: [str], note?: str, action: "submit"|"skip"}
+    Stored at reports/feedback/{session_id}_session.json. Rating and tags
+    are both optional so the student can submit just a note, just stars,
+    or skip entirely. The skip action is recorded so we know the form
+    was shown and dismissed (distinct from "never saw it").
+    """
+    session = LIVE_SESSIONS.get(session_id)
+    action = body.get("action", "submit")
+    if action not in ("submit", "skip"):
+        raise HTTPException(400, "action must be 'submit' or 'skip'")
+    rating = body.get("rating")
+    if rating is not None:
+        try:
+            rating = int(rating)
+        except (TypeError, ValueError):
+            raise HTTPException(400, "rating must be an integer 1-5 or null")
+        if not 1 <= rating <= 5:
+            raise HTTPException(400, "rating must be between 1 and 5")
+    tags = body.get("tags") or []
+    if not isinstance(tags, list):
+        raise HTTPException(400, "tags must be a list")
+    tags = [str(t)[:60] for t in tags][:20]
+    note = (body.get("note") or "")[:2000]
+
+    FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    path = FEEDBACK_DIR / f"{session_id}_session.json"
+    payload = {
+        "session_id": session_id,
+        "action": action,
+        "rating": rating,
+        "tags": tags,
+        "note": note,
+        "teacher_id": session.teacher.config.teacher_id if session else None,
+        "topic": session.topic if session else None,
+        "timestamp": datetime.datetime.now().isoformat(),
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"ok": True}
+
+
 @app.get("/api/live/{session_id}")
 async def live_status(session_id: str):
     """Get current state of a live session."""
