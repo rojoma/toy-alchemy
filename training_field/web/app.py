@@ -1017,7 +1017,7 @@ async def agent_leaderboard(_auth: bool = Depends(require_field_key), limit: int
         slot["sessions"] += 1
         if r.get("learning_gain") is not None:
             slot["gains"].append(r["learning_gain"])
-        if r.get("session_grade") in ("◎", "○"):
+        if r.get("session_grade") in ("◎", "○", "△"):
             slot["passes"] += 1
         slot["total_zpd"] += r.get("avg_zpd_alignment") or 0
     out = []

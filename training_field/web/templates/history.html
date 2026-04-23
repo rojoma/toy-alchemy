@@ -102,6 +102,7 @@ main{max-width:1280px;margin:0 auto;padding:64px 40px 120px}
 }
 .card.grade-ex::before{background:var(--success)}
 .card.grade-pass::before{background:var(--link)}
+.card.grade-marginal::before{background:var(--warning, #f59e0b)}
 .card.grade-fail::before{background:var(--danger)}
 .card:hover{
   transform:translateY(-2px);
@@ -121,9 +122,11 @@ main{max-width:1280px;margin:0 auto;padding:64px 40px 120px}
 }
 .g-ex{background:rgba(31,138,76,0.14);color:var(--success)}
 .g-pass{background:rgba(0,113,227,0.14);color:var(--link)}
+.g-marginal{background:rgba(245,158,11,0.14);color:var(--warning, #f59e0b)}
 .g-fail{background:rgba(193,39,45,0.12);color:var(--danger)}
 :root[data-theme="dark"] .g-ex{background:rgba(48,209,88,0.18)}
 :root[data-theme="dark"] .g-pass{background:rgba(41,151,255,0.18)}
+:root[data-theme="dark"] .g-marginal{background:rgba(250,179,37,0.2)}
 :root[data-theme="dark"] .g-fail{background:rgba(255,69,58,0.18)}
 
 .card-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -246,14 +249,14 @@ main{max-width:1280px;margin:0 auto;padding:64px 40px 120px}
     <button class="filter-chip" data-filter="live">Live</button>
     <button class="filter-chip" data-filter="observatory">Observatory</button>
     <button class="filter-chip" data-filter="passed">◎ ○ Passed</button>
-    <button class="filter-chip" data-filter="failed">× Failed</button>
+    <button class="filter-chip" data-filter="failed">⚠ Review</button>
   </div>
 
   {% if sessions %}
   <div class="grid" id="grid">
     {% for r in sessions %}
     {% set is_live = r.exp_id.startswith('live_') %}
-    {% set grade_class = 'grade-ex' if r.session_grade == '◎' else ('grade-pass' if r.session_grade == '○' else 'grade-fail') %}
+    {% set grade_class = 'grade-ex' if r.session_grade == '◎' else ('grade-pass' if r.session_grade == '○' else ('grade-marginal' if r.session_grade == '△' else 'grade-fail')) %}
     {% set grade_passed = r.session_grade in ['◎', '○'] %}
     <div class="card {{ grade_class }}"
          data-mode="{{ 'live' if is_live else 'observatory' }}"
@@ -264,7 +267,9 @@ main{max-width:1280px;margin:0 auto;padding:64px 40px 120px}
         <div class="card-topic" data-i18n-tx>{{ r.topic or '—' }}</div>
         {% if r.session_grade == '◎' %}<span class="grade-mark g-ex">◎</span>
         {% elif r.session_grade == '○' %}<span class="grade-mark g-pass">○</span>
-        {% else %}<span class="grade-mark g-fail">×</span>{% endif %}
+        {% elif r.session_grade == '△' %}<span class="grade-mark g-marginal">△</span>
+        {% elif r.session_grade == '⚠' %}<span class="grade-mark g-fail">⚠</span>
+        {% else %}<span class="grade-mark g-fail">⚠</span>{% endif %}
       </div>
 
       <div class="card-meta">
