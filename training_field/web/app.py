@@ -977,7 +977,14 @@ async def terms_page(request: Request):
     })
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
+async def landing(request: Request):
+    """Public-facing landing page (#31). Draft copy; audience/CTA are placeholder."""
+    return templates.TemplateResponse(request, "landing.html", {})
+
+
+@app.get("/observatory", response_class=HTMLResponse)
+async def observatory(request: Request):
+    """Legacy dashboard (previously at /). Agent-vs-agent + experiment overview."""
     reg = ExperimentRegistry()
     summary = reg.summary()
     student_data = []
