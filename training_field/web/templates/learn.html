@@ -266,6 +266,7 @@ const I18N = {
     scope_photo_ok:"学習範囲を読み取りました（必要なら編集してください）",
     scope_photo_too_large:"ファイルが大きすぎます（5MB以下にしてください）",
     scope_photo_failed:"写真の読み取りに失敗しました。手で入力してください。",
+    footer_terms:"利用規約", footer_privacy:"プライバシー",
     lets_go:"はじめる", start_session:"セッション開始", switch_student:"別の生徒に切り替え",
     welcome_back:n=>"おかえりなさい、"+n+"さん！",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" セッション完了",
@@ -292,6 +293,7 @@ const I18N = {
     scope_photo_ok:"Scope extracted from photo (edit if needed)",
     scope_photo_too_large:"File is too large (5MB max)",
     scope_photo_failed:"Couldn't read the photo. Please type the scope instead.",
+    footer_terms:"Terms", footer_privacy:"Privacy",
     lets_go:"Let's Go", start_session:"Start Session", switch_student:"Switch student",
     welcome_back:n=>"Welcome back, "+n+"!",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" sessions completed",
@@ -631,8 +633,8 @@ async function handleScopePhoto(event){
 </script>
 
 <footer style="max-width:480px;margin:24px auto 0;text-align:center;font-size:11px;color:var(--muted);letter-spacing:0.02em">
-  <a href="/terms" style="color:var(--muted);text-decoration:none;margin:0 6px">利用規約</a>·
-  <a href="/privacy" style="color:var(--muted);text-decoration:none;margin:0 6px">プライバシー</a>·
+  <a href="/terms" data-i18n="footer_terms" style="color:var(--muted);text-decoration:none;margin:0 6px">Terms</a>·
+  <a href="/privacy" data-i18n="footer_privacy" style="color:var(--muted);text-decoration:none;margin:0 6px">Privacy</a>·
   <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none;margin:0 6px">GitHub</a>
 </footer>
 </body>
