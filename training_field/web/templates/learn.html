@@ -219,9 +219,33 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
   </div>
   <div class="form-group">
     <label class="form-label" data-i18n="label_teacher">TEACHER</label>
-    <select class="form-select" id="teacherInput">
+    <div class="teacher-picker" id="teacherPickerOnboard" role="radiogroup">
       {% for t in teachers %}
-      <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
+      <div class="teacher-card" role="radio" tabindex="0"
+           data-teacher-id="{{ t.teacher_id }}"
+           data-tagline-en="{{ t.tagline_en or '' }}"
+           data-tagline-ja="{{ t.tagline_ja or '' }}">
+        <div class="teacher-head">
+          <div class="teacher-avatar">{{ t.name[:1] }}</div>
+          <div class="teacher-name">{{ t.name }}</div>
+        </div>
+        <div class="teacher-tagline"
+             data-en="{{ t.tagline_en or '' }}"
+             data-ja="{{ t.tagline_ja or '' }}">{{ t.tagline_en or '' }}</div>
+        <div class="teacher-traits">
+          {% for trait in t.traits or [] %}
+          <span class="teacher-trait"
+                data-en="{{ trait.label_en }}"
+                data-ja="{{ trait.label_ja }}">{{ trait.icon }} {{ trait.label_en }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <!-- Hidden value-carrier kept so registerStudent() reads teacherInput.value. -->
+    <select id="teacherInput" style="display:none">
+      {% for t in teachers %}
+      <option value="{{ t.teacher_id }}">{{ t.name }}</option>
       {% endfor %}
     </select>
   </div>
@@ -555,7 +579,7 @@ function showWelcome(profile){
     });
 
   // Wire teacher cards (#10 groundwork)
-  initTeacherPicker();
+  initTeacherPicker("teacherPicker");
 
   // History
   const list = document.getElementById("historyList");
@@ -574,35 +598,45 @@ function showWelcome(profile){
 
 
 // ── Teacher picker ────────────────────────────────────
+// Two pickers coexist: onboarding (id="teacherPickerOnboard") and
+// welcome-back (id="teacherPicker"). Each has its own scope so selecting
+// in one doesn't visually deselect the other.
 let selectedTeacherId = null;
-function initTeacherPicker(){
-  const cards = document.querySelectorAll(".teacher-card");
+function initTeacherPicker(containerId, opts){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const cards = container.querySelectorAll(".teacher-card");
   if(cards.length === 0) return;
   const saved = localStorage.getItem("tfStudentTeacher");
   let initial = null;
   cards.forEach(card=>{
     if(card.dataset.teacherId === saved) initial = card;
-    card.addEventListener("click", ()=>selectTeacher(card));
+    card.addEventListener("click", ()=>selectTeacherIn(container, card, opts));
     card.addEventListener("keydown", e=>{
       if(e.key === "Enter" || e.key === " "){
         e.preventDefault();
-        selectTeacher(card);
+        selectTeacherIn(container, card, opts);
       }
     });
   });
-  selectTeacher(initial || cards[0]);
-  // Apply current language labels to trait chips + tagline
+  selectTeacherIn(container, initial || cards[0], opts);
   refreshTeacherLabels(curLang);
 }
-function selectTeacher(card){
+function selectTeacherIn(container, card, opts){
   if(!card) return;
-  document.querySelectorAll(".teacher-card").forEach(c=>{
+  container.querySelectorAll(".teacher-card").forEach(c=>{
     c.classList.remove("selected");
     c.setAttribute("aria-checked", "false");
   });
   card.classList.add("selected");
   card.setAttribute("aria-checked", "true");
   selectedTeacherId = card.dataset.teacherId;
+  // Mirror selection into a hidden <select> if the caller asked us to
+  // (keeps legacy form-style reads like teacherInput.value working).
+  if(opts && opts.mirrorSelectId){
+    const sel = document.getElementById(opts.mirrorSelectId);
+    if(sel) sel.value = selectedTeacherId;
+  }
 }
 function refreshTeacherLabels(lang){
   document.querySelectorAll(".teacher-tagline").forEach(el=>{
@@ -650,6 +684,11 @@ function goToSession(profile, teacherId){
 }
 
 applyLang(curLang);
+// Onboard teacher picker is always present in the DOM, so wire it up at
+// load time. welcome-back picker is wired by showWelcome() once a profile
+// is loaded. Both share selectedTeacherId, but clicks are scoped to the
+// container they live in.
+initTeacherPicker("teacherPickerOnboard", {mirrorSelectId: "teacherInput"});
 
 function resetProfile(){
   localStorage.removeItem("tfStudentId");
