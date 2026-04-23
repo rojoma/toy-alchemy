@@ -9,7 +9,7 @@ This memo lays out, per issue, **what question needs answering**, **who is the n
 ## #7 — Terms of Service & Privacy Policy (`legal`)
 
 ### The question
-What legal framework does Toy Alchemy operate under, and what consents do we collect before a minor uses the service?
+What legal framework does Beyond Answer Engine operate under, and what consents do we collect before a minor uses the service?
 
 ### Why this blocks engineering
 We already collect per-student profile data (name, grade, subject, proficiency history, session transcripts, now end-of-session feedback from #29 and planned photo uploads in #32). Without a posted ToS + privacy policy, we cannot legally invite unknown families to the live app (#31 depends on this).
