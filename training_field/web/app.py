@@ -355,6 +355,10 @@ async def live_start(body: dict):
     student_label = body.get("student_name", "You")
     run_pre_test = bool(body.get("run_pre_test", True))
     run_post_test = bool(body.get("run_post_test", True))
+    # Optional learning scope the student specified (#28). When present we
+    # skip the pre-test and weave the scope into the teacher's greeting so
+    # the first message is relevant to what the student actually wants.
+    scope = (body.get("scope") or "").strip() or None
 
     gcode = GRADE_CODES.get(grade_str, 6)
     teacher = load_teacher(teacher_id)
@@ -405,12 +409,29 @@ async def live_start(body: dict):
             "is_complete": False,
         }
 
-    # No pre-test: open with a teaching greeting and let the student speak first.
-    greeting = (
-        f"Hi! I'm {teacher.config.name}. What would you like to work on for {display_topic(topic, lang)}?"
-        if lang == "en"
-        else f"こんにちは！{teacher.config.name}です。{display_topic(topic, lang)}について、どこから始めましょうか？"
-    )
+    # No pre-test: open with a teaching greeting. If the student gave us a
+    # scope (#28), acknowledge it and dive straight into it instead of
+    # asking an open "what do you want to work on?" question.
+    dtopic = display_topic(topic, lang)
+    if scope:
+        if lang == "en":
+            greeting = (
+                f"Hi! I'm {teacher.config.name}. Got it — let's work on "
+                f"\"{scope}\" for {dtopic}. Let me start with a quick "
+                f"walkthrough, and jump in any time you want to ask something."
+            )
+        else:
+            greeting = (
+                f"こんにちは！{teacher.config.name}です。"
+                f"「{scope}」ですね。{dtopic}について、一緒に見ていきましょう。"
+                f"途中でわからないところがあったら、気軽に聞いてくださいね。"
+            )
+    else:
+        greeting = (
+            f"Hi! I'm {teacher.config.name}. What would you like to work on for {dtopic}?"
+            if lang == "en"
+            else f"こんにちは！{teacher.config.name}です。{dtopic}について、どこから始めましょうか？"
+        )
     session.last_teacher_text = greeting
     return {
         "session_id": sid,

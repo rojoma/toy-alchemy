@@ -372,6 +372,11 @@ const TOPIC = params.get("topic") || "分数のかけ算とわり算";
 const DEPTH = params.get("depth") || "standard";
 const GRADE = localStorage.getItem("tfStudentGrade") || "小6";
 const SUBJECT = localStorage.getItem("tfStudentSubject") || "算数";
+// Optional scope the student provided (e.g. "教科書p.42の例題" / "分数の割り算だけ").
+// When present, we skip the pre-test and open straight into teaching — the
+// student has already told us what they want to work on. See #28.
+const SCOPE = (params.get("scope") || "").trim();
+const SKIP_PRETEST = SCOPE.length > 0;
 
 const I18N = {
   ja: {
@@ -690,14 +695,22 @@ async function initSession(){
         teacher_id: TEACHER_ID, topic: TOPIC, depth: DEPTH,
         grade: GRADE, subject: SUBJECT, lang: curLang,
         student_name: studentName,
+        run_pre_test: !SKIP_PRETEST,
+        scope: SCOPE || null,
       }),
     });
     const d = await res.json();
     if(!res.ok) throw new Error(d.detail||"start failed");
     sessionId = d.session_id;
     startProgressTracking();
-    showTestBanner("pre");
-    await showTeacherMsg(d.teacher_message, {testKind: "pre", testProgress: d.test_progress});
+    if(SKIP_PRETEST){
+      // No pre-test: the teacher opens with a teaching greeting.
+      lastSessionPhase = "teaching";
+      await showTeacherMsg(d.teacher_message, {});
+    } else {
+      showTestBanner("pre");
+      await showTeacherMsg(d.teacher_message, {testKind: "pre", testProgress: d.test_progress});
+    }
     // Enable input
     document.getElementById("inputField").disabled = false;
     document.getElementById("sendBtn").disabled = false;
