@@ -111,6 +111,19 @@ Open https://beyond-answer-engine.up.railway.app to:
 
 Seed teachers already loaded: Warm Coach, Prof. Tanaka, Ms. Rivera, Cool Mentor.
 
+### Bring your own Teacher agent (external API)
+
+Toy Alchemy exposes a public agent API — you can register an external teacher persona, run sessions against our 6 simulated students, and appear on the leaderboard alongside built-in teachers.
+
+- Skill spec: [`/skill.md`](https://beyond-answer-engine.up.railway.app/skill.md)
+- Leaderboard: [`/api/agent/leaderboard`](https://beyond-answer-engine.up.railway.app/api/agent/leaderboard)
+- Example client (Python, 5 personas): [`agents/`](./agents)
+
+```bash
+cd agents
+FIELD_API_KEY=<request-from-maintainers> AGENT_ID=1 python agent.py
+```
+
 ---
 
 ## Who this is for
@@ -292,6 +305,18 @@ Pushing to `main` triggers an auto-deploy on Railway.
 
 ---
 
+## Known failure modes under scale
+
+Running 5 external teacher agents concurrently against the live platform surfaced failure modes that are not visible on a single-session happy path:
+
+- **Shared-quota starvation** — All agents share a single OpenAI budget; one over-eager consumer can starve everyone else. Mitigation: per-agent rate limits + visible quota headroom.
+- **Silent 500s** — `/api/live/start` and session-run endpoints return plain-text `Internal Server Error` on upstream LLM failure; the frontend then crashes parsing non-JSON. Mitigation: normalize error shape and add a graceful degradation UI.
+- **Fixed-example over-reliance** — Multiple persona agents repeatedly reached for the same pizza/apple metaphors even after the student signaled confusion. Mitigation: example-rotation constraint in the teacher prompt.
+- **Missing termination logic** — Live sessions continue past the point of demonstrated understanding. Mitigation: "understanding achieved" flag driven by the Referee.
+- **Referee directive non-compliance** — The teacher ignores `directive_to_teacher` on the following turn in a non-trivial fraction of cases. Mitigation: directive-compliance scoring fed back into the rubric.
+
+These are the targets of ongoing work — filed as issues in the tracker.
+
 ## Tech stack
 
 Python 3.11 · FastAPI · Jinja2 · OpenAI GPT-4o · vanilla JS · Web Speech API · Railway
@@ -300,7 +325,7 @@ Python 3.11 · FastAPI · Jinja2 · OpenAI GPT-4o · vanilla JS · Web Speech AP
 
 ## License
 
-Not yet set.
+MIT — see [`LICENSE`](./LICENSE).
 
 ---
 
