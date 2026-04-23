@@ -20,8 +20,103 @@ _INTERNAL_FACTORIES = {
 }
 
 
+def _warmth_tier(v: float) -> str:
+    if v >= 0.85: return "very_warm"
+    if v >= 0.65: return "warm"
+    if v >= 0.4: return "balanced"
+    return "cool"
+
+
+def _formality_tier(v: float) -> str:
+    if v >= 0.7: return "formal"
+    if v >= 0.45: return "neutral"
+    return "casual"
+
+
+def _pace_tier(v: float) -> str:
+    if v >= 0.55: return "brisk"
+    if v >= 0.4: return "steady"
+    return "slow"
+
+
+def _persona_preview(c) -> dict:
+    """User-facing summary: what makes this teacher different from the others?
+
+    Converts internal TeacherConfig parameters into tags and a plain-English
+    tagline that a student or parent can actually use to pick one.
+    """
+    warmth = _warmth_tier(c.warmth)
+    formality = _formality_tier(c.formality)
+    pace = _pace_tier(c.pacing_speed)
+    patience = "patient" if c.patience_threshold >= 4 else "brisk"
+    motivation = c.motivation_style  # "challenge" | "encouragement" | "mastery"
+
+    # Traits: short chips the UI shows on the teacher card.
+    traits: list[dict] = []
+    if warmth == "very_warm":
+        traits.append({"key": "warm", "icon": "💗", "label_en": "Very warm", "label_ja": "とてもやさしい"})
+    elif warmth == "warm":
+        traits.append({"key": "warm", "icon": "😊", "label_en": "Warm", "label_ja": "やさしい"})
+    elif warmth == "cool":
+        traits.append({"key": "cool", "icon": "🧊", "label_en": "Cool & direct", "label_ja": "クールで率直"})
+
+    if formality == "formal":
+        traits.append({"key": "formal", "icon": "🎓", "label_en": "Formal", "label_ja": "丁寧"})
+    elif formality == "casual":
+        traits.append({"key": "casual", "icon": "🗣️", "label_en": "Casual", "label_ja": "くだけた"})
+
+    if patience == "patient":
+        traits.append({"key": "patient", "icon": "🕰️", "label_en": "Patient with mistakes", "label_ja": "間違いに寛容"})
+
+    if motivation == "challenge":
+        traits.append({"key": "challenges", "icon": "🔥", "label_en": "Challenges you", "label_ja": "チャレンジを促す"})
+    elif motivation == "encouragement":
+        traits.append({"key": "cheers", "icon": "📣", "label_en": "Cheers you on", "label_ja": "はげましてくれる"})
+    elif motivation == "mastery":
+        traits.append({"key": "mastery", "icon": "🎯", "label_en": "Mastery-focused", "label_ja": "じっくり完成させる"})
+
+    if pace == "slow":
+        traits.append({"key": "slow", "icon": "🐢", "label_en": "Slow and steady", "label_ja": "ゆっくりじっくり"})
+    elif pace == "brisk":
+        traits.append({"key": "brisk", "icon": "⚡", "label_en": "Brisk pace", "label_ja": "テンポよく"})
+
+    if "socratic_questioning" in c.selected_skills:
+        traits.append({"key": "socratic", "icon": "❓", "label_en": "Asks questions", "label_ja": "問いかけてくれる"})
+    if "stepwise_decomposition" in c.selected_skills:
+        traits.append({"key": "stepwise", "icon": "🪜", "label_en": "Step-by-step", "label_ja": "一歩ずつ"})
+    if "concrete_examples" in c.selected_skills:
+        traits.append({"key": "examples", "icon": "🍎", "label_en": "Real examples", "label_ja": "身近な例で"})
+
+    # Derive a single tagline from the dominant traits. Short, student-facing.
+    if motivation == "encouragement" and warmth in ("warm", "very_warm"):
+        tagline_en = "Your encouraging cheerleader."
+        tagline_ja = "やさしく応援してくれる先生。"
+    elif motivation == "mastery" and pace == "slow":
+        tagline_en = "Patient, step-by-step coach."
+        tagline_ja = "一歩ずつ、しっかり確認する先生。"
+    elif motivation == "challenge" and warmth == "cool":
+        tagline_en = "Sharp challenger. No fluff."
+        tagline_ja = "きびしめで、実力勝負の先生。"
+    elif motivation == "challenge":
+        tagline_en = "Curious questioner who pushes you to think."
+        tagline_ja = "問いかけて考えさせてくれる先生。"
+    elif warmth == "very_warm":
+        tagline_en = "Warm and welcoming — great if you're nervous."
+        tagline_ja = "あったかい雰囲気。緊張しがちな子に。"
+    else:
+        tagline_en = "Balanced and approachable."
+        tagline_ja = "バランス型の先生。"
+
+    return {
+        "tagline_en": tagline_en,
+        "tagline_ja": tagline_ja,
+        "traits": traits,
+    }
+
+
 def _summarize(agent: TeacherAgent) -> dict:
     c = agent.config
+    persona = _persona_preview(c)
     return {
         "teacher_id": c.teacher_id,
         "name": c.name,
@@ -31,6 +126,10 @@ def _summarize(agent: TeacherAgent) -> dict:
         "formality": c.formality,
         "patience_threshold": c.patience_threshold,
         "selected_skills": list(c.selected_skills),
+        # User-facing derived fields (#10 groundwork):
+        "tagline_en": persona["tagline_en"],
+        "tagline_ja": persona["tagline_ja"],
+        "traits": persona["traits"],
     }
 
 
