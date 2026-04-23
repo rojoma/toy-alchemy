@@ -133,6 +133,26 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
 .trend-bar.pos{background:var(--success)}
 .trend-bar.neg{background:var(--danger)}
 .trend-sum{font-size:11px;color:var(--muted);font-feature-settings:"tnum";min-width:40px;text-align:right}
+
+/* Scope + photo upload (#32) */
+.scope-row{display:flex;gap:8px;align-items:stretch}
+.scope-input{flex:1;min-width:0}
+.scope-photo-btn{
+  flex:0 0 44px;width:44px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;background:var(--surface-2);color:var(--text-secondary);
+  font-size:18px;cursor:pointer;user-select:none;
+  transition:background 0.15s var(--ease);
+}
+.scope-photo-btn:hover{background:var(--border-strong);color:var(--text)}
+.scope-photo-btn.busy{cursor:progress;opacity:0.6}
+.scope-status{
+  font-size:11px;margin-top:6px;padding:8px 10px;border-radius:8px;
+  color:var(--text-secondary);
+}
+.scope-status.ok{background:rgba(31,138,76,0.12);color:var(--success, #1f8a4c)}
+.scope-status.err{background:rgba(193,39,45,0.1);color:var(--danger, #c1272d)}
+.scope-status.busy{background:var(--surface-2);color:var(--muted)}
 </style>
 </head>
 <body>
@@ -199,12 +219,20 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
   </div>
   <div class="form-group">
     <label class="form-label" data-i18n="label_scope">LEARNING SCOPE (OPTIONAL)</label>
-    <input type="text" class="form-select" id="scopeInput"
-           data-i18n-placeholder="scope_placeholder"
-           placeholder='e.g. "textbook p.42 word problems" — leave blank to take a pre-test first' />
+    <div class="scope-row">
+      <input type="text" class="form-select scope-input" id="scopeInput"
+             data-i18n-placeholder="scope_placeholder"
+             placeholder='e.g. "textbook p.42 word problems" — leave blank to take a pre-test first' />
+      <label for="scopePhoto" class="scope-photo-btn" data-i18n-title="scope_photo_title" title="Upload a photo of your homework">
+        <span id="scopePhotoIcon">📷</span>
+      </label>
+      <input type="file" id="scopePhoto" accept="image/*" capture="environment"
+             style="display:none" onchange="handleScopePhoto(event)" />
+    </div>
     <div class="form-hint" data-i18n="scope_hint" style="font-size:11px;color:var(--muted);margin-top:4px">
       When you tell the teacher what you want to work on, the session skips the pre-test and jumps straight into teaching.
     </div>
+    <div id="scopeStatus" class="scope-status" style="display:none"></div>
   </div>
   <button class="btn-primary" onclick="startSession()" data-i18n="start_session">Start Session</button>
 
@@ -233,6 +261,11 @@ const I18N = {
     stat_streak:"連続日数",
     stat_sessions:"セッション数",
     stat_total_gain:"累計の伸び",
+    scope_photo_title:"宿題の写真をアップロード",
+    scope_photo_uploading:"写真を読み取り中…",
+    scope_photo_ok:"学習範囲を読み取りました（必要なら編集してください）",
+    scope_photo_too_large:"ファイルが大きすぎます（5MB以下にしてください）",
+    scope_photo_failed:"写真の読み取りに失敗しました。手で入力してください。",
     lets_go:"はじめる", start_session:"セッション開始", switch_student:"別の生徒に切り替え",
     welcome_back:n=>"おかえりなさい、"+n+"さん！",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" セッション完了",
@@ -254,6 +287,11 @@ const I18N = {
     stat_streak:"Day streak",
     stat_sessions:"Sessions",
     stat_total_gain:"Total gain",
+    scope_photo_title:"Upload a photo of your homework",
+    scope_photo_uploading:"Reading the photo…",
+    scope_photo_ok:"Scope extracted from photo (edit if needed)",
+    scope_photo_too_large:"File is too large (5MB max)",
+    scope_photo_failed:"Couldn't read the photo. Please type the scope instead.",
     lets_go:"Let's Go", start_session:"Start Session", switch_student:"Switch student",
     welcome_back:n=>"Welcome back, "+n+"!",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" sessions completed",
@@ -528,6 +566,52 @@ function resetProfile(){
   localStorage.removeItem("tfStudentSubject");
   localStorage.removeItem("tfStudentTeacher");
   location.reload();
+}
+
+// Homework photo upload (#32) — image goes to GPT-4o vision, scope text
+// comes back. The image itself is not persisted on our server.
+async function handleScopePhoto(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const MAX = 5 * 1024 * 1024;
+  const statusEl = document.getElementById("scopeStatus");
+  const btn = document.querySelector(".scope-photo-btn");
+  const icon = document.getElementById("scopePhotoIcon");
+  function showStatus(cls, text){
+    statusEl.className = "scope-status " + cls;
+    statusEl.textContent = text;
+    statusEl.style.display = "block";
+  }
+  if(file.size > MAX){
+    showStatus("err", tr("scope_photo_too_large"));
+    event.target.value = "";
+    return;
+  }
+  showStatus("busy", tr("scope_photo_uploading"));
+  if(btn) btn.classList.add("busy");
+  if(icon) icon.textContent = "…";
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const res = await fetch("/api/vision/extract-scope?lang=" + encodeURIComponent(curLang), {
+      method: "POST", body: fd,
+    });
+    const d = await res.json();
+    if(!res.ok){
+      showStatus("err", (d && d.detail) || tr("scope_photo_failed"));
+    } else if(d.scope){
+      document.getElementById("scopeInput").value = d.scope;
+      showStatus("ok", tr("scope_photo_ok"));
+    } else {
+      showStatus("err", (d && d.error) || tr("scope_photo_failed"));
+    }
+  } catch(e){
+    showStatus("err", tr("scope_photo_failed") + ": " + (e.message || e));
+  } finally {
+    if(btn) btn.classList.remove("busy");
+    if(icon) icon.textContent = "📷";
+    event.target.value = "";
+  }
 }
 </script>
 
