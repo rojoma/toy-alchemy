@@ -148,7 +148,11 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
 
   <div class="form-group">
     <label class="form-label" data-i18n="label_topic">TOPIC</label>
-    <select class="form-select" id="topicSelect"></select>
+    <select class="form-select" id="topicSelect" onchange="onTopicChange()"></select>
+    <input type="text" class="form-select" id="topicCustom"
+           data-i18n-placeholder="topic_custom_placeholder"
+           placeholder='e.g. "word problems about ratios"'
+           style="display:none;margin-top:8px" />
   </div>
   <div class="form-group">
     <label class="form-label" data-i18n="label_teacher">TEACHER</label>
@@ -189,6 +193,8 @@ const I18N = {
     label_scope:"学習したい範囲（任意）",
     scope_placeholder:"例：「教科書p.42の例題」「分数の割り算だけ」— 空欄なら事前テストから始めます",
     scope_hint:"範囲を書くと事前テストをスキップして、すぐに解説から始まります。",
+    topic_other:"その他（自由記述）",
+    topic_custom_placeholder:"例：「割合の文章題」「百分率の計算」",
     lets_go:"はじめる", start_session:"セッション開始", switch_student:"別の生徒に切り替え",
     welcome_back:n=>"おかえりなさい、"+n+"さん！",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" セッション完了",
@@ -205,6 +211,8 @@ const I18N = {
     label_scope:"LEARNING SCOPE (OPTIONAL)",
     scope_placeholder:'e.g. "textbook p.42 word problems" — leave blank to take a pre-test first',
     scope_hint:"When you tell the teacher what you want to work on, the session skips the pre-test and jumps straight into teaching.",
+    topic_other:"Other (type your own)",
+    topic_custom_placeholder:'e.g. "word problems about ratios"',
     lets_go:"Let's Go", start_session:"Start Session", switch_student:"Switch student",
     welcome_back:n=>"Welcome back, "+n+"!",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" sessions completed",
@@ -346,6 +354,15 @@ function showWelcome(profile){
         o.dataset.en = TOPIC_TX[tp]||tp;
         topicSel.appendChild(o);
       });
+      // "Other" option (#33) — lets the student type a topic that isn't in
+      // the pre-defined curriculum. The backend already accepts any topic
+      // string; AI interprets it directly.
+      const other = document.createElement("option");
+      other.value = "__custom__";
+      other.textContent = tr("topic_other");
+      other.dataset.ja = "その他（自由記述）";
+      other.dataset.en = "Other (type your own)";
+      topicSel.appendChild(other);
     });
 
   // Restore saved teacher
@@ -367,10 +384,31 @@ function showWelcome(profile){
   });
 }
 
+function onTopicChange(){
+  const sel = document.getElementById("topicSelect");
+  const custom = document.getElementById("topicCustom");
+  if(!custom) return;
+  if(sel.value === "__custom__"){
+    custom.style.display = "block";
+    custom.focus();
+  } else {
+    custom.style.display = "none";
+  }
+}
+
 function startSession(){
   const sid = localStorage.getItem("tfStudentId");
   const teacher = document.getElementById("teacherSelect").value;
-  const topic = document.getElementById("topicSelect").value;
+  const sel = document.getElementById("topicSelect");
+  let topic = sel.value;
+  if(topic === "__custom__"){
+    const customEl = document.getElementById("topicCustom");
+    topic = (customEl && customEl.value || "").trim();
+    if(!topic){
+      if(customEl) customEl.focus();
+      return;  // don't proceed with empty custom topic
+    }
+  }
   const scopeEl = document.getElementById("scopeInput");
   const scope = (scopeEl && scopeEl.value || "").trim();
   localStorage.setItem("tfStudentTeacher", teacher);
