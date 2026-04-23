@@ -56,6 +56,12 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
 
 .form-group{margin-bottom:24px}
 .form-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:0.02em}
+.form-or{
+  display:flex;align-items:center;gap:12px;
+  color:var(--muted);font-size:12px;letter-spacing:0.08em;
+  text-transform:uppercase;text-align:center;
+  margin:-4px 0 20px;justify-content:center;
+}
 .form-input,.form-select{
   width:100%;height:48px;
   border:1px solid var(--border-strong);border-radius:var(--radius-md);
@@ -237,15 +243,12 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
   <div class="trend-list" id="trendList"></div>
 
   <div class="form-group">
-    <label class="form-label" data-i18n="label_topic">TOPIC</label>
-    <select class="form-select" id="topicSelect" onchange="onTopicChange()"></select>
-    <input type="text" class="form-select" id="topicCustom"
-           data-i18n-placeholder="topic_custom_placeholder"
-           placeholder='e.g. "word problems about ratios"'
-           style="display:none;margin-top:8px" />
+    <label class="form-label" data-i18n="label_topic">PICK A TOPIC</label>
+    <select class="form-select" id="topicSelect"></select>
   </div>
-  <div class="form-group" id="scopeGroup" style="display:none">
-    <label class="form-label" data-i18n="label_scope">DESCRIBE WHAT TO WORK ON</label>
+  <div class="form-or" data-i18n="or_divider">— or —</div>
+  <div class="form-group">
+    <label class="form-label" data-i18n="label_scope">UPLOAD YOUR HOMEWORK OR DESCRIBE YOUR OWN TOPIC</label>
     <div class="scope-row">
       <input type="text" class="form-select scope-input" id="scopeInput"
              data-i18n-placeholder="scope_placeholder"
@@ -257,7 +260,7 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
              style="display:none" onchange="handleScopePhoto(event)" />
     </div>
     <div class="form-hint" data-i18n="scope_hint" style="font-size:11px;color:var(--muted);margin-top:4px">
-      Type the topic, or tap 📷 to upload a photo of the homework. The session jumps straight into teaching.
+      If you describe your own topic or upload a photo, the session skips the pre-test and jumps straight into teaching.
     </div>
     <div id="scopeStatus" class="scope-status" style="display:none"></div>
   </div>
@@ -305,12 +308,11 @@ const I18N = {
     onboard_subtitle:"少しだけ自己紹介してください。あなたにぴったりの先生を選びます。",
     label_name:"なまえ", name_placeholder:"例：エマ",
     label_grade:"がくねん", label_subject:"きょうか", label_teacher:"せんせい",
-    label_progress:"これまでの学習", label_topic:"単元",
-    label_scope:"学習したい範囲を入力",
+    label_progress:"これまでの学習", label_topic:"単元を選ぶ",
+    label_scope:"自分の宿題をアップロード／単元を自由に入力",
     scope_placeholder:"例：「教科書p.42の例題」「分数の割り算だけ」",
-    scope_hint:"テキストを入力するか、📷 で宿題の写真をアップロードしてください。事前テストをスキップして、すぐに解説から始まります。",
-    topic_other:"その他（自由記述）",
-    topic_custom_placeholder:"例：「割合の文章題」「百分率の計算」",
+    scope_hint:"自分で単元を入力するか写真をアップロードすると、事前テストをスキップしてすぐに解説が始まります。",
+    or_divider:"— または —",
     stat_streak:"連続日数",
     stat_sessions:"セッション数",
     stat_total_gain:"累計の伸び",
@@ -332,12 +334,11 @@ const I18N = {
     onboard_subtitle:"Tell us a little about yourself so we can match you with the right teacher.",
     label_name:"YOUR NAME", name_placeholder:"e.g. Emma",
     label_grade:"GRADE", label_subject:"SUBJECT", label_teacher:"TEACHER",
-    label_progress:"YOUR PROGRESS", label_topic:"TOPIC",
-    label_scope:"DESCRIBE WHAT TO WORK ON",
+    label_progress:"YOUR PROGRESS", label_topic:"PICK A TOPIC",
+    label_scope:"UPLOAD YOUR HOMEWORK OR DESCRIBE YOUR OWN TOPIC",
     scope_placeholder:'e.g. "textbook p.42 word problems"',
-    scope_hint:"Type the topic, or tap 📷 to upload a photo of the homework. The session jumps straight into teaching.",
-    topic_other:"Other (type your own)",
-    topic_custom_placeholder:'e.g. "word problems about ratios"',
+    scope_hint:"If you describe your own topic or upload a photo, the session skips the pre-test and jumps straight into teaching.",
+    or_divider:"— or —",
     stat_streak:"Day streak",
     stat_sessions:"Sessions",
     stat_total_gain:"Total gain",
@@ -551,15 +552,6 @@ function showWelcome(profile){
         o.dataset.en = TOPIC_TX[tp]||tp;
         topicSel.appendChild(o);
       });
-      // "Other" option (#33) — lets the student type a topic that isn't in
-      // the pre-defined curriculum. The backend already accepts any topic
-      // string; AI interprets it directly.
-      const other = document.createElement("option");
-      other.value = "__custom__";
-      other.textContent = tr("topic_other");
-      other.dataset.ja = "その他（自由記述）";
-      other.dataset.en = "Other (type your own)";
-      topicSel.appendChild(other);
     });
 
   // Wire teacher cards (#10 groundwork)
@@ -580,25 +572,6 @@ function showWelcome(profile){
   });
 }
 
-function onTopicChange(){
-  const sel = document.getElementById("topicSelect");
-  const custom = document.getElementById("topicCustom");
-  const scopeGroup = document.getElementById("scopeGroup");
-  const scopeInput = document.getElementById("scopeInput");
-  const scopeStatus = document.getElementById("scopeStatus");
-  const isCustom = sel.value === "__custom__";
-  if(custom){
-    custom.style.display = isCustom ? "block" : "none";
-    if(isCustom) custom.focus();
-  }
-  if(scopeGroup){
-    scopeGroup.style.display = isCustom ? "block" : "none";
-  }
-  if(!isCustom){
-    if(scopeInput) scopeInput.value = "";
-    if(scopeStatus){ scopeStatus.style.display = "none"; scopeStatus.textContent = ""; }
-  }
-}
 
 // ── Teacher picker ────────────────────────────────────
 let selectedTeacherId = null;
@@ -649,17 +622,12 @@ function startSession(){
   const sid = localStorage.getItem("tfStudentId");
   const teacher = selectedTeacherId || localStorage.getItem("tfStudentTeacher") || "t001";
   const sel = document.getElementById("topicSelect");
-  let topic = sel.value;
-  if(topic === "__custom__"){
-    const customEl = document.getElementById("topicCustom");
-    topic = (customEl && customEl.value || "").trim();
-    if(!topic){
-      if(customEl) customEl.focus();
-      return;  // don't proceed with empty custom topic
-    }
-  }
   const scopeEl = document.getElementById("scopeInput");
   const scope = (scopeEl && scopeEl.value || "").trim();
+  // Scope wins: if the student described their own topic (or uploaded a
+  // photo that filled in scope), use it as the topic. Otherwise fall back
+  // to the dropdown selection.
+  let topic = scope || sel.value;
   localStorage.setItem("tfStudentTeacher", teacher);
   let url = "/learn/session?student_id="+sid+
     "&teacher_id="+encodeURIComponent(teacher)+
