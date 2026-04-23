@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -26,11 +26,21 @@ body{
   line-height:1.7;font-size:15px;
 }
 .legal-wrap{max-width:760px;margin:0 auto}
+.top-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;
+}
 .back-link{
-  display:inline-block;color:var(--muted);text-decoration:none;
-  font-size:13px;margin-bottom:24px;
+  color:var(--muted);text-decoration:none;font-size:13px;
 }
 .back-link:hover{color:var(--text)}
+.lang-btn{
+  background:var(--surface-2);color:var(--text-secondary);
+  border:1px solid var(--border);border-radius:var(--radius-pill);
+  padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;
+  transition:background 0.15s var(--ease);
+}
+.lang-btn:hover{background:var(--border-strong);color:var(--text)}
 h1{font-size:28px;letter-spacing:-0.02em;margin:0 0 8px}
 h2{font-size:18px;letter-spacing:-0.01em;margin-top:32px;padding-top:20px;border-top:1px solid var(--border)}
 h2:first-of-type{border-top:none;padding-top:0}
@@ -51,19 +61,64 @@ hr{border:none;border-top:1px solid var(--border);margin:40px 0}
 }
 .legal-banner strong{color:var(--warning)}
 em{color:var(--muted)}
+
+/* Language toggling — show the active language, hide the other */
+[data-lang-block]{display:none}
+:root[data-legal-lang="en"] [data-lang-block="en"]{display:block}
+:root[data-legal-lang="ja"] [data-lang-block="ja"]{display:block}
 </style>
 </head>
 <body>
-<script>(function(){var t=localStorage.getItem("tfTheme")||"light";document.documentElement.setAttribute("data-theme",t);})();</script>
+<script>
+(function(){
+  var t = localStorage.getItem("tfTheme") || "light";
+  document.documentElement.setAttribute("data-theme", t);
+  var l = localStorage.getItem("tfLang") || "en";
+  if (l !== "ja") l = "en";
+  document.documentElement.setAttribute("data-legal-lang", l);
+  document.documentElement.lang = l;
+})();
+</script>
 <div class="legal-wrap">
-  <a href="/" class="back-link">← Toy Alchemy</a>
+  <div class="top-bar">
+    <a href="/" class="back-link">← Toy Alchemy</a>
+    <button class="lang-btn" id="langbtn" onclick="toggleLegalLang()">JA</button>
+  </div>
+
   {% block content %}{% endblock %}
+
   <hr />
   <p style="font-size:12px;color:var(--muted)">
-    <a href="/terms">利用規約 / Terms</a> ·
-    <a href="/privacy">プライバシーポリシー / Privacy</a> ·
+    <a href="/terms" data-lang-block="en">Terms</a>
+    <a href="/terms" data-lang-block="ja">利用規約</a>
+    ·
+    <a href="/privacy" data-lang-block="en">Privacy</a>
+    <a href="/privacy" data-lang-block="ja">プライバシー</a>
+    ·
     <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a>
   </p>
 </div>
+<script>
+function toggleLegalLang(){
+  var cur = document.documentElement.getAttribute("data-legal-lang") || "en";
+  var next = cur === "ja" ? "en" : "ja";
+  document.documentElement.setAttribute("data-legal-lang", next);
+  document.documentElement.lang = next;
+  localStorage.setItem("tfLang", next);
+  var btn = document.getElementById("langbtn");
+  if (btn) btn.textContent = next === "ja" ? "EN" : "JA";
+  // Update page title: first H1 of the active block
+  var activeH1 = document.querySelector('[data-lang-block="' + next + '"] h1');
+  if (activeH1) document.title = activeH1.textContent + " — Toy Alchemy";
+}
+// Set initial button label
+(function(){
+  var cur = document.documentElement.getAttribute("data-legal-lang") || "en";
+  var btn = document.getElementById("langbtn");
+  if (btn) btn.textContent = cur === "ja" ? "EN" : "JA";
+  var activeH1 = document.querySelector('[data-lang-block="' + cur + '"] h1');
+  if (activeH1) document.title = activeH1.textContent + " — Toy Alchemy";
+})();
+</script>
 </body>
 </html>

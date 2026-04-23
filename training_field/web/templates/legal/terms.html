@@ -1,11 +1,88 @@
 {% extends "legal/base.html" %}
-{% set page_title = "利用規約 / Terms of Service" %}
+{% set page_title = "Terms of Service" %}
 {% block content %}
 
 <div class="legal-banner">
-  <strong>⚠ ドラフト / Draft status.</strong>
-  本書はエンジニアによる初稿であり、法律家のレビューを受けていません。公開前に弁護士または教育法務の専門家による確認が必要です。
+  <strong>⚠ Draft.</strong>
+  This is an engineer's initial draft. It has not been reviewed by a lawyer.
+  Before any public launch, this document should be reviewed by qualified legal
+  counsel (education-law specialist recommended).
 </div>
+
+<!-- ────────────── ENGLISH ────────────── -->
+<div data-lang-block="en">
+
+<h1>Terms of Service</h1>
+<p class="last-updated">Last updated: 2026-04-23 (draft v0.1)</p>
+
+<h2>1. Purpose</h2>
+<p>These Terms of Service (“Terms”) govern use of Toy Alchemy (the “Service”). By using the Service, you agree to these Terms.</p>
+
+<h2>2. Operator</h2>
+<p>MIT MAS.664 AI Studio, Spring 2026 — Team Toy Alchemy ({{ contact_email or "TBD: operator contact email to be added" }}).</p>
+
+<h2>3. What the Service is</h2>
+<p>The Service is an online AI tutor, currently focused on primary-school mathematics, provided as part of an educational research project. It is not a substitute for school instruction.</p>
+
+<h2>4. Age and parental consent</h2>
+<p>The Service is designed for minor users. Users under 18 should use the Service with the consent of a parent or legal guardian.</p>
+<p>TBD: the specific consent flow (consent modal, email verification, written consent, etc.) and when to enforce it are operational decisions pending.</p>
+
+<h2>5. Fees</h2>
+<p>The Service is currently free. If we ever introduce fees, we will announce the change in advance.</p>
+
+<h2>6. Nature of AI-generated instruction</h2>
+<p>The Service uses large language models to generate its responses. Please be aware that:</p>
+<ul>
+  <li>AI responses may contain errors or inappropriate content.</li>
+  <li>Content may not exactly match school curricula or textbooks.</li>
+  <li>Important learning decisions should be confirmed with a parent or teacher.</li>
+  <li>Use of the Service does not guarantee academic outcomes or qualifications.</li>
+</ul>
+
+<h2>7. User responsibilities</h2>
+<ul>
+  <li>Do not post content that defames or harasses other users or the operator.</li>
+  <li>Do not submit information that infringes third parties' personal data or copyright.</li>
+  <li>Do not redistribute the Service for commercial purposes (the repository's MIT license still applies to the code).</li>
+  <li>Do not attempt unauthorized access or generate excessive load against the Service.</li>
+</ul>
+
+<h2>8. Prohibited conduct</h2>
+<ul>
+  <li>Interfering with the operation of the Service.</li>
+  <li>Unauthorized acquisition of other users' data.</li>
+  <li>Any activity that violates applicable law or public order and morals.</li>
+  <li>Reverse-engineering to exploit vulnerabilities (responsible vulnerability disclosure is welcome).</li>
+</ul>
+
+<h2>9. Intellectual property</h2>
+<p>The Service's source code is published on <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a>. Rights in AI-generated content (e.g. the AI teacher's messages) follow the generative-AI provider's terms of service at the time of generation.</p>
+
+<h2>10. Disclaimers</h2>
+<ul>
+  <li>The Service is provided as part of AI research. No commercial-grade SLA is guaranteed.</li>
+  <li>The operator is not liable for any direct or indirect damages arising from use of the Service.</li>
+  <li>The Service may be suspended or modified without notice.</li>
+</ul>
+
+<h2>11. Data handling</h2>
+<p>Handling of user data is governed by the <a href="/privacy">Privacy Policy</a>.</p>
+
+<h2>12. Changes to these Terms</h2>
+<p>We may revise these Terms as needed. Significant changes will be announced on this page.</p>
+
+<h2>13. Governing law and jurisdiction</h2>
+<p>These Terms are governed by the laws of Japan. Any dispute arising in connection with the Service shall be subject to the exclusive jurisdiction of the Tokyo District Court as the court of first instance.</p>
+<p>TBD: if we expand distribution to the US, the jurisdiction clause should be reviewed (see <code>docs/open-issues-decisions.md</code>, issue #7).</p>
+
+<h2>14. Contact</h2>
+<p>{{ contact_email or "TBD: operator contact email" }}</p>
+
+</div>
+
+<!-- ────────────── 日本語 ────────────── -->
+<div data-lang-block="ja">
 
 <h1>利用規約</h1>
 <p class="last-updated">最終更新: 2026-04-23（ドラフト v0.1）</p>
@@ -71,15 +148,11 @@
 
 <h2>13. 準拠法・管轄</h2>
 <p>本規約は日本法に準拠するものとし、本サービスに関する紛争は東京地方裁判所を第一審の専属的合意管轄とします。</p>
-<p>TBD: 米国での利用も視野に入れる場合は、管轄条項の再検討が必要です（#7 決定メモ参照）。</p>
+<p>TBD: 米国での利用も視野に入れる場合は、管轄条項の再検討が必要です（<code>docs/open-issues-decisions.md</code> 参照）。</p>
 
 <h2>14. お問い合わせ</h2>
 <p>{{ contact_email or "TBD: 運営代表メールアドレスを記載" }}</p>
 
-<hr />
-
-<h2 id="english">English (summary)</h2>
-<p><em>This English summary is for convenience only. The Japanese version above is authoritative.</em></p>
-<p>Toy Alchemy is an AI tutoring service for educational research. The service is free, may contain errors typical of AI-generated content, and is not a substitute for formal education. Users under 18 should use with parental consent. Governing law: Japan. Data handling follows our <a href="/privacy">Privacy Policy</a>. This is a <strong>draft document pending legal review</strong>.</p>
+</div>
 
 {% endblock %}
