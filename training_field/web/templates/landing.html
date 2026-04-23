@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Toy Alchemy — お子さまに寄り添うAI家庭教師</title>
-<meta name="description" content="AI家庭教師が、お子さまの理解度とペースに合わせて教え方を変えます。MIT MAS.664 AI Studioの研究プロジェクト。" />
+<title>Toy Alchemy — An AI tutor that adapts to how your child thinks</title>
+<meta name="description" content="An AI tutor built for MIT MAS.664 AI Studio. The teacher adjusts to each student's pace and understanding." />
 <style>
 :root{
   --bg:#fafaf7;--surface:#ffffff;--surface-2:#f4f4f0;
@@ -156,6 +156,14 @@ html,body{background:var(--bg);color:var(--text);line-height:1.7;font-size:16px}
 .footer a{color:var(--muted);text-decoration:none;margin:0 8px}
 .footer a:hover{color:var(--text)}
 
+.lang-btn{
+  background:var(--surface-2);color:var(--text-secondary);
+  border:1px solid var(--border);border-radius:var(--radius-pill);
+  padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;
+  transition:background 0.15s var(--ease);
+}
+.lang-btn:hover{background:var(--border-strong);color:var(--text)}
+
 @media (max-width: 600px){
   .hero{padding:50px 20px 40px}
   .section{padding:40px 20px}
@@ -169,83 +177,84 @@ html,body{background:var(--bg);color:var(--text);line-height:1.7;font-size:16px}
 <nav class="nav">
   <a href="/" class="brand">Toy Alchemy</a>
   <div class="nav-right">
-    <a href="/observatory" class="nav-link">Observatory</a>
+    <a href="/observatory" class="nav-link" data-i18n="nav_observatory">Observatory</a>
     <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener" class="nav-link">GitHub</a>
-    <a href="/learn" class="nav-cta">試してみる</a>
+    <button class="lang-btn" id="langbtn" onclick="toggleLang()">JA</button>
+    <a href="/learn" class="nav-cta" data-i18n="nav_cta">Try it</a>
   </div>
 </nav>
 
 <!-- Hero -->
 <section class="hero">
   <div class="kicker">MIT MAS.664 AI Studio — Spring 2026</div>
-  <h1>お子さまに寄り添う、<br/>学び方を学ぶAI家庭教師</h1>
-  <p class="hero-sub">
-    同じ単元でも、お子さまによって「つまずくところ」は違います。
-    Toy Alchemyは、会話の一問一答から理解度を読み取り、
-    教え方を調整する研究プロジェクト。
+  <h1 data-i18n-html="hero_title">An AI tutor that adapts<br/>to how your child thinks</h1>
+  <p class="hero-sub" data-i18n="hero_sub">
+    The same topic trips up different kids in different places. Toy Alchemy reads
+    understanding from every turn of the conversation and adjusts how the teacher
+    teaches — a research project exploring what a good AI tutor actually looks like.
   </p>
   <div class="hero-cta-row">
-    <a href="/learn" class="btn-primary">無料で試してみる →</a>
-    <a href="/observatory" class="btn-secondary">技術的な中身を見る</a>
+    <a href="/learn" class="btn-primary" data-i18n="hero_cta_primary">Try it free →</a>
+    <a href="/observatory" class="btn-secondary" data-i18n="hero_cta_secondary">See the tech</a>
   </div>
-  <p class="hero-note">登録不要で体験できます · MIT発の教育研究プロジェクト</p>
+  <p class="hero-note" data-i18n="hero_note">No signup needed · MIT research project</p>
 </section>
 
 <!-- What it does -->
 <section class="section">
-  <h2>他のAI家庭教師と、何が違うの？</h2>
-  <p class="section-intro">
-    答えを教えるだけなら、どんなAIチャットでもできます。
-    私たちが目指すのは、生徒の「考え方」そのものに寄り添う先生です。
+  <h2 data-i18n="features_title">How is it different?</h2>
+  <p class="section-intro" data-i18n="features_intro">
+    Any AI chatbot can spit out the answer. We're trying to build a tutor that
+    meets the student where they are — in how they think, not just what they know.
   </p>
 
   <div class="features">
     <div class="feature-card">
       <span class="feature-icon">🧭</span>
-      <div class="feature-title">4つのキャラクターから選べる</div>
-      <p class="feature-desc">
-        Warm Coach、Prof. Tanaka、Ms. Rivera、Cool Mentor。
-        温かさや厳しさ、ペースの違う先生の中から、お子さまに合うタイプを選べます。
+      <div class="feature-title" data-i18n="f1_title">Four teacher personalities</div>
+      <p class="feature-desc" data-i18n="f1_desc">
+        Warm Coach, Prof. Tanaka, Ms. Rivera, Cool Mentor. Pick the one whose
+        warmth, pace, and style matches your child.
       </p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">📝</span>
-      <div class="feature-title">宿題の範囲をそのまま相談できる</div>
-      <p class="feature-desc">
-        「教科書 p.42 の例題」「分数の割り算だけ」など、
-        学校の宿題に合わせて学習範囲を直接指定できます。
+      <div class="feature-title" data-i18n="f2_title">Tell it what to work on</div>
+      <p class="feature-desc" data-i18n="f2_desc">
+        "Textbook p.42 word problems", "just dividing fractions" — the student
+        can describe the exact scope they want help with.
       </p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">📊</span>
-      <div class="feature-title">学んだ記録が残る</div>
-      <p class="feature-desc">
-        単元ごとの習熟度や、何日連続で学んだかをダッシュボードで確認。
-        お子さまの成長を見守れます。
+      <div class="feature-title" data-i18n="f3_title">Progress you can see</div>
+      <p class="feature-desc" data-i18n="f3_desc">
+        Per-topic proficiency, streak days, learning gains — all visible on a
+        simple dashboard that helps parents watch without hovering.
       </p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">👀</span>
-      <div class="feature-title">AIの教え方を別のAIがチェック</div>
-      <p class="feature-desc">
-        Principal Agent（審判役）が毎回の会話を見守り、
-        教え方の質を6つの観点でスコアリングします。
+      <div class="feature-title" data-i18n="f4_title">A second AI checks the first</div>
+      <p class="feature-desc" data-i18n="f4_desc">
+        Our Principal Agent watches every turn and scores the teacher on six
+        pedagogy-grounded signals. No teacher moment goes unexamined.
       </p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">💬</span>
-      <div class="feature-title">セッション後にフィードバック</div>
-      <p class="feature-desc">
-        生徒自身が「今日の先生はどうだったか」を教えてくれます。
-        そのシグナルで、AIはさらに学んでいきます。
+      <div class="feature-title" data-i18n="f5_title">The student rates the teacher</div>
+      <p class="feature-desc" data-i18n="f5_desc">
+        After each session students tell us how the teacher felt. That signal
+        feeds back into how the AI teaches next time.
       </p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">🔬</span>
-      <div class="feature-title">オープンソースの研究プロジェクト</div>
-      <p class="feature-desc">
-        MIT MAS.664 AI Studio の研究として公開中。
-        コードは <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a> で誰でも見られます。
+      <div class="feature-title" data-i18n="f6_title">Open research project</div>
+      <p class="feature-desc" data-i18n-html="f6_desc">
+        Built openly for MIT MAS.664 AI Studio. Full source on
+        <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a>.
       </p>
     </div>
   </div>
@@ -253,93 +262,216 @@ html,body{background:var(--bg);color:var(--text);line-height:1.7;font-size:16px}
 
 <!-- How it works -->
 <section class="section">
-  <h2>どうやって使うの？</h2>
+  <h2 data-i18n="how_title">How it works</h2>
   <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
-      <div class="step-title">名前と学年を入力</div>
-      <div class="step-desc">簡単なプロフィール登録だけ。お子さまの学年と教科を選びます。</div>
+      <div class="step-title" data-i18n="step1_title">Enter name and grade</div>
+      <div class="step-desc" data-i18n="step1_desc">Quick profile — pick a grade and a subject.</div>
     </div>
     <div class="step">
       <div class="step-num">2</div>
-      <div class="step-title">先生と単元を選ぶ</div>
-      <div class="step-desc">4人の先生から1人を選び、学びたい単元を指定。宿題の範囲も書けます。</div>
+      <div class="step-title" data-i18n="step2_title">Pick a teacher and topic</div>
+      <div class="step-desc" data-i18n="step2_desc">Choose a teacher, choose what to work on. Homework scope is optional.</div>
     </div>
     <div class="step">
       <div class="step-num">3</div>
-      <div class="step-title">会話で学ぶ</div>
-      <div class="step-desc">AIの先生と1対1で対話。わかったら「次へ」、わからなければ「もう一度」。</div>
+      <div class="step-title" data-i18n="step3_title">Learn through conversation</div>
+      <div class="step-desc" data-i18n="step3_desc">One-on-one with the AI teacher. Ask for a hint, a new example, or skip ahead.</div>
     </div>
     <div class="step">
       <div class="step-num">4</div>
-      <div class="step-title">ふりかえり</div>
-      <div class="step-desc">確認テストと、先生についてのフィードバックで一日を締めくくり。</div>
+      <div class="step-title" data-i18n="step4_title">Reflect</div>
+      <div class="step-desc" data-i18n="step4_desc">A review test and a short feedback prompt to wrap the session.</div>
     </div>
   </div>
 </section>
 
 <!-- Trust ribbon -->
 <section class="trust">
-  <div class="trust-title">About this project</div>
-  <p class="trust-meta">
-    Toy Alchemy は MIT スローン校の MAS.664 AI Studio（2026年春期）の研究プロジェクトです。<br/>
-    現在は β 版として無償で公開しています。
+  <div class="trust-title" data-i18n="trust_title">About this project</div>
+  <p class="trust-meta" data-i18n-html="trust_meta">
+    Toy Alchemy is a research project built for MIT Sloan's MAS.664 AI Studio (Spring 2026).<br/>
+    Currently available free as a beta.
   </p>
 </section>
 
 <!-- FAQ -->
 <section class="section">
-  <h2>よくある質問</h2>
+  <h2 data-i18n="faq_title">FAQ</h2>
   <div class="faq">
     <details class="faq-item">
-      <summary>利用料はかかりますか？</summary>
-      <div class="faq-body">
-        現時点では無償です。将来的に有料化する場合は事前に告知します。
+      <summary data-i18n="faq1_q">Is it free?</summary>
+      <div class="faq-body" data-i18n="faq1_a">
+        Yes, free right now. If that changes we'll announce in advance.
       </div>
     </details>
     <details class="faq-item">
-      <summary>対象年齢は？</summary>
-      <div class="faq-body">
-        小学生から高校生までを想定しています。特に小6算数で検証を進めています。
-        未成年の利用には保護者の同意をお願いしています。詳しくは
-        <a href="/terms">利用規約</a>をご覧ください。
+      <summary data-i18n="faq2_q">What ages?</summary>
+      <div class="faq-body" data-i18n-html="faq2_a">
+        Aimed at elementary through high school, with the most testing on 6th-grade
+        math. Students under 18 should use with a parent's consent — see our
+        <a href="/terms">Terms of Service</a>.
       </div>
     </details>
     <details class="faq-item">
-      <summary>子どもの入力内容は保存されますか？</summary>
-      <div class="faq-body">
-        学習の記録や習熟度を残すために保存します。外部への販売や共有はしません。
-        データの開示・削除の請求も可能です。詳しくは
-        <a href="/privacy">プライバシーポリシー</a>を参照してください。
+      <summary data-i18n="faq3_q">What happens to what my child types?</summary>
+      <div class="faq-body" data-i18n-html="faq3_a">
+        It's kept so we can show progress and history. We don't sell or share it.
+        You can request disclosure or deletion anytime. See our
+        <a href="/privacy">Privacy Policy</a>.
       </div>
     </details>
     <details class="faq-item">
-      <summary>AIが間違った答えを教えることはありますか？</summary>
-      <div class="faq-body">
-        可能性はあります。Principal Agent（審判役AI）が毎回チェックしていますが、
-        完全ではありません。重要な学習判断は保護者・学校教員の確認の上で行ってください。
+      <summary data-i18n="faq4_q">Can the AI be wrong?</summary>
+      <div class="faq-body" data-i18n="faq4_a">
+        Yes. The Principal Agent catches many errors but not all. Treat the tutor
+        as a helpful study partner — confirm important work with a teacher or parent.
       </div>
     </details>
     <details class="faq-item">
-      <summary>既存の学校教育の代わりになる？</summary>
-      <div class="faq-body">
-        なりません。Toy Alchemy は補助ツールです。
-        学校教育を補うための研究プロジェクトとしてご利用ください。
+      <summary data-i18n="faq5_q">Does it replace school?</summary>
+      <div class="faq-body" data-i18n="faq5_a">
+        No — it's a supplement. Use it alongside school, not instead of it.
       </div>
     </details>
   </div>
 
   <div style="text-align:center;margin-top:40px">
-    <a href="/learn" class="btn-primary">試してみる →</a>
+    <a href="/learn" class="btn-primary" data-i18n="cta_try">Try it →</a>
   </div>
 </section>
 
 <footer class="footer">
-  <a href="/observatory">Observatory</a>·
-  <a href="/terms">利用規約</a>·
-  <a href="/privacy">プライバシー</a>·
+  <a href="/observatory" data-i18n="footer_observatory">Observatory</a>·
+  <a href="/terms" data-i18n="footer_terms">Terms</a>·
+  <a href="/privacy" data-i18n="footer_privacy">Privacy</a>·
   <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a>
   <div style="margin-top:14px">© 2026 Toy Alchemy — MIT MAS.664 AI Studio</div>
 </footer>
+
+<script>
+const I18N = {
+  en: {
+    nav_observatory:"Observatory", nav_cta:"Try it",
+    hero_title:"An AI tutor that adapts<br/>to how your child thinks",
+    hero_sub:"The same topic trips up different kids in different places. Toy Alchemy reads understanding from every turn of the conversation and adjusts how the teacher teaches — a research project exploring what a good AI tutor actually looks like.",
+    hero_cta_primary:"Try it free →",
+    hero_cta_secondary:"See the tech",
+    hero_note:"No signup needed · MIT research project",
+    features_title:"How is it different?",
+    features_intro:"Any AI chatbot can spit out the answer. We're trying to build a tutor that meets the student where they are — in how they think, not just what they know.",
+    f1_title:"Four teacher personalities",
+    f1_desc:"Warm Coach, Prof. Tanaka, Ms. Rivera, Cool Mentor. Pick the one whose warmth, pace, and style matches your child.",
+    f2_title:"Tell it what to work on",
+    f2_desc:"\"Textbook p.42 word problems\", \"just dividing fractions\" — the student can describe the exact scope they want help with.",
+    f3_title:"Progress you can see",
+    f3_desc:"Per-topic proficiency, streak days, learning gains — all visible on a simple dashboard that helps parents watch without hovering.",
+    f4_title:"A second AI checks the first",
+    f4_desc:"Our Principal Agent watches every turn and scores the teacher on six pedagogy-grounded signals. No teacher moment goes unexamined.",
+    f5_title:"The student rates the teacher",
+    f5_desc:"After each session students tell us how the teacher felt. That signal feeds back into how the AI teaches next time.",
+    f6_title:"Open research project",
+    f6_desc:'Built openly for MIT MAS.664 AI Studio. Full source on <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a>.',
+    how_title:"How it works",
+    step1_title:"Enter name and grade",
+    step1_desc:"Quick profile — pick a grade and a subject.",
+    step2_title:"Pick a teacher and topic",
+    step2_desc:"Choose a teacher, choose what to work on. Homework scope is optional.",
+    step3_title:"Learn through conversation",
+    step3_desc:"One-on-one with the AI teacher. Ask for a hint, a new example, or skip ahead.",
+    step4_title:"Reflect",
+    step4_desc:"A review test and a short feedback prompt to wrap the session.",
+    trust_title:"About this project",
+    trust_meta:"Toy Alchemy is a research project built for MIT Sloan's MAS.664 AI Studio (Spring 2026).<br/>Currently available free as a beta.",
+    faq_title:"FAQ",
+    faq1_q:"Is it free?",
+    faq1_a:"Yes, free right now. If that changes we'll announce in advance.",
+    faq2_q:"What ages?",
+    faq2_a:'Aimed at elementary through high school, with the most testing on 6th-grade math. Students under 18 should use with a parent\'s consent — see our <a href="/terms">Terms of Service</a>.',
+    faq3_q:"What happens to what my child types?",
+    faq3_a:'It\'s kept so we can show progress and history. We don\'t sell or share it. You can request disclosure or deletion anytime. See our <a href="/privacy">Privacy Policy</a>.',
+    faq4_q:"Can the AI be wrong?",
+    faq4_a:"Yes. The Principal Agent catches many errors but not all. Treat the tutor as a helpful study partner — confirm important work with a teacher or parent.",
+    faq5_q:"Does it replace school?",
+    faq5_a:"No — it's a supplement. Use it alongside school, not instead of it.",
+    cta_try:"Try it →",
+    footer_observatory:"Observatory",
+    footer_terms:"Terms",
+    footer_privacy:"Privacy",
+  },
+  ja: {
+    nav_observatory:"Observatory", nav_cta:"試してみる",
+    hero_title:"お子さまに寄り添う、<br/>学び方を学ぶAI家庭教師",
+    hero_sub:"同じ単元でも、お子さまによって「つまずくところ」は違います。Toy Alchemyは、会話の一問一答から理解度を読み取り、教え方を調整する研究プロジェクトです。",
+    hero_cta_primary:"無料で試してみる →",
+    hero_cta_secondary:"技術的な中身を見る",
+    hero_note:"登録不要で体験できます · MIT発の教育研究プロジェクト",
+    features_title:"他のAI家庭教師と、何が違うの？",
+    features_intro:"答えを教えるだけなら、どんなAIチャットでもできます。私たちが目指すのは、生徒の「考え方」そのものに寄り添う先生です。",
+    f1_title:"4つのキャラクターから選べる",
+    f1_desc:"Warm Coach、Prof. Tanaka、Ms. Rivera、Cool Mentor。温かさや厳しさ、ペースの違う先生の中から、お子さまに合うタイプを選べます。",
+    f2_title:"宿題の範囲をそのまま相談できる",
+    f2_desc:"「教科書 p.42 の例題」「分数の割り算だけ」など、学校の宿題に合わせて学習範囲を直接指定できます。",
+    f3_title:"学んだ記録が残る",
+    f3_desc:"単元ごとの習熟度や、何日連続で学んだかをダッシュボードで確認。お子さまの成長を見守れます。",
+    f4_title:"AIの教え方を別のAIがチェック",
+    f4_desc:"Principal Agent（審判役）が毎回の会話を見守り、教え方の質を6つの観点でスコアリングします。",
+    f5_title:"セッション後にフィードバック",
+    f5_desc:"生徒自身が「今日の先生はどうだったか」を教えてくれます。そのシグナルで、AIはさらに学んでいきます。",
+    f6_title:"オープンソースの研究プロジェクト",
+    f6_desc:'MIT MAS.664 AI Studio の研究として公開中。コードは <a href="https://github.com/rojoma/toy-alchemy" target="_blank" rel="noopener">GitHub</a> で誰でも見られます。',
+    how_title:"どうやって使うの？",
+    step1_title:"名前と学年を入力",
+    step1_desc:"簡単なプロフィール登録だけ。お子さまの学年と教科を選びます。",
+    step2_title:"先生と単元を選ぶ",
+    step2_desc:"4人の先生から1人を選び、学びたい単元を指定。宿題の範囲も書けます。",
+    step3_title:"会話で学ぶ",
+    step3_desc:"AIの先生と1対1で対話。わかったら「次へ」、わからなければ「もう一度」。",
+    step4_title:"ふりかえり",
+    step4_desc:"確認テストと、先生についてのフィードバックで一日を締めくくり。",
+    trust_title:"このプロジェクトについて",
+    trust_meta:"Toy Alchemy は MIT スローン校の MAS.664 AI Studio（2026年春期）の研究プロジェクトです。<br/>現在は β 版として無償で公開しています。",
+    faq_title:"よくある質問",
+    faq1_q:"利用料はかかりますか？",
+    faq1_a:"現時点では無償です。将来的に有料化する場合は事前に告知します。",
+    faq2_q:"対象年齢は？",
+    faq2_a:'小学生から高校生までを想定しています。特に小6算数で検証を進めています。未成年の利用には保護者の同意をお願いしています。詳しくは<a href="/terms">利用規約</a>をご覧ください。',
+    faq3_q:"子どもの入力内容は保存されますか？",
+    faq3_a:'学習の記録や習熟度を残すために保存します。外部への販売や共有はしません。データの開示・削除の請求も可能です。詳しくは<a href="/privacy">プライバシーポリシー</a>を参照してください。',
+    faq4_q:"AIが間違った答えを教えることはありますか？",
+    faq4_a:"可能性はあります。Principal Agent（審判役AI）が毎回チェックしていますが、完全ではありません。重要な学習判断は保護者・学校教員の確認の上で行ってください。",
+    faq5_q:"既存の学校教育の代わりになる？",
+    faq5_a:"なりません。Toy Alchemy は補助ツールです。学校教育を補うための研究プロジェクトとしてご利用ください。",
+    cta_try:"試してみる →",
+    footer_observatory:"Observatory",
+    footer_terms:"利用規約",
+    footer_privacy:"プライバシー",
+  }
+};
+let curLang = localStorage.getItem("tfLang") || "en";
+function applyLang(l){
+  curLang = l;
+  localStorage.setItem("tfLang", l);
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k = el.getAttribute("data-i18n");
+    if(I18N[l] && I18N[l][k]) el.textContent = I18N[l][k];
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach(el=>{
+    const k = el.getAttribute("data-i18n-html");
+    if(I18N[l] && I18N[l][k]) el.innerHTML = I18N[l][k];
+  });
+  const btn = document.getElementById("langbtn");
+  if(btn) btn.textContent = (l === "ja") ? "EN" : "JA";
+  // Update page title appropriately
+  document.title = l === "ja"
+    ? "Toy Alchemy — お子さまに寄り添うAI家庭教師"
+    : "Toy Alchemy — An AI tutor that adapts to how your child thinks";
+}
+function toggleLang(){ applyLang(curLang === "ja" ? "en" : "ja"); }
+applyLang(curLang);
+</script>
+
 </body>
 </html>
