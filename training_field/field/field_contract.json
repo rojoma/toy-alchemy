@@ -1,6 +1,6 @@
 {
     "field_version":  "1.0.0",
-    "field_name":  "Toy Alchemy Agent Training Field",
+    "field_name":  "Beyond Answer Engine Agent Training Field",
     "last_updated":  "2025-04-07",
     "absolute_rules":  {
                            "no_direct_answers":  {

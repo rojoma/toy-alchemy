@@ -1,4 +1,4 @@
-# Toy Alchemy / Training Field — システム概要
+# Beyond Answer Engine / Training Field — システム概要
 
 このドキュメントは初めての人向けに、Training Field（`training_field/` 配下）の構造を説明します。
 最新の状態を知りたい場合は実コードを正としてください。

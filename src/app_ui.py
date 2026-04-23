@@ -34,7 +34,7 @@ from src.conversation_store import PERSONAS, PHASE_QUESTIONING
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="Toy Alchemy - フクロウ先生 🦉",
+    page_title="Beyond Answer Engine - フクロウ先生 🦉",
     page_icon="🦉",
     layout="wide",
 )

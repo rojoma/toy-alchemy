@@ -1,14 +1,14 @@
-# Toy Alchemy
+# Beyond Answer Engine
 
 An AI tutor that adapts to how your child thinks — and a lab where we teach AI agents how to teach.
 
-Every child learns differently. Some need a patient coach; others need a formal professor; most need something in between. Toy Alchemy is a playground for parents, teachers, and researchers to explore *what makes an AI a good tutor* — and a live tutor your child can actually use today.
+Every child learns differently. Some need a patient coach; others need a formal professor; most need something in between. Beyond Answer Engine is a playground for parents, teachers, and researchers to explore *what makes an AI a good tutor* — and a live tutor your child can actually use today.
 
 🌐 **Live app**: https://beyond-answer-engine.up.railway.app
 📚 **Architecture**: [`docs/architecture.md`](./docs/architecture.md)
 📂 **GitHub**: https://github.com/rojoma/toy-alchemy
 
-MIT MAS.664 AI Studio, Spring 2026 — Team: Toy Alchemy
+MIT MAS.664 AI Studio, Spring 2026 — Team: Beyond Answer Engine
 
 ---
 
@@ -22,7 +22,7 @@ AI tutors today are answer engines dressed as teachers. They give the right answ
 
 Parents and teachers are left with a tool they cannot tune, cannot trust, and cannot see into.
 
-This repo is our attempt to change that. Toy Alchemy treats teaching itself as something an AI has to *earn* — through tunable teaching parameters, persistent per-student memory, and an independent AI evaluator that scores every turn of the conversation.
+This repo is our attempt to change that. Beyond Answer Engine treats teaching itself as something an AI has to *earn* — through tunable teaching parameters, persistent per-student memory, and an independent AI evaluator that scores every turn of the conversation.
 
 ---
 
@@ -39,7 +39,7 @@ This repo is our attempt to change that. Toy Alchemy treats teaching itself as s
 
 ## How the Teacher is designed
 
-A teacher in Toy Alchemy is not a single prompt. It is a **TeacherConfig** — a set of parameters that shape behavior across every turn of a session.
+A teacher in Beyond Answer Engine is not a single prompt. It is a **TeacherConfig** — a set of parameters that shape behavior across every turn of a session.
 
 ```python
 @dataclass
@@ -113,7 +113,7 @@ Seed teachers already loaded: Warm Coach, Prof. Tanaka, Ms. Rivera, Cool Mentor.
 
 ### Bring your own Teacher agent (external API)
 
-Toy Alchemy exposes a public agent API — you can register an external teacher persona, run sessions against our 6 simulated students, and appear on the leaderboard alongside built-in teachers.
+Beyond Answer Engine exposes a public agent API — you can register an external teacher persona, run sessions against our 6 simulated students, and appear on the leaderboard alongside built-in teachers.
 
 - Skill spec: [`/skill.md`](https://beyond-answer-engine.up.railway.app/skill.md)
 - Leaderboard: [`/api/agent/leaderboard`](https://beyond-answer-engine.up.railway.app/api/agent/leaderboard)

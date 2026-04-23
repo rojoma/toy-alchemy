@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>{{ page_title }} — Toy Alchemy</title>
+<title>{{ page_title }} — Beyond Answer Engine</title>
 <style>
 :root{
   --bg:#fafaf7;--surface:#ffffff;--surface-2:#f4f4f0;
@@ -81,7 +81,7 @@ em{color:var(--muted)}
 </script>
 <div class="legal-wrap">
   <div class="top-bar">
-    <a href="/" class="back-link">← Toy Alchemy</a>
+    <a href="/" class="back-link">← Beyond Answer Engine</a>
     <button class="lang-btn" id="langbtn" onclick="toggleLegalLang()">JA</button>
   </div>
 
@@ -109,7 +109,7 @@ function toggleLegalLang(){
   if (btn) btn.textContent = next === "ja" ? "EN" : "JA";
   // Update page title: first H1 of the active block
   var activeH1 = document.querySelector('[data-lang-block="' + next + '"] h1');
-  if (activeH1) document.title = activeH1.textContent + " — Toy Alchemy";
+  if (activeH1) document.title = activeH1.textContent + " — Beyond Answer Engine";
 }
 // Set initial button label
 (function(){
@@ -117,7 +117,7 @@ function toggleLegalLang(){
   var btn = document.getElementById("langbtn");
   if (btn) btn.textContent = cur === "ja" ? "EN" : "JA";
   var activeH1 = document.querySelector('[data-lang-block="' + cur + '"] h1');
-  if (activeH1) document.title = activeH1.textContent + " — Toy Alchemy";
+  if (activeH1) document.title = activeH1.textContent + " — Beyond Answer Engine";
 })();
 </script>
 </body>
