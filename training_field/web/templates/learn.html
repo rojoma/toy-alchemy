@@ -104,6 +104,35 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
   background:var(--surface-2);color:var(--text-secondary);
   font-weight:500;font-feature-settings:"tnum";
 }
+
+/* Dashboard stats (#8) */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 24px;
+}
+.stats-card{
+  padding:14px 16px;border-radius:12px;background:var(--surface-2);
+  display:flex;flex-direction:column;gap:4px;
+}
+.stats-num{font-size:24px;font-weight:600;letter-spacing:-0.02em;font-feature-settings:"tnum"}
+.stats-num.streak{color:#f59e0b}
+.stats-num.sessions{color:var(--link, #2997ff)}
+.stats-num.gain{color:var(--success)}
+.stats-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.trend-list{margin-bottom:24px}
+.trend-row{
+  display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--border);font-size:12px;
+}
+.trend-row:last-child{border-bottom:none}
+.trend-topic{flex:1;color:var(--text-secondary)}
+.trend-spark{display:flex;gap:3px;align-items:flex-end;height:20px}
+.trend-bar{
+  width:4px;border-radius:2px;background:var(--border-strong);
+  min-height:2px;
+}
+.trend-bar.pos{background:var(--success)}
+.trend-bar.neg{background:var(--danger)}
+.trend-sum{font-size:11px;color:var(--muted);font-feature-settings:"tnum";min-width:40px;text-align:right}
 </style>
 </head>
 <body>
@@ -143,8 +172,14 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
   <div class="welcome" id="welcomeMsg">Welcome back!</div>
   <div class="welcome-sub" id="welcomeSub"></div>
 
+  <!-- Dashboard stats (#8) — streak / total sessions / total gain -->
+  <div class="stats-grid" id="statsGrid" style="display:none"></div>
+
   <div class="form-label" data-i18n="label_progress">YOUR PROGRESS</div>
   <div class="prof-grid" id="profGrid"></div>
+
+  <!-- Per-topic trend (#8): last-5 deltas as mini sparkline -->
+  <div class="trend-list" id="trendList"></div>
 
   <div class="form-group">
     <label class="form-label" data-i18n="label_topic">TOPIC</label>
@@ -195,6 +230,9 @@ const I18N = {
     scope_hint:"範囲を書くと事前テストをスキップして、すぐに解説から始まります。",
     topic_other:"その他（自由記述）",
     topic_custom_placeholder:"例：「割合の文章題」「百分率の計算」",
+    stat_streak:"連続日数",
+    stat_sessions:"セッション数",
+    stat_total_gain:"累計の伸び",
     lets_go:"はじめる", start_session:"セッション開始", switch_student:"別の生徒に切り替え",
     welcome_back:n=>"おかえりなさい、"+n+"さん！",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" セッション完了",
@@ -213,6 +251,9 @@ const I18N = {
     scope_hint:"When you tell the teacher what you want to work on, the session skips the pre-test and jumps straight into teaching.",
     topic_other:"Other (type your own)",
     topic_custom_placeholder:'e.g. "word problems about ratios"',
+    stat_streak:"Day streak",
+    stat_sessions:"Sessions",
+    stat_total_gain:"Total gain",
     lets_go:"Let's Go", start_session:"Start Session", switch_student:"Switch student",
     welcome_back:n=>"Welcome back, "+n+"!",
     welcome_sub:(g,s,n)=>g+" · "+s+" · "+n+" sessions completed",
@@ -326,6 +367,26 @@ function showWelcome(profile){
   document.getElementById("welcomeMsg").textContent = tr("welcome_back")(profile.name);
   document.getElementById("welcomeSub").textContent = tr("welcome_sub")(profile.grade, profile.subject, profile.sessions_completed);
 
+  // Dashboard stats (#8): streak / total sessions / proficiency gain
+  const stats = profile.stats || {};
+  const statsGrid = document.getElementById("statsGrid");
+  if(statsGrid && (stats.sessions_total || 0) > 0){
+    statsGrid.innerHTML =
+      '<div class="stats-card">'+
+        '<div class="stats-num streak">'+(stats.streak_days||0)+'</div>'+
+        '<div class="stats-label">'+tr("stat_streak")+'</div>'+
+      '</div>'+
+      '<div class="stats-card">'+
+        '<div class="stats-num sessions">'+(stats.sessions_total||0)+'</div>'+
+        '<div class="stats-label">'+tr("stat_sessions")+'</div>'+
+      '</div>'+
+      '<div class="stats-card">'+
+        '<div class="stats-num gain">'+((stats.total_proficiency_gain||0)>=0?"+":"")+(stats.total_proficiency_gain||0)+'</div>'+
+        '<div class="stats-label">'+tr("stat_total_gain")+'</div>'+
+      '</div>';
+    statsGrid.style.display = "grid";
+  }
+
   // Proficiency chips
   const grid = document.getElementById("profGrid");
   grid.innerHTML = "";
@@ -339,6 +400,33 @@ function showWelcome(profile){
       chip.className = "prof-chip";
       chip.textContent = label + " " + Math.round(score);
       grid.appendChild(chip);
+    }
+  }
+
+  // Per-topic trend sparklines (#8): last 5 session deltas per topic
+  const trendList = document.getElementById("trendList");
+  if(trendList){
+    trendList.innerHTML = "";
+    const trend = stats.topic_trend || {};
+    const entries = Object.entries(trend);
+    if(entries.length > 0){
+      const maxAbs = entries.reduce((m,[_,arr]) => Math.max(m, ...arr.map(Math.abs)), 1);
+      entries.forEach(([topic, deltas])=>{
+        const label = TOPIC_TX[topic] || topic;
+        const sum = deltas.reduce((a,b)=>a+b, 0);
+        const row = document.createElement("div");
+        row.className = "trend-row";
+        let spark = '<div class="trend-spark">';
+        deltas.forEach(d=>{
+          const cls = d > 0 ? "pos" : (d < 0 ? "neg" : "");
+          const h = Math.max(2, Math.round(Math.abs(d) / maxAbs * 20));
+          spark += '<div class="trend-bar '+cls+'" style="height:'+h+'px"></div>';
+        });
+        spark += '</div>';
+        row.innerHTML = '<div class="trend-topic">'+label+'</div>'+spark+
+          '<div class="trend-sum">'+(sum>=0?"+":"")+sum.toFixed(1)+'</div>';
+        trendList.appendChild(row);
+      });
     }
   }
 
