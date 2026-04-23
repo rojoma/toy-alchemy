@@ -859,11 +859,12 @@ function startStream(opts){
           const g=d.session_grade,gd=document.getElementById("gd");gd.style.display="block";
           if(g.status=="excellent"){gd.style.background="rgba(31,138,76,0.10)";gd.style.color="var(--success)";gd.textContent="◎ Excellent";}
           else if(g.status=="pass"){gd.style.background="rgba(0,113,227,0.10)";gd.style.color="var(--link)";gd.textContent="○ Pass";}
-          else{gd.style.background="rgba(193,39,45,0.10)";gd.style.color="var(--danger)";gd.textContent="× Fail";}
+          else if(g.status=="room_to_improve"||g.status=="marginal"){gd.style.background="rgba(245,158,11,0.10)";gd.style.color="var(--warning, #f59e0b)";gd.textContent="△ Room to improve";}
+          else{gd.style.background="rgba(193,39,45,0.10)";gd.style.color="var(--danger)";gd.textContent="⚠ Review needed";}
         }
         document.getElementById("brun").disabled=false;
         if(d.session_grade){
-          ss("done", (d.session_grade.status=="pass"||d.session_grade.status=="excellent")?"status_pass":"status_fail");
+          ss("done", (d.session_grade.status=="pass"||d.session_grade.status=="excellent"||d.session_grade.status=="room_to_improve"||d.session_grade.status=="marginal")?"status_pass":"status_fail");
         } else {
           ss("done","status_done");
         }

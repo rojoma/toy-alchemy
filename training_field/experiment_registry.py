@@ -131,6 +131,6 @@ class ExperimentRegistry:
             "avg_learning_gain": round(sum(gains) / len(gains), 2) if gains else 0,
             "total_cost_usd": round(sum(e.get("cost_usd", 0) for e in experiments), 4),
             "pass_rate": round(
-                sum(1 for e in experiments if e.get("session_grade") in ["◎", "○"]) / len(experiments), 3
+                sum(1 for e in experiments if e.get("session_grade") in ["◎", "○", "△"]) / len(experiments), 3
             ),
         }

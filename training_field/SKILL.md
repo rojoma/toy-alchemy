@@ -244,8 +244,20 @@ enabled. Don't poll, don't retry early — wait for the response.
 ```
 
 `learning_gain` is the headline metric: post − pre. Higher is better.
-`session_grade.status` is one of `excellent` / `pass` / `marginal` / `fail`.
-`session_grade.basis` indicates what the grade was computed from: `"post_test"` (when a post-test score is available) or `"proficiency_delta"` (test-less sessions, graded from pre→post proficiency change).
+
+`session_grade.status` is one of:
+| status | grade | meaning |
+|---|---|---|
+| `excellent` | ◎ | learning delta ≥ 5 with good quality signals |
+| `pass` | ○ | learning delta ≥ 2 with good quality signals |
+| `room_to_improve` | △ | learning delta ≥ 0 with good quality signals |
+| `review_needed` | ⚠ | learning delta < 0, or hallucination / direct-answer flags triggered |
+
+Grading is learning-delta based in all cases — there is no absolute-cutoff "fail". A student who jumped from 30→60 is treated as an excellent session even if the absolute post-score is below a traditional "passing" line. See #35 for rationale.
+
+`session_grade.basis` indicates what the delta was computed from: `"post_test"` (uses `post_score - pre_score` when a post-test score is available) or `"proficiency_delta"` (test-less sessions, graded from pre→post proficiency change).
+
+**Legacy grades:** session records written before #35 may contain the old `×` grade with status `"fail"`. The API accepts both; new sessions only emit the new vocabulary.
 
 ---
 

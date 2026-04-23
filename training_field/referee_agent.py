@@ -145,7 +145,9 @@ Evaluate this exchange."""
 
     def grade_session(self, post_test_score: float) -> dict:
         # DEPRECATED: use Evaluator.evaluate(...).session_grade instead.
-        # Only considers post_test_score; returns "×"/fail for test-less sessions.
+        # This function uses the old absolute-cutoff vocabulary ("×"/fail) and
+        # doesn't apply the learning-delta framing from #35. Kept only for
+        # backward compatibility with any external callers.
         if post_test_score >= 90:
             return {"grade": "◎", "status": "excellent", "score": post_test_score}
         elif post_test_score >= 70:

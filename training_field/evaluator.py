@@ -147,27 +147,40 @@ class Evaluator:
         cost = cost_tracker.total_cost_usd()
         cpg = (cost / learning_gain) if learning_gain > 0 else None
 
-        # Grade session based on post_test_score if available, otherwise use proficiency delta
+        # Grade session on learning delta + quality signals.
+        # No "fail" / "×" — a session that didn't help the student is framed as
+        # "review_needed" so the student doesn't see a failing mark and the
+        # teacher/parent knows to look at the transcript.
+        #
+        # Quality signals override: hallucination or answer-given-directly
+        # always forces review_needed regardless of score/delta.
+        quality_ok = (
+            halluc_rate < 0.1
+            and direct_rate < 0.1
+            and avg_zpd >= 0.6
+        )
+
         if post_score is not None:
-            # Test-based grading
-            if post_score >= 90:
-                session_grade = {"grade": "◎", "status": "excellent", "basis": "post_test"}
-            elif post_score >= 70:
-                session_grade = {"grade": "○", "status": "pass", "basis": "post_test"}
-            else:
-                session_grade = {"grade": "×", "status": "fail", "basis": "post_test"}
+            # Test-based: prefer learning gain (post - pre) over absolute post.
+            # Absolute "cutoff" scoring was removed because a low-proficiency
+            # student who jumps from 30 → 60 was being scored the same as a
+            # stagnating one — see #35.
+            delta_for_grade = learning_gain
+            basis = "post_test"
         else:
-            # Proficiency-based grading when no tests are run
-            # Also consider quality metrics (hallucination, direct answers, ZPD)
-            quality_ok = halluc_rate < 0.1 and direct_rate < 0.1 and avg_zpd >= 0.6
-            if proficiency_delta >= 5 and quality_ok:
-                session_grade = {"grade": "◎", "status": "excellent", "basis": "proficiency_delta"}
-            elif proficiency_delta >= 2 and quality_ok:
-                session_grade = {"grade": "○", "status": "pass", "basis": "proficiency_delta"}
-            elif proficiency_delta >= 0 and quality_ok:
-                session_grade = {"grade": "△", "status": "marginal", "basis": "proficiency_delta"}
-            else:
-                session_grade = {"grade": "×", "status": "fail", "basis": "proficiency_delta"}
+            delta_for_grade = proficiency_delta
+            basis = "proficiency_delta"
+
+        if not quality_ok:
+            session_grade = {"grade": "⚠", "status": "review_needed", "basis": basis}
+        elif delta_for_grade >= 5:
+            session_grade = {"grade": "◎", "status": "excellent", "basis": basis}
+        elif delta_for_grade >= 2:
+            session_grade = {"grade": "○", "status": "pass", "basis": basis}
+        elif delta_for_grade >= 0:
+            session_grade = {"grade": "△", "status": "room_to_improve", "basis": basis}
+        else:
+            session_grade = {"grade": "⚠", "status": "review_needed", "basis": basis}
 
         return EvaluationResult(
             session_id=session_id,
