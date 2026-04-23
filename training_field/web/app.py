@@ -1069,7 +1069,9 @@ async def run_session(body: dict):
     registry = ExperimentRegistry()
     qbank = QuestionBank()
     cost_tracker = CostTracker()
-    await qbank.init_db()
+    # init_db is handled inside qbank.get_test_questions() with fallback;
+    # calling it unguarded here crashes the request with 500 when the DB path
+    # is not writable (e.g. Railway filesystem constraints). See #20.
 
     initial_prof = student.proficiency_model.topic_proficiencies.get(
         config.topic, student.proficiency_model.proficiency)
@@ -1184,7 +1186,8 @@ async def run_session_stream(
         registry = ExperimentRegistry()
         cost_tracker = CostTracker()
         qbank = QuestionBank()
-        await qbank.init_db()
+        # init_db is handled inside qbank.get_test_questions() with fallback;
+        # see note on the batch /api/run-session call site above (#20).
         initial_prof = student.proficiency_model.topic_proficiencies.get(
             config.topic, student.proficiency_model.proficiency)
         turn_evaluations = []
