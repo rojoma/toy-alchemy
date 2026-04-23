@@ -439,6 +439,51 @@ select:hover{border-color:var(--text)}
   border-radius:var(--radius-md);
 }
 .referee-card .frame{font-weight:500;color:var(--text)}
+
+/* Teacher picker — shared with /learn */
+.teacher-picker{display:flex;flex-direction:column;gap:8px}
+.teacher-card-pick{
+  border:1.5px solid var(--border);border-radius:12px;
+  background:var(--surface);padding:12px 14px;cursor:pointer;
+  transition:border-color .15s var(--ease), background .15s var(--ease);
+}
+.teacher-card-pick:hover{border-color:var(--border-strong)}
+.teacher-card-pick:focus{outline:none;border-color:var(--text)}
+.teacher-card-pick.selected{
+  border-color:var(--text);
+  background:var(--surface-2);
+}
+.tp-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.tp-av{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--text);color:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:600;flex-shrink:0;
+}
+.tp-name{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.tp-tagline{
+  font-size:12px;color:var(--text-secondary);
+  margin-bottom:8px;line-height:1.45;
+}
+.tp-traits{display:flex;flex-wrap:wrap;gap:4px}
+.tp-trait{
+  font-size:10px;padding:3px 8px;border-radius:10px;
+  background:var(--surface-2);color:var(--text-secondary);
+  font-weight:500;
+}
+.teacher-card-pick.selected .tp-trait{background:var(--surface)}
+
+/* Customize / Context group headers */
+.panel-group{
+  font-size:10px;font-weight:700;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--muted);
+  padding:4px 0 10px;margin-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+.panel-group-hint{
+  font-size:11px;color:var(--muted);font-weight:400;
+  letter-spacing:0.02em;text-transform:none;margin-left:6px;
+}
 </style>
 </head>
 <body>
@@ -533,31 +578,44 @@ select:hover{border-color:var(--text)}
 
 <!-- RIGHT -->
 <div class="panel panel-last">
+  <div class="panel-group" data-i18n="group_customize">
+    Customize <span class="panel-group-hint" data-i18n="group_customize_hint">pick what this session uses</span>
+  </div>
+
   <div class="sec"><div class="slabel" data-i18n="topic">Topic</div><select id="tsel">{% for t in topics %}<option data-i18n-tx>{{ t }}</option>{% endfor %}</select></div>
-  <div class="sec"><div class="slabel" data-i18n="depth">Depth</div>
-    <select id="dsel">
-      <option value="quick">Quick · 8 turns</option>
-      <option value="standard" selected>Standard · 12 turns</option>
-      <option value="deep">Deep · 16 turns</option>
-    </select>
-  </div>
-  <div class="sec">
-    <div class="slabel" data-i18n="skills_lib">Skills Library</div>
-    <span class="sk on" data-s="socratic_questioning">Socratic</span>
-    <span class="sk" data-s="concrete_examples">Concrete</span>
-    <span class="sk" data-s="stepwise_decomposition">Stepwise</span>
-    <span class="sk" data-s="visual_explanation">Visual</span>
-    <span class="sk on" data-s="error_reframing">Error reframe</span>
-    <span class="sk" data-s="metacognitive_prompting">Metacognitive</span>
-  </div>
+
   <div class="sec">
     <div class="slabel" data-i18n="teacher_agent">Teacher Agent</div>
-    <select id="teacherSel" style="margin-bottom:12px">
+    <div class="teacher-picker" id="teacherPicker" role="radiogroup">
       {% for t in teachers %}
-      <option value="{{ t.teacher_id }}">{{ t.name }} — {{ t.origin }}</option>
+      <div class="teacher-card-pick" role="radio" tabindex="0"
+           data-teacher-id="{{ t.teacher_id }}"
+           data-tagline-en="{{ t.tagline_en or '' }}"
+           data-tagline-ja="{{ t.tagline_ja or '' }}">
+        <div class="tp-head">
+          <div class="tp-av">{{ t.name[:1] }}</div>
+          <div class="tp-name">{{ t.name }}</div>
+        </div>
+        <div class="tp-tagline"
+             data-en="{{ t.tagline_en or '' }}"
+             data-ja="{{ t.tagline_ja or '' }}">{{ t.tagline_en or '' }}</div>
+        <div class="tp-traits">
+          {% for trait in t.traits or [] %}
+          <span class="tp-trait"
+                data-en="{{ trait.label_en }}"
+                data-ja="{{ trait.label_ja }}">{{ trait.icon }} {{ trait.label_en }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <!-- Hidden value-carrier, kept so existing runSession/startLiveSession code works unchanged. -->
+    <select id="teacherSel" style="display:none">
+      {% for t in teachers %}
+      <option value="{{ t.teacher_id }}">{{ t.name }}</option>
       {% endfor %}
     </select>
-    <div class="agent-card" id="teacherCard">
+    <div class="agent-card" id="teacherCard" style="margin-top:12px">
       <div class="agent-head">
         <div class="agent-av" id="tAv" style="background:rgba(178,80,0,0.12);color:var(--amber)">—</div>
         <div><div class="agent-name" id="tName">—</div><div class="agent-sub" id="tSub">—</div></div>
@@ -570,6 +628,11 @@ select:hover{border-color:var(--text)}
       <div style="font-size:10px;color:var(--muted);margin-top:10px" id="tSkills"></div>
     </div>
   </div>
+
+  <div class="panel-group" data-i18n="group_context">
+    Context <span class="panel-group-hint" data-i18n="group_context_hint">fixed for this student</span>
+  </div>
+
   <div class="sec">
     <div class="slabel" data-i18n="student_agent">Student Agent</div>
     <div class="agent-card">
@@ -592,6 +655,15 @@ select:hover{border-color:var(--text)}
       <span data-i18n="neutral_eval">中立評価 — 全Agentに適用</span>
     </div>
   </div>
+  <div class="sec">
+    <div class="slabel" data-i18n="skills_lib">Skills Library</div>
+    <span class="sk on" data-s="socratic_questioning">Socratic</span>
+    <span class="sk" data-s="concrete_examples">Concrete</span>
+    <span class="sk" data-s="stepwise_decomposition">Stepwise</span>
+    <span class="sk" data-s="visual_explanation">Visual</span>
+    <span class="sk on" data-s="error_reframing">Error reframe</span>
+    <span class="sk" data-s="metacognitive_prompting">Metacognitive</span>
+  </div>
 </div>
 </div>
 
@@ -604,6 +676,8 @@ const I18N = {
     session_hist:"セッション履歴", no_sessions:"セッションなし",
     select_unit:"単元を選択してセッションを開始", start_session:"セッション開始", run_test:"テスト実施", measure_always_on:"事前・事後テストは常に実施（比較のため必須）",
     topic:"単元", depth:"深さ", skills_lib:"スキルライブラリ",
+    group_customize:"カスタマイズ", group_customize_hint:"このセッションの設定",
+    group_context:"前提情報", group_context_hint:"この生徒の設定（変更不可）",
     teacher_agent:"教師エージェント", student_agent:"生徒エージェント", referee:"審判",
     neutral_eval:"中立評価 — 全Agentに適用",
     status_idle:"待機中", status_running:"セッション実行中", status_done:"セッション完了",
@@ -616,6 +690,8 @@ const I18N = {
     session_hist:"Session History", no_sessions:"No sessions yet",
     select_unit:"Select a topic to start a session", start_session:"Start Session", run_test:"Run Test", measure_always_on:"Pre/post tests always run (required to compare teachers)",
     topic:"Topic", depth:"Depth", skills_lib:"Skills Library",
+    group_customize:"Customize", group_customize_hint:"pick what this session uses",
+    group_context:"Context", group_context_hint:"fixed for this student",
     teacher_agent:"Teacher Agent", student_agent:"Student Agent", referee:"Referee",
     neutral_eval:"Neutral evaluation — applied to all Agents",
     status_idle:"Idle", status_running:"Session running", status_done:"Session complete",
@@ -646,6 +722,7 @@ function applyLang(l){
   const b=document.getElementById("langbtn"); if(b) b.textContent = l==="ja"?"EN":"JA";
   curLang=l; localStorage.setItem("tfLang",l);
   document.documentElement.lang = l;
+  if(typeof refreshTeacherCardLabels === "function") refreshTeacherCardLabels(l);
 }
 function tx(s){ return (curLang!=="ja" && TX[curLang] && TX[curLang][s]) ? TX[curLang][s] : s; }
 function toggleLang(){ applyLang(curLang==="ja"?"en":"ja"); }
@@ -657,7 +734,6 @@ const pp = PARAMS[SID]||{c:.5,n:.5,p:.5};
 document.getElementById("pcur").textContent=pp.c; document.getElementById("pbcur").style.width=(pp.c*100)+"%";
 document.getElementById("pcon").textContent=pp.n; document.getElementById("pbcon").style.width=(pp.n*100)+"%";
 document.getElementById("ppat").textContent=pp.p; document.getElementById("pbpat").style.width=(pp.p*100)+"%";
-document.querySelectorAll(".sk").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("on")));
 
 // ── Teacher selector ─────────────────────────────────
 const TEACHERS = {{ teachers|tojson }};
@@ -677,6 +753,11 @@ function renderTeacher(tid){
   document.getElementById("tPatienceVal").textContent = p+" turns";
   document.getElementById("tPatienceBar").style.width = Math.min(100,p*15)+"%";
   document.getElementById("tSkills").textContent = "Skills: " + (t.selected_skills||[]).join(", ");
+  // Reflect teacher's skills on the Skills Library chips (read-only visual).
+  const active = new Set(t.selected_skills || []);
+  document.querySelectorAll(".sk").forEach(c=>{
+    c.classList.toggle("on", active.has(c.dataset.s));
+  });
 }
 const savedTeacher = localStorage.getItem("tfTeacher");
 if(savedTeacher && TEACHERS.some(t=>t.teacher_id===savedTeacher)) teacherSel.value = savedTeacher;
@@ -684,8 +765,45 @@ renderTeacher(teacherSel.value);
 teacherSel.addEventListener("change",()=>{
   localStorage.setItem("tfTeacher", teacherSel.value);
   renderTeacher(teacherSel.value);
+  syncTeacherCards(teacherSel.value);
 });
 function currentTeacher(){ return TEACHERS.find(x=>x.teacher_id===teacherSel.value) || TEACHERS[0] || {name:"Teacher"}; }
+
+// ── Teacher card picker (mirrors /learn) ─────────────
+function syncTeacherCards(tid){
+  document.querySelectorAll(".teacher-card-pick").forEach(c=>{
+    const on = c.dataset.teacherId === tid;
+    c.classList.toggle("selected", on);
+    c.setAttribute("aria-checked", on ? "true" : "false");
+  });
+}
+function refreshTeacherCardLabels(lang){
+  document.querySelectorAll(".tp-tagline").forEach(el=>{
+    const v = el.dataset[lang]; if(v) el.textContent = v;
+  });
+  document.querySelectorAll(".tp-trait").forEach(el=>{
+    const v = el.dataset[lang]; if(!v) return;
+    const first = el.textContent.split(" ")[0];
+    el.textContent = first + " " + v;
+  });
+}
+(function initTeacherCards(){
+  const cards = document.querySelectorAll(".teacher-card-pick");
+  cards.forEach(card=>{
+    card.addEventListener("click", ()=>pickTeacherCard(card));
+    card.addEventListener("keydown", e=>{
+      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); pickTeacherCard(card); }
+    });
+  });
+  syncTeacherCards(teacherSel.value);
+  refreshTeacherCardLabels(curLang);
+})();
+function pickTeacherCard(card){
+  if(!card) return;
+  const tid = card.dataset.teacherId;
+  teacherSel.value = tid;
+  teacherSel.dispatchEvent(new Event("change"));
+}
 
 applyLang(curLang);
 function ss(st,key){const d=document.getElementById("sdot");d.className="dot"+(st=="run"?" run":st=="done"?" done":"");const e=document.getElementById("stxt");e.setAttribute("data-i18n-key",key);e.textContent=(window.I18N&&I18N[curLang]&&I18N[curLang][key])||key;}
@@ -750,7 +868,7 @@ function pushMsgEmpty(role,name){
 function startStream(opts){
   document.getElementById("brun").disabled=true;
   ss("run",opts.statusKey);document.getElementById("chat").innerHTML="";
-  const topic=document.getElementById("tsel").value,depth=document.getElementById("dsel").value;
+  const topic=document.getElementById("tsel").value,depth="standard";
   const pm={diagnosis:1,exploration:2,practice:3,reflection:4};
   const params = {student_id:SID,topic,depth,grade:GRADE,subject:SUBJECT,teacher_id:teacherSel.value,lang:curLang};
   if(opts.pre_test) params.pre_test="true";
@@ -894,7 +1012,7 @@ async function startLiveSession(){
   document.getElementById("tp").style.width = "0%";
 
   const topic = document.getElementById("tsel").value;
-  const depth = document.getElementById("dsel").value;
+  const depth = "standard";
   const tName = prompt(curLang==="ja" ? "あなたの名前を入力:" : "Enter your name:") || "Student";
 
   try {
