@@ -1,11 +1,128 @@
 {% extends "legal/base.html" %}
-{% set page_title = "プライバシーポリシー / Privacy Policy" %}
+{% set page_title = "Privacy Policy" %}
 {% block content %}
 
 <div class="legal-banner">
-  <strong>⚠ ドラフト / Draft status.</strong>
-  本書はエンジニアによる初稿であり、法律家のレビューを受けていません。公開前に弁護士または教育法務の専門家による確認が必要です。内容の最終責任は Toy Alchemy プロジェクト運営者にあります。
+  <strong>⚠ Draft.</strong>
+  This is an engineer's initial draft. It has not been reviewed by a lawyer.
+  Before any public launch, this document should be reviewed by qualified legal
+  counsel (education-law specialist recommended).
 </div>
+
+<!-- ────────────── ENGLISH ────────────── -->
+<div data-lang-block="en">
+
+<h1>Privacy Policy</h1>
+<p class="last-updated">Last updated: 2026-04-23 (draft v0.1)</p>
+
+<p>Toy Alchemy (the “Service”) handles personal information under the policy below. Because the Service is an AI-tutor platform that is used by minors, we take extra care.</p>
+
+<h2>1. Operator</h2>
+<p>MIT MAS.664 AI Studio, Spring 2026 — Team Toy Alchemy ({{ contact_email or "TBD: operator contact email to be added" }}).</p>
+
+<h2>2. What we collect</h2>
+
+<h3>2.1 Information the student enters directly</h3>
+<ul>
+  <li>Name or nickname (student-chosen)</li>
+  <li>Grade (primary 1 through high-school 3)</li>
+  <li>Subject (math, Japanese, science, social studies, English)</li>
+  <li>Learning topic and scope (free text)</li>
+  <li>Messages typed during a session (questions to the teacher, answers, etc.)</li>
+  <li>Optional post-session feedback (5-point rating, tags, free text)</li>
+  <li>Optional per-turn feedback (👍 / ❓ / 👎)</li>
+  <li>Optional uploaded photos of homework / textbook pages — see §2.4 below</li>
+</ul>
+
+<h3>2.2 Information generated automatically</h3>
+<ul>
+  <li>Session ID (randomly generated)</li>
+  <li>Proficiency scores (per topic)</li>
+  <li>AI evaluation signals (ZPD alignment, Bloom level, clarity, etc.)</li>
+  <li>Session-history timestamps</li>
+  <li>Teacher Memory (per-student observational notes held by the AI teacher)</li>
+</ul>
+
+<h3>2.3 Information stored in the browser (LocalStorage)</h3>
+<ul>
+  <li>Anonymous student ID</li>
+  <li>Selected teacher ID</li>
+  <li>Language setting (en / ja)</li>
+  <li>Theme setting (light / dark)</li>
+</ul>
+<p>This information is stored in the user's browser and may not be transmitted to our server. It can be cleared from the browser settings.</p>
+
+<h3>2.4 Uploaded photos</h3>
+<p>Students may optionally upload a photo of a homework sheet or textbook page to help describe the learning scope.</p>
+<ul>
+  <li>Uploaded images are sent to OpenAI (USA) for image analysis only.</li>
+  <li>We do <strong>not retain</strong> the image file on our server. It is discarded immediately after inference.</li>
+  <li>Only the short textual description extracted from the image is saved as the session scope.</li>
+  <li>Please do not include personally identifying information (names, addresses, photos of faces, etc.) in the image.</li>
+</ul>
+
+<h2>3. Purposes of use</h2>
+<ul>
+  <li>Provide personalized AI-based learning instruction.</li>
+  <li>Show the student their learning progress.</li>
+  <li>Improve how the AI teachers teach (aggregate analysis).</li>
+  <li>Publish research results (MIT MAS.664 AI Studio coursework and academic publication — any public disclosure will be de-identified).</li>
+  <li>Investigate bugs and improve service quality.</li>
+</ul>
+
+<h2>4. Sharing with third parties</h2>
+<p>We share information only with the following processors, to the minimum extent necessary for operating the Service.</p>
+<ul>
+  <li><strong>OpenAI</strong> (USA): session dialogue is sent for AI model inference. Per the API agreement, OpenAI does not use this data to train its models.</li>
+  <li><strong>Railway</strong> (USA): hosting and persistent storage.</li>
+</ul>
+<p>We do not share personal information with any other third party (except as required by law).</p>
+
+<h2>5. Cross-border transfer</h2>
+<p>As noted above, data is transmitted to and stored on US-based services. By using the Service, users consent to this cross-border transfer.</p>
+
+<h2>6. Retention</h2>
+<p>The following data is retained until a deletion request is received:</p>
+<ul>
+  <li>Student profiles</li>
+  <li>Session history and evaluation reports</li>
+  <li>Feedback records</li>
+</ul>
+<p>TBD: a specific retention window (e.g. 1 year, or until graduation) will be set as operational policy.</p>
+
+<h2>7. Deletion and disclosure requests</h2>
+<p>Students or their parents/guardians may request:</p>
+<ul>
+  <li>Disclosure of information we hold about them.</li>
+  <li>Correction or deletion of that information.</li>
+  <li>Suspension of service use.</li>
+</ul>
+<p>Please contact {{ contact_email or "TBD: operator contact email" }}. We will respond within a reasonable period after verifying identity.</p>
+
+<h2>8. Minors and parental consent</h2>
+<p>The Service is designed for minor users (under 18).</p>
+<p>TBD: the specific consent mechanism (consent dialog, email confirmation, written consent, etc.) and when it is enforced remain open. This draft simply requests that parental consent be obtained before use.</p>
+
+<h2>9. Security</h2>
+<ul>
+  <li>API keys and other credentials are managed via environment variables and are not committed to the repository.</li>
+  <li>Communication is encrypted using HTTPS (Railway default).</li>
+  <li>Database access is limited to the operator and the service processes.</li>
+</ul>
+
+<h2>10. Cookies and local storage</h2>
+<p>The Service uses cookies or LocalStorage to maintain an authenticated session. Users may disable these in browser settings, though doing so may break some functionality.</p>
+
+<h2>11. Changes to this Policy</h2>
+<p>This Policy may be revised in response to changes in law or in the Service. Significant changes will be announced on this page.</p>
+
+<h2>12. Contact</h2>
+<p>{{ contact_email or "TBD: operator contact email to be added" }}</p>
+
+</div>
+
+<!-- ────────────── 日本語 ────────────── -->
+<div data-lang-block="ja">
 
 <h1>プライバシーポリシー</h1>
 <p class="last-updated">最終更新: 2026-04-23（ドラフト v0.1）</p>
@@ -29,15 +146,6 @@
   <li>宿題・教科書の写真（任意アップロード）— 下記 2.4 をご覧ください</li>
 </ul>
 
-<h3>2.4 写真アップロードの取り扱い</h3>
-<p>生徒は学習範囲を指定する方法として、宿題プリントや教科書ページの写真をアップロードできます（任意機能）。</p>
-<ul>
-  <li>アップロードされた画像は、学習範囲を要約する目的でOpenAI（米国）の画像解析APIに送信されます。</li>
-  <li>本サービスは画像ファイルそのものを <strong>保存しません</strong>。推論完了後は速やかに破棄します。</li>
-  <li>画像から抽出された短い説明テキストのみが、セッションの学習範囲として保存されます。</li>
-  <li>アップロードされる画像に個人を特定できる情報（氏名、住所、顔写真等）が含まれないよう、利用者側でご注意ください。</li>
-</ul>
-
 <h3>2.2 利用に伴い自動生成される情報</h3>
 <ul>
   <li>セッションID（ランダム生成）</li>
@@ -55,6 +163,15 @@
   <li>テーマ設定（light / dark）</li>
 </ul>
 <p>これらは利用者のブラウザに保存され、サーバーには送信されない場合があります。ブラウザの設定で削除可能です。</p>
+
+<h3>2.4 写真アップロードの取り扱い</h3>
+<p>生徒は学習範囲を指定する方法として、宿題プリントや教科書ページの写真をアップロードできます（任意機能）。</p>
+<ul>
+  <li>アップロードされた画像は、学習範囲を要約する目的でOpenAI（米国）の画像解析APIに送信されます。</li>
+  <li>本サービスは画像ファイルそのものを <strong>保存しません</strong>。推論完了後は速やかに破棄します。</li>
+  <li>画像から抽出された短い説明テキストのみが、セッションの学習範囲として保存されます。</li>
+  <li>アップロードされる画像に個人を特定できる情報（氏名、住所、顔写真等）が含まれないよう、利用者側でご注意ください。</li>
+</ul>
 
 <h2>3. 利用目的</h2>
 <ul>
@@ -114,10 +231,6 @@
 <h2>12. お問い合わせ</h2>
 <p>{{ contact_email or "TBD: 運営代表メールアドレスを記載" }}</p>
 
-<hr />
-
-<h2 id="english">English (summary)</h2>
-<p><em>This English summary is for convenience only. The Japanese version above is authoritative.</em></p>
-<p>Toy Alchemy is an AI tutoring platform built for MIT MAS.664 AI Studio, Spring 2026. Data we collect includes: student nickname, grade/subject, session dialogue with the AI tutor, proficiency scores, and optional feedback. Data is sent to OpenAI (AI inference) and stored on Railway (US hosting). Data is not sold or shared beyond these service providers. Users may request disclosure, correction, or deletion of their data by emailing us. This service is intended for minors; parental consent is expected. This is a <strong>draft document pending legal review</strong>.</p>
+</div>
 
 {% endblock %}
