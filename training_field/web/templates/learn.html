@@ -244,6 +244,23 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
            placeholder='e.g. "word problems about ratios"'
            style="display:none;margin-top:8px" />
   </div>
+  <div class="form-group" id="scopeGroup" style="display:none">
+    <label class="form-label" data-i18n="label_scope">DESCRIBE WHAT TO WORK ON</label>
+    <div class="scope-row">
+      <input type="text" class="form-select scope-input" id="scopeInput"
+             data-i18n-placeholder="scope_placeholder"
+             placeholder='e.g. "textbook p.42 word problems"' />
+      <label for="scopePhoto" class="scope-photo-btn" data-i18n-title="scope_photo_title" title="Upload a photo of your homework">
+        <span id="scopePhotoIcon">📷</span>
+      </label>
+      <input type="file" id="scopePhoto" accept="image/*" capture="environment"
+             style="display:none" onchange="handleScopePhoto(event)" />
+    </div>
+    <div class="form-hint" data-i18n="scope_hint" style="font-size:11px;color:var(--muted);margin-top:4px">
+      Type the topic, or tap 📷 to upload a photo of the homework. The session jumps straight into teaching.
+    </div>
+    <div id="scopeStatus" class="scope-status" style="display:none"></div>
+  </div>
   <div class="form-group">
     <label class="form-label" data-i18n="label_teacher">TEACHER</label>
     <div class="teacher-picker" id="teacherPicker" role="radiogroup">
@@ -269,23 +286,6 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
       </div>
       {% endfor %}
     </div>
-  </div>
-  <div class="form-group" id="scopeGroup" style="display:none">
-    <label class="form-label" data-i18n="label_scope">DESCRIBE WHAT TO WORK ON</label>
-    <div class="scope-row">
-      <input type="text" class="form-select scope-input" id="scopeInput"
-             data-i18n-placeholder="scope_placeholder"
-             placeholder='e.g. "textbook p.42 word problems"' />
-      <label for="scopePhoto" class="scope-photo-btn" data-i18n-title="scope_photo_title" title="Upload a photo of your homework">
-        <span id="scopePhotoIcon">📷</span>
-      </label>
-      <input type="file" id="scopePhoto" accept="image/*" capture="environment"
-             style="display:none" onchange="handleScopePhoto(event)" />
-    </div>
-    <div class="form-hint" data-i18n="scope_hint" style="font-size:11px;color:var(--muted);margin-top:4px">
-      Type the topic, or tap 📷 to upload a photo of the homework. The session jumps straight into teaching.
-    </div>
-    <div id="scopeStatus" class="scope-status" style="display:none"></div>
   </div>
   <button class="btn-primary" onclick="startSession()" data-i18n="start_session">Start Session</button>
 
