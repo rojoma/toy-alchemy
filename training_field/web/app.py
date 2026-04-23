@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, Request, Header, HTTPException, Depends
+from fastapi import FastAPI, Request, Header, HTTPException, Depends, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -975,6 +975,84 @@ async def terms_page(request: Request):
     return templates.TemplateResponse(request, "legal/terms.html", {
         "contact_email": LEGAL_CONTACT_EMAIL,
     })
+
+
+# ── Homework photo upload → learning scope (#32) ──────────────
+# Students (or parents) can upload a photo of a homework sheet or textbook
+# page. We ask GPT-4o vision to describe what problem(s) the page is asking
+# about; the caller then uses that description as the `scope` parameter in
+# /api/live/start (which already skips the pre-test when scope is set, per
+# #28). The image itself is NOT persisted — it's streamed to OpenAI and
+# dropped. This keeps us aligned with the privacy.html draft.
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+VISION_MODEL = "gpt-4o"
+
+
+@app.post("/api/vision/extract-scope")
+async def vision_extract_scope(
+    file: UploadFile = File(...),
+    lang: str = "ja",
+):
+    """Send an uploaded image to GPT-4o vision and return a short scope string.
+
+    Returns: {scope: str, confidence: "high" | "low", error?: str}
+    Callers should treat the scope as a suggestion — it's meant to be
+    confirmable/editable by the student before session start.
+    """
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(400, "upload must be an image")
+
+    data = await file.read()
+    if len(data) == 0:
+        raise HTTPException(400, "empty upload")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, f"image too large (>{MAX_UPLOAD_BYTES // 1024 // 1024} MB)")
+
+    import base64 as _b64
+    b64 = _b64.b64encode(data).decode("ascii")
+    data_url = f"data:{file.content_type};base64,{b64}"
+
+    sys_prompt_ja = (
+        "あなたは小中学生の宿題の写真を読み取り、学習範囲を30字以内の日本語で要約するアシスタントです。"
+        "写真の内容（教科書のページ・プリント・ノートなど）から、"
+        "生徒が取り組むべき単元または問題の種類を短く表現してください。"
+        "問題そのものを解く必要はありません。"
+        "返答は1行だけ、説明文や前置きなし。"
+    )
+    sys_prompt_en = (
+        "You are an assistant that reads a student's homework photo and writes a short "
+        "(<=30 chars) description of the learning scope in English. "
+        "From the photo (textbook page, worksheet, notebook, etc.), describe the topic "
+        "or problem type the student is working on. Do not solve the problems. "
+        "Return a single line, no prefix, no explanation."
+    )
+
+    from openai import OpenAI, BadRequestError
+    client = OpenAI()
+    try:
+        resp = client.chat.completions.create(
+            model=VISION_MODEL,
+            max_tokens=60,
+            messages=[
+                {"role": "system", "content": sys_prompt_ja if lang == "ja" else sys_prompt_en},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "この画像の学習範囲を短く要約してください。" if lang == "ja" else "Summarize the learning scope in this image."},
+                    {"type": "image_url", "image_url": {"url": data_url}},
+                ]},
+            ],
+        )
+        scope_text = (resp.choices[0].message.content or "").strip().strip('"').strip("「").strip("」")
+        # Cap aggressively — the UI shows this in a text input.
+        scope_text = scope_text.splitlines()[0] if scope_text else ""
+        scope_text = scope_text[:80]
+        if not scope_text:
+            return {"scope": "", "confidence": "low", "error": "vision returned empty"}
+        return {"scope": scope_text, "confidence": "high"}
+    except BadRequestError as e:
+        # Safety / content filter or image parse failure — don't 500.
+        return {"scope": "", "confidence": "low", "error": f"vision rejected image: {e.message if hasattr(e, 'message') else str(e)[:200]}"}
+    except Exception as e:
+        return {"scope": "", "confidence": "low", "error": f"vision failed: {str(e)[:200]}"}
 
 @app.get("/", response_class=HTMLResponse)
 async def landing(request: Request):
