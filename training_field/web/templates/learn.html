@@ -398,12 +398,27 @@ async function loadProfile(sid){
   }
 }
 
+function gradeLabel(v){
+  const row = GRADE_DATA.find(g=>g.v===v);
+  if(!row) return v;
+  return curLang === "ja" ? row.ja : row.en;
+}
+function subjectLabel(v){
+  const row = SUBJECT_DATA.find(s=>s.v===v);
+  if(!row) return v;
+  return curLang === "ja" ? row.ja : row.en;
+}
+
 function showWelcome(profile){
   window._lastProfile = profile;
   document.getElementById("onboard").style.display = "none";
   document.getElementById("welcome").style.display = "block";
   document.getElementById("welcomeMsg").textContent = tr("welcome_back")(profile.name);
-  document.getElementById("welcomeSub").textContent = tr("welcome_sub")(profile.grade, profile.subject, profile.sessions_completed);
+  document.getElementById("welcomeSub").textContent = tr("welcome_sub")(
+    gradeLabel(profile.grade),
+    subjectLabel(profile.subject),
+    profile.sessions_completed
+  );
 
   // Dashboard stats (#8): streak / total sessions / proficiency gain
   const stats = profile.stats || {};
@@ -433,7 +448,7 @@ function showWelcome(profile){
     grid.innerHTML = '<span class="prof-chip">'+tr("no_topics_yet")+'</span>';
   } else {
     for(const [topic, score] of Object.entries(profs)){
-      const label = TOPIC_TX[topic] || topic;
+      const label = curLang === "ja" ? topic : (TOPIC_TX[topic] || topic);
       const chip = document.createElement("span");
       chip.className = "prof-chip";
       chip.textContent = label + " " + Math.round(score);
@@ -450,7 +465,7 @@ function showWelcome(profile){
     if(entries.length > 0){
       const maxAbs = entries.reduce((m,[_,arr]) => Math.max(m, ...arr.map(Math.abs)), 1);
       entries.forEach(([topic, deltas])=>{
-        const label = TOPIC_TX[topic] || topic;
+        const label = curLang === "ja" ? topic : (TOPIC_TX[topic] || topic);
         const sum = deltas.reduce((a,b)=>a+b, 0);
         const row = document.createElement("div");
         row.className = "trend-row";
@@ -501,7 +516,7 @@ function showWelcome(profile){
   (profile.history || []).slice(0,5).forEach(h=>{
     const item = document.createElement("div");
     item.className = "history-item";
-    const topicLabel = TOPIC_TX[h.topic] || h.topic || "—";
+    const topicLabel = curLang === "ja" ? (h.topic || "—") : (TOPIC_TX[h.topic] || h.topic || "—");
     const delta = h.proficiency_delta || 0;
     item.innerHTML = '<div><div class="history-topic">'+topicLabel+'</div><div class="history-date">'+
       (h.timestamp||"").slice(0,10)+'</div></div>'+
