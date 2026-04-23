@@ -270,12 +270,12 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
       {% endfor %}
     </div>
   </div>
-  <div class="form-group">
-    <label class="form-label" data-i18n="label_scope">LEARNING SCOPE (OPTIONAL)</label>
+  <div class="form-group" id="scopeGroup" style="display:none">
+    <label class="form-label" data-i18n="label_scope">DESCRIBE WHAT TO WORK ON</label>
     <div class="scope-row">
       <input type="text" class="form-select scope-input" id="scopeInput"
              data-i18n-placeholder="scope_placeholder"
-             placeholder='e.g. "textbook p.42 word problems" — leave blank to take a pre-test first' />
+             placeholder='e.g. "textbook p.42 word problems"' />
       <label for="scopePhoto" class="scope-photo-btn" data-i18n-title="scope_photo_title" title="Upload a photo of your homework">
         <span id="scopePhotoIcon">📷</span>
       </label>
@@ -283,7 +283,7 @@ h1{font-size:28px;font-weight:600;letter-spacing:-0.025em;margin-bottom:8px}
              style="display:none" onchange="handleScopePhoto(event)" />
     </div>
     <div class="form-hint" data-i18n="scope_hint" style="font-size:11px;color:var(--muted);margin-top:4px">
-      When you tell the teacher what you want to work on, the session skips the pre-test and jumps straight into teaching.
+      Type the topic, or tap 📷 to upload a photo of the homework. The session jumps straight into teaching.
     </div>
     <div id="scopeStatus" class="scope-status" style="display:none"></div>
   </div>
@@ -306,9 +306,9 @@ const I18N = {
     label_name:"なまえ", name_placeholder:"例：エマ",
     label_grade:"がくねん", label_subject:"きょうか", label_teacher:"せんせい",
     label_progress:"これまでの学習", label_topic:"単元",
-    label_scope:"学習したい範囲（任意）",
-    scope_placeholder:"例：「教科書p.42の例題」「分数の割り算だけ」— 空欄なら事前テストから始めます",
-    scope_hint:"範囲を書くと事前テストをスキップして、すぐに解説から始まります。",
+    label_scope:"学習したい範囲を入力",
+    scope_placeholder:"例：「教科書p.42の例題」「分数の割り算だけ」",
+    scope_hint:"テキストを入力するか、📷 で宿題の写真をアップロードしてください。事前テストをスキップして、すぐに解説から始まります。",
     topic_other:"その他（自由記述）",
     topic_custom_placeholder:"例：「割合の文章題」「百分率の計算」",
     stat_streak:"連続日数",
@@ -333,9 +333,9 @@ const I18N = {
     label_name:"YOUR NAME", name_placeholder:"e.g. Emma",
     label_grade:"GRADE", label_subject:"SUBJECT", label_teacher:"TEACHER",
     label_progress:"YOUR PROGRESS", label_topic:"TOPIC",
-    label_scope:"LEARNING SCOPE (OPTIONAL)",
-    scope_placeholder:'e.g. "textbook p.42 word problems" — leave blank to take a pre-test first',
-    scope_hint:"When you tell the teacher what you want to work on, the session skips the pre-test and jumps straight into teaching.",
+    label_scope:"DESCRIBE WHAT TO WORK ON",
+    scope_placeholder:'e.g. "textbook p.42 word problems"',
+    scope_hint:"Type the topic, or tap 📷 to upload a photo of the homework. The session jumps straight into teaching.",
     topic_other:"Other (type your own)",
     topic_custom_placeholder:'e.g. "word problems about ratios"',
     stat_streak:"Day streak",
@@ -583,12 +583,20 @@ function showWelcome(profile){
 function onTopicChange(){
   const sel = document.getElementById("topicSelect");
   const custom = document.getElementById("topicCustom");
-  if(!custom) return;
-  if(sel.value === "__custom__"){
-    custom.style.display = "block";
-    custom.focus();
-  } else {
-    custom.style.display = "none";
+  const scopeGroup = document.getElementById("scopeGroup");
+  const scopeInput = document.getElementById("scopeInput");
+  const scopeStatus = document.getElementById("scopeStatus");
+  const isCustom = sel.value === "__custom__";
+  if(custom){
+    custom.style.display = isCustom ? "block" : "none";
+    if(isCustom) custom.focus();
+  }
+  if(scopeGroup){
+    scopeGroup.style.display = isCustom ? "block" : "none";
+  }
+  if(!isCustom){
+    if(scopeInput) scopeInput.value = "";
+    if(scopeStatus){ scopeStatus.style.display = "none"; scopeStatus.textContent = ""; }
   }
 }
 
