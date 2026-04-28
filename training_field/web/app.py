@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from training_field.llm import chat_complete
 from training_field.student_agent import StudentAgentFactory
 from training_field.teacher_agent import TeacherAgent
 from training_field.teacher_registry import list_teachers, load_teacher
@@ -282,14 +283,12 @@ async def live_start(body: dict):
     if run_pre_test:
         # Generate first pre-test question
         prompt = _test_prompt(teacher.config, topic, gcode, subject, lang, 1, NUM_TEST_QUESTIONS, student_label, is_post=False)
-        from openai import OpenAI
-        client = OpenAI()
-        resp = client.chat.completions.create(
-            model="gpt-4o", max_tokens=300,
-            messages=[{"role": "system", "content": prompt},
-                      {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {display_topic(topic, lang)}."}],
-        )
-        first_q = resp.choices[0].message.content.strip()
+        first_q = chat_complete(
+            [{"role": "system", "content": prompt},
+             {"role": "user", "content": f"Ask question 1 of {NUM_TEST_QUESTIONS} about {display_topic(topic, lang)}."}],
+            role="judge",
+            max_tokens=300,
+        ).strip()
         session.last_teacher_text = first_q
         greeting = "Let's start with a quick check!" if lang == "en" else "まずは軽いチェックから始めましょう！"
         return {
@@ -355,9 +354,6 @@ async def live_respond(session_id: str, body: dict):
         session.lang = new_lang
 
     teacher = session.teacher
-    from openai import OpenAI
-    client = OpenAI()
-
     # ── PRE-TEST or POST-TEST phase ──────────────────────────
     if session.session_phase in ("pre_test", "post_test"):
         is_post = session.session_phase == "post_test"
@@ -368,12 +364,12 @@ async def live_respond(session_id: str, body: dict):
             teacher.config, session.topic, session.grade, session.lang,
             session.last_teacher_text or "", student_text,
         )
-        resp = client.chat.completions.create(
-            model="gpt-4o", max_tokens=400,
-            messages=[{"role": "system", "content": judge_sys},
-                      {"role": "user", "content": f'Student answered: "{student_text}"'}],
-        )
-        raw = resp.choices[0].message.content.strip()
+        raw = chat_complete(
+            [{"role": "system", "content": judge_sys},
+             {"role": "user", "content": f'Student answered: "{student_text}"'}],
+            role="judge",
+            max_tokens=400,
+        ).strip()
 
         # Parse feedback + JSON
         feedback_text = raw
@@ -403,12 +399,12 @@ async def live_respond(session_id: str, body: dict):
                 session.lang, session.test_question_num, NUM_TEST_QUESTIONS,
                 session.student_label, is_post=is_post,
             )
-            resp2 = client.chat.completions.create(
-                model="gpt-4o", max_tokens=300,
-                messages=[{"role": "system", "content": prompt},
-                          {"role": "user", "content": f"Ask question {session.test_question_num} of {NUM_TEST_QUESTIONS}."}],
-            )
-            next_q = resp2.choices[0].message.content.strip()
+            next_q = chat_complete(
+                [{"role": "system", "content": prompt},
+                 {"role": "user", "content": f"Ask question {session.test_question_num} of {NUM_TEST_QUESTIONS}."}],
+                role="judge",
+                max_tokens=300,
+            ).strip()
             session.last_teacher_text = next_q
             return {
                 "teacher_message": f"{feedback_text}\n\n{next_q}",
@@ -528,12 +524,12 @@ async def live_respond(session_id: str, body: dict):
             teacher.config, dtopic, session.grade, session.subject,
             session.lang, 1, NUM_TEST_QUESTIONS, session.student_label, is_post=True,
         )
-        resp = client.chat.completions.create(
-            model="gpt-4o", max_tokens=300,
-            messages=[{"role": "system", "content": prompt},
-                      {"role": "user", "content": f"Ask review question 1 of {NUM_TEST_QUESTIONS}."}],
-        )
-        post_q = resp.choices[0].message.content.strip()
+        post_q = chat_complete(
+            [{"role": "system", "content": prompt},
+             {"role": "user", "content": f"Ask review question 1 of {NUM_TEST_QUESTIONS}."}],
+            role="judge",
+            max_tokens=300,
+        ).strip()
         session.last_teacher_text = post_q
         review_intro = ("Great work! Let's see how much you've learned." if session.lang == "en"
                         else "よく頑張りました！どれだけ学んだか確認しましょう。")
@@ -614,8 +610,6 @@ async def live_end(session_id: str):
             "proficiency_delta": round(session.proficiency - session.initial_proficiency, 1),
         }
 
-    from openai import OpenAI
-    client = OpenAI()
     teacher = session.teacher
     dtopic = display_topic(session.topic, session.lang)
 
@@ -625,12 +619,12 @@ async def live_end(session_id: str):
         teacher.config, dtopic, session.grade, session.subject,
         session.lang, 1, NUM_TEST_QUESTIONS, session.student_label, is_post=True,
     )
-    resp = client.chat.completions.create(
-        model="gpt-4o", max_tokens=300,
-        messages=[{"role": "system", "content": prompt},
-                  {"role": "user", "content": f"Ask review question 1 of {NUM_TEST_QUESTIONS}."}],
-    )
-    post_q = resp.choices[0].message.content.strip()
+    post_q = chat_complete(
+        [{"role": "system", "content": prompt},
+         {"role": "user", "content": f"Ask review question 1 of {NUM_TEST_QUESTIONS}."}],
+        role="judge",
+        max_tokens=300,
+    ).strip()
     session.last_teacher_text = post_q
     review_intro = ("Great work! Let's see how much you've learned." if session.lang == "en"
                     else "よく頑張りました！どれだけ学んだか確認しましょう。")
@@ -985,7 +979,9 @@ async def terms_page(request: Request):
 # #28). The image itself is NOT persisted — it's streamed to OpenAI and
 # dropped. This keeps us aligned with the privacy.html draft.
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
-VISION_MODEL = "gpt-4o"
+# Vision still uses OpenAI directly because the multimodal message format
+# differs across providers. Gemini migration for vision is a separate task.
+VISION_MODEL = os.getenv("VISION_MODEL", "gpt-4o")
 
 
 @app.post("/api/vision/extract-scope")

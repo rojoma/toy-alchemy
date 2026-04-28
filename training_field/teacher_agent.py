@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Optional
-from openai import OpenAI
+
+from training_field.llm import chat_complete
 
 
 class TeachingStyle(Enum):
@@ -43,7 +44,6 @@ class TeacherAgent:
 
     def __init__(self, config: TeacherConfig):
         self.config = config
-        self.client = OpenAI()
         self._contract = self._load_contract()
         self._skills_content = self._load_skills()
         self._turn_history: list = []
@@ -160,12 +160,11 @@ Then output this JSON on a new line (no code block):
             else f'Student responded: "{student_last_response}"\nThis is turn {turn_number} of the {phase} phase.'
         )
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
+        raw = chat_complete(
+            [{"role": "system", "content": system}, {"role": "user", "content": user_content}],
+            role="teacher",
             max_tokens=300,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user_content}]
         )
-        raw = response.choices[0].message.content
         text_part, metadata = self._parse_response(raw)
         self._turn_history.append({"role": "teacher", "text": text_part, "metadata": metadata})
 

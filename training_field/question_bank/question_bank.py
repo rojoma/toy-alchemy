@@ -6,7 +6,8 @@ import aiosqlite
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from openai import OpenAI
+
+from training_field.llm import chat_complete
 
 
 @dataclass
@@ -38,7 +39,6 @@ class QuestionBank:
     COPYRIGHT_SAFE_MODE = True
 
     def __init__(self):
-        self.client = OpenAI()
         self._nakatsu = self._load_json("nakatsu_index.json")
         self._pisa = self._load_json("pisa_index.json")
 
@@ -118,15 +118,14 @@ class QuestionBank:
         }
 
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                max_tokens=600,
-                messages=[
+            raw = chat_complete(
+                [
                     {"role": "system", "content": system},
-                    {"role": "user", "content": f"単元「{unit}」の{difficulty}レベルの問題を1問作成してください。"}
-                ]
-            )
-            raw = response.choices[0].message.content.strip()
+                    {"role": "user", "content": f"単元「{unit}」の{difficulty}レベルの問題を1問作成してください。"},
+                ],
+                role="question_bank",
+                max_tokens=600,
+            ).strip()
             
             # Try to parse JSON, handling potential code blocks
             if raw.startswith("```"):

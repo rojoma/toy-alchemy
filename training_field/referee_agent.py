@@ -3,7 +3,8 @@ import json
 import datetime
 from pathlib import Path
 from dataclasses import dataclass
-from openai import OpenAI
+
+from training_field.llm import chat_complete
 
 
 @dataclass
@@ -36,7 +37,6 @@ class PrincipalAgent:
     }
 
     def __init__(self):
-        self.client = OpenAI()
         self.session_log: list = []
 
     def _build_system(self, lang: str = "en") -> str:
@@ -91,12 +91,11 @@ Student: "{student_text}"
 
 Evaluate this exchange."""
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
+        raw = chat_complete(
+            [{"role": "system", "content": self._build_system(lang)}, {"role": "user", "content": user_content}],
+            role="referee",
             max_tokens=500,
-            messages=[{"role": "system", "content": self._build_system(lang)}, {"role": "user", "content": user_content}]
-        )
-        raw = response.choices[0].message.content.strip()
+        ).strip()
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
@@ -237,12 +236,11 @@ Return ONLY valid JSON:
   "expected_effect": "what metric should improve, by how much"
 }}"""
         try:
-            resp = self.client.chat.completions.create(
-                model="gpt-4o",
+            raw = chat_complete(
+                [{"role": "system", "content": sys}, {"role": "user", "content": user}],
+                role="referee",
                 max_tokens=600,
-                messages=[{"role": "system", "content": sys}, {"role": "user", "content": user}],
-            )
-            raw = resp.choices[0].message.content.strip()
+            ).strip()
             if raw.startswith("```"):
                 raw = raw.strip("`").lstrip("json").strip()
             data = json.loads(raw)
