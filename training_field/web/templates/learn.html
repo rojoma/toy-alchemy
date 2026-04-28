@@ -791,10 +791,10 @@ function startSession(){
   const sel = document.getElementById("topicSelect");
   const scopeEl = document.getElementById("scopeInput");
   const scope = (scopeEl && scopeEl.value || "").trim();
-  // Scope wins: if the student described their own topic (or uploaded a
-  // photo that filled in scope), use it as the topic. Otherwise fall back
-  // to the dropdown selection.
-  let topic = scope || sel.value;
+  // Topic always comes from the dropdown — keeps the URL and chat-header
+  // header tidy. Scope (if any) is held server-side and threaded into the
+  // Teacher's system prompt; never echoed in the UI.
+  const topic = sel.value;
   localStorage.setItem("tfStudentTeacher", teacher);
   let url = "/learn/session?student_id="+sid+
     "&teacher_id="+encodeURIComponent(teacher)+
