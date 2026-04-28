@@ -91,9 +91,12 @@ Student: "{student_text}"
 
 Evaluate this exchange."""
 
+        # Adult evaluations (grade 13) need longer directives — child topics
+        # fit in 500 tokens but business / tech / academic critique rarely does.
+        max_tokens = 800 if grade == 13 else 500
         response = self.client.chat.completions.create(
             model="gpt-4o",
-            max_tokens=500,
+            max_tokens=max_tokens,
             messages=[{"role": "system", "content": self._build_system(lang)}, {"role": "user", "content": user_content}]
         )
         raw = response.choices[0].message.content.strip()
