@@ -71,7 +71,7 @@ Emotional state: {self.emotional_state.to_prompt_description()}
 
 For this question, {'answer correctly (but in a natural, kid-like way as if you figured it out yourself)' if is_correct else f'make a mistake (typical kid errors: {", ".join(self.error_patterns[:2])})'}.
 
-Reply in 2-4 sentences in English with realistic grade-{self.grade} language. Stay in character as {display_name}."""
+{'Reply in 4-15 characters total. Use one short word, a single concrete noun, or refusals like "dunno", "no idea", "I told you I dont know!". Do NOT pad. Silence and curt refusals are realistic.' if self.personality.get('verbosity', 0.5) <= 0.1 else f'Reply in 2-4 sentences in English with realistic grade-{self.grade} language.'} Stay in character as {display_name}."""
             user_msg = f'The teacher said: "{teacher_message}"'
         else:
             prof_desc = (
@@ -96,7 +96,7 @@ Reply in 2-4 sentences in English with realistic grade-{self.grade} language. St
 
 この問いに対して{'正しく答えてください（ただし自分で考えたように自然に）' if is_correct else f'間違えてください（典型的な小学生のミス: {", ".join(self.error_patterns[:2])}）'}。
 
-返答は2〜4文、日本語で。{self.grade}年生らしいリアルな言葉遣いで。"""
+{'返答は4〜15文字で。短い一語、具体物の名前、または「知らない」「わからない」「だからわからないって！」のような短い拒絶のみ。文を埋めないこと。沈黙や苛立った短文も自然。' if self.personality.get('verbosity', 0.5) <= 0.1 else f'返答は2〜4文、日本語で。{self.grade}年生らしいリアルな言葉遣いで。'}"""
             user_msg = f'先生が言いました: "{teacher_message}"'
 
         text = chat_complete(

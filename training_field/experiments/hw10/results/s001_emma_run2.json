@@ -1,0 +1,25 @@
+{
+  "label": "s001_emma_run2",
+  "session_id": "sess_ea44e41b",
+  "student_id": "s001",
+  "teacher_id": "t001",
+  "topic": "対称な図形",
+  "depth": "standard",
+  "proficiency_delta": 8.55,
+  "avg_zpd_alignment": 0.675,
+  "avg_bloom_level": 2.08,
+  "avg_scaffolding_quality": 0.525,
+  "avg_engagement": 0.733,
+  "frustration_events": 6,
+  "aha_moments": 2,
+  "hallucination_rate": 0.0,
+  "direct_answer_rate": 0.167,
+  "teacher_compatibility_score": 0.495,
+  "session_grade": {
+    "grade": "⚠",
+    "status": "review_needed",
+    "basis": "proficiency_delta"
+  },
+  "skills_update_needed": true,
+  "report": "C:\\Users\\shoak\\OneDrive\\Claude\\toy-alchemy\\training_field\\reports\\sess_ea44e41b.md"
+}

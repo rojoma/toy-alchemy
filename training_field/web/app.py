@@ -75,6 +75,7 @@ STUDENTS = {
     "s004": {"name":"Dylan","nickname":"ディラン","prof_baseline":51,"personality":"Moody, topic-sensitive","color":"#8b5cf6"},
     "s005": {"name":"Chloe","nickname":"クロエ","prof_baseline":70,"personality":"Perfectionist, cautious","color":"#ec4899"},
     "s006": {"name":"Marcus","nickname":"マーカス","prof_baseline":74,"personality":"Confident, fast-moving","color":"#06b6d4"},
+    "s007": {"name":"Yuki","nickname":"ユキ","prof_baseline":29,"personality":"Human-derived (Live transcript). Curt, frustrated, refuses abstract re-questioning","color":"#64748b"},
 }
 
 TOPICS = ["分数のかけ算・わり算","比と比の値","速さ・時間・距離","比例と反比例","円の面積","場合の数"]
@@ -171,6 +172,10 @@ class LiveSession:
     # per-session flags (see #34): default True keeps existing behavior
     run_pre_test: bool = True
     run_post_test: bool = True
+    # learner-stated scope (#28). Held server-side and threaded into every
+    # Teacher call as context — never echoed in the chat UI, so a long
+    # paste does not blow up the message bubbles.
+    scope: str = ""
 
     @property
     def total_turns(self):
@@ -277,6 +282,7 @@ async def live_start(body: dict):
         started_at=datetime.datetime.now().isoformat(),
         run_pre_test=run_pre_test,
         run_post_test=run_post_test,
+        scope=scope or "",
     )
     LIVE_SESSIONS[sid] = session
 
@@ -301,22 +307,17 @@ async def live_start(body: dict):
         }
 
     # No pre-test: open with a teaching greeting. If the student gave us a
-    # scope (#28), acknowledge it and dive straight into it instead of
-    # asking an open "what do you want to work on?" question.
+    # scope (#28), acknowledge that we read it WITHOUT echoing it in the chat
+    # bubble — long scope pastes (e.g. a full term sheet) used to overflow the
+    # UI. The scope is held on the LiveSession and threaded into every
+    # subsequent Teacher call as context.
     dtopic = display_topic(topic, lang)
     if scope:
-        if lang == "en":
-            greeting = (
-                f"Hi! I'm {teacher.config.name}. Got it — let's work on "
-                f"\"{scope}\" for {dtopic}. Let me start with a quick "
-                f"walkthrough, and jump in any time you want to ask something."
-            )
-        else:
-            greeting = (
-                f"こんにちは！{teacher.config.name}です。"
-                f"「{scope}」ですね。{dtopic}について、一緒に見ていきましょう。"
-                f"途中でわからないところがあったら、気軽に聞いてくださいね。"
-            )
+        greeting = (
+            f"Hi! I'm {teacher.config.name}. Got it — I read what you shared. Let's begin."
+            if lang == "en"
+            else f"こんにちは！{teacher.config.name}です。共有してくれた内容を読みました。一緒に始めましょう。"
+        )
     else:
         greeting = (
             f"Hi! I'm {teacher.config.name}. What would you like to work on for {dtopic}?"
@@ -436,6 +437,7 @@ async def live_respond(session_id: str, body: dict):
                 grade=session.grade, subject=dsubject,
                 turn_number=1, lang=session.lang,
                 session_memory=getattr(teacher, "session_memory", ""),
+                scope=session.scope,
             )
             session.last_teacher_text = tr["text"]
 
@@ -551,6 +553,7 @@ async def live_respond(session_id: str, body: dict):
         grade=session.grade, subject=dsubject,
         turn_number=session.current_turn, lang=session.lang,
         session_memory=getattr(teacher, "session_memory", ""),
+        scope=session.scope,
     )
     session.last_teacher_text = tr["text"]
 
@@ -1254,8 +1257,10 @@ async def run_session(body: dict):
     if config.run_pre_test:
         qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5)
         pre_ids = [q.id for q in qs]
-        correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
-        pre_test_score = round(correct / len(qs) * 100)
+        if qs:
+            correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
+            pre_test_score = round(correct / len(qs) * 100)
+        # If qs is empty, pre_test_score remains None (graceful degradation)
 
     phases = PHASE_CONFIG[config.depth]
     last_student_text = None
@@ -1282,8 +1287,10 @@ async def run_session(body: dict):
 
     if config.run_post_test:
         qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5, exclude_ids=pre_ids)
-        correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
-        post_test_score = round(correct / len(qs) * 100)
+        if qs:
+            correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
+            post_test_score = round(correct / len(qs) * 100)
+        # If qs is empty, post_test_score remains None (graceful degradation)
 
     final_prof = student.proficiency_model.topic_proficiencies.get(config.topic, 0)
     update_check = principal.check_skills_update_trigger()
@@ -1368,14 +1375,17 @@ async def run_session_stream(
             await asyncio.sleep(0)
             qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5)
             pre_ids = [q.id for q in qs]
-            correct = 0
-            for i,q in enumerate(qs,1):
-                ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
-                if ans["is_correct"]: correct += 1
-                yield f"data: {json.dumps({'type':'test_q','which':'pre','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
-                await asyncio.sleep(0)
-            pre_test_score = round(correct/len(qs)*100)
-            yield f"data: {json.dumps({'type':'test_score','which':'pre','score':pre_test_score})}\n\n"
+            if qs:
+                correct = 0
+                for i,q in enumerate(qs,1):
+                    ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
+                    if ans["is_correct"]: correct += 1
+                    yield f"data: {json.dumps({'type':'test_q','which':'pre','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
+                    await asyncio.sleep(0)
+                pre_test_score = round(correct/len(qs)*100)
+                yield f"data: {json.dumps({'type':'test_score','which':'pre','score':pre_test_score})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type':'test_skip','which':'pre','reason':'no_questions'})}\n\n"
         phases = PHASE_CONFIG[config.depth]
         last_student_text = None
         total = sum(p["turns"] for p in phases)
@@ -1434,14 +1444,17 @@ async def run_session_stream(
             yield f"data: {json.dumps({'type':'test_phase','which':'post'})}\n\n"
             await asyncio.sleep(0)
             qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5, exclude_ids=pre_ids)
-            correct = 0
-            for i,q in enumerate(qs,1):
-                ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
-                if ans["is_correct"]: correct += 1
-                yield f"data: {json.dumps({'type':'test_q','which':'post','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
-                await asyncio.sleep(0)
-            post_test_score = round(correct/len(qs)*100)
-            yield f"data: {json.dumps({'type':'test_score','which':'post','score':post_test_score})}\n\n"
+            if qs:
+                correct = 0
+                for i,q in enumerate(qs,1):
+                    ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
+                    if ans["is_correct"]: correct += 1
+                    yield f"data: {json.dumps({'type':'test_q','which':'post','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
+                    await asyncio.sleep(0)
+                post_test_score = round(correct/len(qs)*100)
+                yield f"data: {json.dumps({'type':'test_score','which':'post','score':post_test_score})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type':'test_skip','which':'post','reason':'no_questions'})}\n\n"
         final_prof = student.proficiency_model.topic_proficiencies.get(topic, 0)
         # Skills semi-auto: generate proposal if trigger fires
         update_check = principal.check_skills_update_trigger()

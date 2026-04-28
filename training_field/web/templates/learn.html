@@ -513,6 +513,7 @@ function tr(k){ return (I18N[curLang] && I18N[curLang][k]) || (I18N.en[k]) || k;
 
 const GRADE_DATA = [
   {v:"小6",ja:"小学6年",en:"Grade 6",available:true},
+  {v:"大人",ja:"大人",en:"Adult",available:true},
   {v:"小1",ja:"小学1年",en:"Grade 1"},{v:"小2",ja:"小学2年",en:"Grade 2"},
   {v:"小3",ja:"小学3年",en:"Grade 3"},{v:"小4",ja:"小学4年",en:"Grade 4"},
   {v:"小5",ja:"小学5年",en:"Grade 5"},
@@ -521,6 +522,9 @@ const GRADE_DATA = [
 ];
 const SUBJECT_DATA = [
   {v:"算数",ja:"算数",en:"Math",available:true},
+  {v:"ビジネス",ja:"ビジネス",en:"Business",available:true},
+  {v:"テクノロジー",ja:"テクノロジー",en:"Technology",available:true},
+  {v:"学術",ja:"学術",en:"Academic",available:true},
   {v:"国語",ja:"国語",en:"Japanese"},{v:"理科",ja:"理科",en:"Science"},
   {v:"社会",ja:"社会",en:"Social Studies"},{v:"英語",ja:"英語",en:"English"},
 ];
@@ -787,10 +791,10 @@ function startSession(){
   const sel = document.getElementById("topicSelect");
   const scopeEl = document.getElementById("scopeInput");
   const scope = (scopeEl && scopeEl.value || "").trim();
-  // Scope wins: if the student described their own topic (or uploaded a
-  // photo that filled in scope), use it as the topic. Otherwise fall back
-  // to the dropdown selection.
-  let topic = scope || sel.value;
+  // Topic always comes from the dropdown — keeps the URL and chat-header
+  // header tidy. Scope (if any) is held server-side and threaded into the
+  // Teacher's system prompt; never echoed in the UI.
+  const topic = sel.value;
   localStorage.setItem("tfStudentTeacher", teacher);
   let url = "/learn/session?student_id="+sid+
     "&teacher_id="+encodeURIComponent(teacher)+

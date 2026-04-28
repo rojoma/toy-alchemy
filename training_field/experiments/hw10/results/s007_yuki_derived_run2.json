@@ -1,0 +1,25 @@
+{
+  "label": "s007_yuki_derived_run2",
+  "session_id": "sess_7332ea03",
+  "student_id": "s007",
+  "teacher_id": "t001",
+  "topic": "対称な図形",
+  "depth": "standard",
+  "proficiency_delta": 4.65,
+  "avg_zpd_alignment": 0.542,
+  "avg_bloom_level": 1.33,
+  "avg_scaffolding_quality": 0.383,
+  "avg_engagement": 0.725,
+  "frustration_events": 6,
+  "aha_moments": 0,
+  "hallucination_rate": 0.0,
+  "direct_answer_rate": 0.0,
+  "teacher_compatibility_score": 0.393,
+  "session_grade": {
+    "grade": "⚠",
+    "status": "review_needed",
+    "basis": "proficiency_delta"
+  },
+  "skills_update_needed": true,
+  "report": "C:\\Users\\shoak\\OneDrive\\Claude\\toy-alchemy\\training_field\\reports\\sess_7332ea03.md"
+}

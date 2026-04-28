@@ -91,10 +91,15 @@ Student: "{student_text}"
 
 Evaluate this exchange."""
 
+        # Adult evaluations (grade 13) need longer directives — child topics
+        # fit in 500 tokens but business / tech / academic critique rarely
+        # does. Routing goes through chat_complete() so the role can be
+        # swapped to a cheaper provider via LLM_MODEL_REFEREE.
+        max_tokens = 800 if grade == 13 else 500
         raw = chat_complete(
             [{"role": "system", "content": self._build_system(lang)}, {"role": "user", "content": user_content}],
             role="referee",
-            max_tokens=500,
+            max_tokens=max_tokens,
         ).strip()
         try:
             data = json.loads(raw)

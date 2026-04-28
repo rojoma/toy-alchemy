@@ -1139,6 +1139,65 @@
           ]
         }
       }
+    },
+    "大人": {
+      "code": 13,
+      "subjects": {
+        "ビジネス": {
+          "ja": [
+            "戦略フレームワーク",
+            "ファイナンス基礎",
+            "マーケティング基礎",
+            "プロダクトマネジメント",
+            "プレゼンテーション",
+            "交渉と意思決定"
+          ],
+          "en": [
+            "Strategy Frameworks",
+            "Finance Basics",
+            "Marketing Basics",
+            "Product Management",
+            "Presentation",
+            "Negotiation and Decision Making"
+          ]
+        },
+        "テクノロジー": {
+          "ja": [
+            "AI／機械学習の基礎",
+            "ソフトウェアアーキテクチャ",
+            "データ分析と統計",
+            "セキュリティ基礎",
+            "クラウドインフラ",
+            "プロンプトエンジニアリング"
+          ],
+          "en": [
+            "AI / Machine Learning Basics",
+            "Software Architecture",
+            "Data Analysis and Statistics",
+            "Security Basics",
+            "Cloud Infrastructure",
+            "Prompt Engineering"
+          ]
+        },
+        "学術": {
+          "ja": [
+            "論文の読み方",
+            "研究設計と仮説検定",
+            "学術ライティング",
+            "文献レビュー",
+            "実験デザイン",
+            "学会発表"
+          ],
+          "en": [
+            "How to Read Papers",
+            "Research Design and Hypothesis Testing",
+            "Academic Writing",
+            "Literature Review",
+            "Experiment Design",
+            "Conference Presentation"
+          ]
+        }
+      }
     }
   }
 }
