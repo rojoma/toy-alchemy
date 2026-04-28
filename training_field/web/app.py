@@ -171,6 +171,10 @@ class LiveSession:
     # per-session flags (see #34): default True keeps existing behavior
     run_pre_test: bool = True
     run_post_test: bool = True
+    # learner-stated scope (#28). Held server-side and threaded into every
+    # Teacher call as context — never echoed in the chat UI, so a long
+    # paste does not blow up the message bubbles.
+    scope: str = ""
 
     @property
     def total_turns(self):
@@ -277,6 +281,7 @@ async def live_start(body: dict):
         started_at=datetime.datetime.now().isoformat(),
         run_pre_test=run_pre_test,
         run_post_test=run_post_test,
+        scope=scope or "",
     )
     LIVE_SESSIONS[sid] = session
 
@@ -303,22 +308,17 @@ async def live_start(body: dict):
         }
 
     # No pre-test: open with a teaching greeting. If the student gave us a
-    # scope (#28), acknowledge it and dive straight into it instead of
-    # asking an open "what do you want to work on?" question.
+    # scope (#28), acknowledge that we read it WITHOUT echoing it in the chat
+    # bubble — long scope pastes (e.g. a full term sheet) used to overflow the
+    # UI. The scope is held on the LiveSession and threaded into every
+    # subsequent Teacher call as context.
     dtopic = display_topic(topic, lang)
     if scope:
-        if lang == "en":
-            greeting = (
-                f"Hi! I'm {teacher.config.name}. Got it — let's work on "
-                f"\"{scope}\" for {dtopic}. Let me start with a quick "
-                f"walkthrough, and jump in any time you want to ask something."
-            )
-        else:
-            greeting = (
-                f"こんにちは！{teacher.config.name}です。"
-                f"「{scope}」ですね。{dtopic}について、一緒に見ていきましょう。"
-                f"途中でわからないところがあったら、気軽に聞いてくださいね。"
-            )
+        greeting = (
+            f"Hi! I'm {teacher.config.name}. Got it — I read what you shared. Let's begin."
+            if lang == "en"
+            else f"こんにちは！{teacher.config.name}です。共有してくれた内容を読みました。一緒に始めましょう。"
+        )
     else:
         greeting = (
             f"Hi! I'm {teacher.config.name}. What would you like to work on for {dtopic}?"
@@ -441,6 +441,7 @@ async def live_respond(session_id: str, body: dict):
                 grade=session.grade, subject=dsubject,
                 turn_number=1, lang=session.lang,
                 session_memory=getattr(teacher, "session_memory", ""),
+                scope=session.scope,
             )
             session.last_teacher_text = tr["text"]
 
@@ -556,6 +557,7 @@ async def live_respond(session_id: str, body: dict):
         grade=session.grade, subject=dsubject,
         turn_number=session.current_turn, lang=session.lang,
         session_memory=getattr(teacher, "session_memory", ""),
+        scope=session.scope,
     )
     session.last_teacher_text = tr["text"]
 

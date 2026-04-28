@@ -147,12 +147,24 @@ Then output this JSON on a new line (no code block):
         turn_number: int = 1,
         lang: str = "en",
         session_memory: str = "",
+        scope: str = "",
     ) -> dict:
         system = self._build_system_prompt(
             topic, phase, phase_goal,
             student_name, student_proficiency, student_emotional,
             grade, subject, lang, session_memory
         )
+        if scope:
+            # The student has shared a specific scope (#28) — could be a few words
+            # ("教科書p.42") or a long paste (full term sheet, full document).
+            # Append it as authoritative context the teacher must address. Not
+            # echoed in the chat UI; only the model sees it.
+            scope_label = "Student-supplied learning scope" if lang == "en" else "学習者が共有した学習スコープ"
+            system += f"\n\n=== {scope_label} ===\n{scope}\n=== End scope ===\n" + (
+                "Stay grounded in this scope. Reference specific parts when helpful, but do not paste the scope verbatim back to the student."
+                if lang == "en"
+                else "上記スコープに沿って指導してください。必要に応じて該当箇所に言及して構いませんが、スコープを丸ごと貼り戻さないでください。"
+            )
         user_content = (
             f"Start the {phase} phase for unit '{topic}'. "
             f"Student score: {student_proficiency:.0f}/100. Turn {turn_number}."
