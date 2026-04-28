@@ -1258,8 +1258,10 @@ async def run_session(body: dict):
     if config.run_pre_test:
         qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5)
         pre_ids = [q.id for q in qs]
-        correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
-        pre_test_score = round(correct / len(qs) * 100)
+        if qs:
+            correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
+            pre_test_score = round(correct / len(qs) * 100)
+        # If qs is empty, pre_test_score remains None (graceful degradation)
 
     phases = PHASE_CONFIG[config.depth]
     last_student_text = None
@@ -1286,8 +1288,10 @@ async def run_session(body: dict):
 
     if config.run_post_test:
         qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5, exclude_ids=pre_ids)
-        correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
-        post_test_score = round(correct / len(qs) * 100)
+        if qs:
+            correct = sum(1 for q in qs if (await student.generate_test_answer(q.question_text, q.correct_answer, config.topic))["is_correct"])
+            post_test_score = round(correct / len(qs) * 100)
+        # If qs is empty, post_test_score remains None (graceful degradation)
 
     final_prof = student.proficiency_model.topic_proficiencies.get(config.topic, 0)
     update_check = principal.check_skills_update_trigger()
@@ -1372,14 +1376,17 @@ async def run_session_stream(
             await asyncio.sleep(0)
             qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5)
             pre_ids = [q.id for q in qs]
-            correct = 0
-            for i,q in enumerate(qs,1):
-                ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
-                if ans["is_correct"]: correct += 1
-                yield f"data: {json.dumps({'type':'test_q','which':'pre','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
-                await asyncio.sleep(0)
-            pre_test_score = round(correct/len(qs)*100)
-            yield f"data: {json.dumps({'type':'test_score','which':'pre','score':pre_test_score})}\n\n"
+            if qs:
+                correct = 0
+                for i,q in enumerate(qs,1):
+                    ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
+                    if ans["is_correct"]: correct += 1
+                    yield f"data: {json.dumps({'type':'test_q','which':'pre','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
+                    await asyncio.sleep(0)
+                pre_test_score = round(correct/len(qs)*100)
+                yield f"data: {json.dumps({'type':'test_score','which':'pre','score':pre_test_score})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type':'test_skip','which':'pre','reason':'no_questions'})}\n\n"
         phases = PHASE_CONFIG[config.depth]
         last_student_text = None
         total = sum(p["turns"] for p in phases)
@@ -1438,14 +1445,17 @@ async def run_session_stream(
             yield f"data: {json.dumps({'type':'test_phase','which':'post'})}\n\n"
             await asyncio.sleep(0)
             qs = await qbank.get_test_questions(config.grade, config.subject, config.topic, 5, exclude_ids=pre_ids)
-            correct = 0
-            for i,q in enumerate(qs,1):
-                ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
-                if ans["is_correct"]: correct += 1
-                yield f"data: {json.dumps({'type':'test_q','which':'post','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
-                await asyncio.sleep(0)
-            post_test_score = round(correct/len(qs)*100)
-            yield f"data: {json.dumps({'type':'test_score','which':'post','score':post_test_score})}\n\n"
+            if qs:
+                correct = 0
+                for i,q in enumerate(qs,1):
+                    ans = await student.generate_test_answer(q.question_text, q.correct_answer, config.topic, lang=lang)
+                    if ans["is_correct"]: correct += 1
+                    yield f"data: {json.dumps({'type':'test_q','which':'post','i':i,'n':len(qs),'correct':ans['is_correct']})}\n\n"
+                    await asyncio.sleep(0)
+                post_test_score = round(correct/len(qs)*100)
+                yield f"data: {json.dumps({'type':'test_score','which':'post','score':post_test_score})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type':'test_skip','which':'post','reason':'no_questions'})}\n\n"
         final_prof = student.proficiency_model.topic_proficiencies.get(topic, 0)
         # Skills semi-auto: generate proposal if trigger fires
         update_check = principal.check_skills_update_trigger()
