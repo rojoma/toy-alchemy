@@ -160,9 +160,12 @@ Then output this JSON on a new line (no code block):
             else f'Student responded: "{student_last_response}"\nThis is turn {turn_number} of the {phase} phase.'
         )
 
+        # Adult learners (grade 13) get longer responses — child topics fit in
+        # 300 tokens but business / tech / academic explanations rarely do.
+        max_tokens = 600 if grade == 13 else 300
         response = self.client.chat.completions.create(
             model="gpt-4o",
-            max_tokens=300,
+            max_tokens=max_tokens,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user_content}]
         )
         raw = response.choices[0].message.content
