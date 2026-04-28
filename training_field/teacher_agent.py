@@ -149,22 +149,57 @@ Then output this JSON on a new line (no code block):
         session_memory: str = "",
         scope: str = "",
     ) -> dict:
+        # When a scope is supplied, derive a short topic label from it and use
+        # that label everywhere the base system prompt mentions {topic}. This
+        # is critical: GPT-4o tends to anchor on the mid-prompt "Topic: X"
+        # line. If we leave it as the legacy unit name (e.g. 対称な図形)
+        # while the scope says term sheets, the model frequently keeps
+        # teaching the unit name and ignores the scope.
+        if scope:
+            topic_for_prompt = scope.strip().split("\n")[0][:60].strip() or topic
+            phase_goal_for_prompt = (
+                f"Address the student-supplied scope. Original phase goal: {phase_goal}"
+                if lang == "en"
+                else f"学習者のスコープに沿って進めてください。元のフェーズ目標: {phase_goal}"
+            )
+        else:
+            topic_for_prompt = topic
+            phase_goal_for_prompt = phase_goal
         system = self._build_system_prompt(
-            topic, phase, phase_goal,
+            topic_for_prompt, phase, phase_goal_for_prompt,
             student_name, student_proficiency, student_emotional,
             grade, subject, lang, session_memory
         )
         if scope:
-            # The student has shared a specific scope (#28) — could be a few words
-            # ("教科書p.42") or a long paste (full term sheet, full document).
-            # Append it as authoritative context the teacher must address. Not
-            # echoed in the chat UI; only the model sees it.
-            scope_label = "Student-supplied learning scope" if lang == "en" else "学習者が共有した学習スコープ"
-            system += f"\n\n=== {scope_label} ===\n{scope}\n=== End scope ===\n" + (
-                "Stay grounded in this scope. Reference specific parts when helpful, but do not paste the scope verbatim back to the student."
-                if lang == "en"
-                else "上記スコープに沿って指導してください。必要に応じて該当箇所に言及して構いませんが、スコープを丸ごと貼り戻さないでください。"
-            )
+            # PRIORITY OVERRIDE: when the student has shared a specific scope
+            # (#28), it takes precedence over the unit/topic name carried by
+            # the session. The base system prompt repeats {topic} several
+            # times, so we prepend a strong directive that flips the truth
+            # about what the lesson is about. Not echoed in the chat UI; only
+            # the model sees it.
+            if lang == "en":
+                override = (
+                    "=== PRIORITY OVERRIDE — read this first ===\n"
+                    "The student has supplied a specific scope of what they want to learn. "
+                    "This scope OVERRIDES the unit name and any topic references that follow. "
+                    "Teach according to the scope below, not the unit name. Treat the unit "
+                    "name as legacy metadata only. Reference parts of the scope when useful, "
+                    "but do not paste the scope verbatim back to the student.\n"
+                    f"--- Student scope ---\n{scope}\n--- End student scope ---\n"
+                    "=== END PRIORITY OVERRIDE ===\n\n"
+                )
+            else:
+                override = (
+                    "=== 最優先指示 — まずここを読むこと ===\n"
+                    "学習者が学びたい内容（スコープ）を具体的に指定しています。"
+                    "このスコープは、以下に出てくる単元名やトピック指定よりも優先されます。"
+                    "単元名ではなく、このスコープに沿って指導してください。単元名はメタデータと"
+                    "見なしてください。必要に応じてスコープ内の該当箇所に言及して構いませんが、"
+                    "スコープを丸ごと貼り戻さないでください。\n"
+                    f"--- 学習者のスコープ ---\n{scope}\n--- スコープここまで ---\n"
+                    "=== 最優先指示ここまで ===\n\n"
+                )
+            system = override + system
         user_content = (
             f"Start the {phase} phase for unit '{topic}'. "
             f"Student score: {student_proficiency:.0f}/100. Turn {turn_number}."
