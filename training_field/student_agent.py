@@ -1,11 +1,11 @@
 from __future__ import annotations
 import json
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from openai import OpenAI
 
+from .llm import chat_complete
 from .proficiency_model import ProficiencyModel, EmotionalState
 
 
@@ -20,11 +20,6 @@ class StudentAgent:
     proficiency_model: ProficiencyModel
     emotional_state: EmotionalState
     error_patterns: list
-    client: object = field(default=None, repr=False)
-
-    def __post_init__(self):
-        if self.client is None:
-            self.client = OpenAI()
 
     def name_ja(self) -> str:
         return self.nickname_ja or self.name
@@ -104,12 +99,11 @@ For this question, {'answer correctly (but in a natural, kid-like way as if you 
 {'返答は4〜15文字で。短い一語、具体物の名前、または「知らない」「わからない」「だからわからないって！」のような短い拒絶のみ。文を埋めないこと。沈黙や苛立った短文も自然。' if self.personality.get('verbosity', 0.5) <= 0.1 else f'返答は2〜4文、日本語で。{self.grade}年生らしいリアルな言葉遣いで。'}"""
             user_msg = f'先生が言いました: "{teacher_message}"'
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
+        text = chat_complete(
+            [{"role": "system", "content": system}, {"role": "user", "content": user_msg}],
+            role="student",
             max_tokens=300,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user_msg}]
         )
-        text = response.choices[0].message.content
 
         self.emotional_state.update(
             was_correct=is_correct,
@@ -150,13 +144,13 @@ Write only your answer, briefly, in English."""
 この問題に{'正しく答えてください' if is_correct else f'間違えてください。典型的なミス: {", ".join(self.error_patterns)}。正解は絶対に書かないこと'}。
 答えだけを短く日本語で書いてください。"""
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o",
+        answer = chat_complete(
+            [{"role": "system", "content": system}, {"role": "user", "content": question_text}],
+            role="student",
             max_tokens=100,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": question_text}]
         )
         return {
-            "student_answer": response.choices[0].message.content.strip(),
+            "student_answer": answer.strip(),
             "is_correct": is_correct,
             "correct_answer": correct_answer,
         }
