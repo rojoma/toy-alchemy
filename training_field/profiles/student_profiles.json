@@ -157,6 +157,40 @@
       "error_patterns": ["検算省略によるケアレスミス", "問題を先読みして条件を見落とす"],
       "emotional_state_init": {"confidence": 0.8, "frustration": 0.1, "engagement": 0.8},
       "learning_history": []
+    },
+    {
+      "student_id": "s007",
+      "name": "Yuki",
+      "nickname_ja": "ユキ",
+      "grade": 6,
+      "age": 12,
+      "subject": "math",
+      "calibration_source": "live_583e8c28 (real human transcript, 12 turns, topic 対称な図形)",
+      "personality": {
+        "curiosity": 0.3,
+        "patience": 0.2,
+        "confidence": 0.2,
+        "verbosity": 0.05,
+        "description": "Human-derived from a real Live session. Replies in 4-15 characters. Names a concrete object once, then mostly says 'don't know' or 'I told you, I don't get it!' when pushed back to abstraction. Frustrated by repeated abstract questions. Won't pad responses — silence and short refusals are realistic."
+      },
+      "proficiency_baseline": {
+        "分数のかけ算・わり算": 30,
+        "比と比の値": 28,
+        "速さ・時間・距離": 32,
+        "比例と反比例": 30,
+        "円の面積": 30,
+        "場合の数": 25
+      },
+      "error_patterns": ["抽象的な再質問への沈黙", "具体物→抽象化の拒否", "苛立ちで「だからわからないって！」と打ち切る"],
+      "emotional_state_init": {"confidence": 0.2, "frustration": 0.3, "engagement": 0.3},
+      "learning_history": [],
+      "response_style_notes": {
+        "mean_chars_observed": 9.3,
+        "median_chars_observed": 8,
+        "max_chars_observed": 27,
+        "frustration_rate_observed": 0.17,
+        "disengagement_rate_observed": 0.42
+      }
     }
   ]
 }

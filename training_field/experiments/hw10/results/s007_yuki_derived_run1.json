@@ -1,0 +1,24 @@
+{
+  "label": "s007_yuki_derived_run1",
+  "session_id": "sess_1ffabf75",
+  "student_id": "s007",
+  "teacher_id": "t001",
+  "topic": "対称な図形",
+  "depth": "standard",
+  "proficiency_delta": 5.1,
+  "avg_zpd_alignment": 0.575,
+  "avg_bloom_level": 1.83,
+  "avg_scaffolding_quality": 0.417,
+  "avg_engagement": 0.65,
+  "frustration_events": 8,
+  "aha_moments": 0,
+  "hallucination_rate": 0.0,
+  "direct_answer_rate": 0.167,
+  "teacher_compatibility_score": 0.374,
+  "session_grade": {
+    "grade": "⚠",
+    "status": "review_needed",
+    "basis": "proficiency_delta"
+  },
+  "skills_update_needed": true
+}

@@ -74,6 +74,7 @@ STUDENTS = {
     "s004": {"name":"Dylan","nickname":"ディラン","prof_baseline":51,"personality":"Moody, topic-sensitive","color":"#8b5cf6"},
     "s005": {"name":"Chloe","nickname":"クロエ","prof_baseline":70,"personality":"Perfectionist, cautious","color":"#ec4899"},
     "s006": {"name":"Marcus","nickname":"マーカス","prof_baseline":74,"personality":"Confident, fast-moving","color":"#06b6d4"},
+    "s007": {"name":"Yuki","nickname":"ユキ","prof_baseline":29,"personality":"Human-derived (Live transcript). Curt, frustrated, refuses abstract re-questioning","color":"#64748b"},
 }
 
 TOPICS = ["分数のかけ算・わり算","比と比の値","速さ・時間・距離","比例と反比例","円の面積","場合の数"]
