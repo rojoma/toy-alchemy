@@ -23,6 +23,7 @@ from training_field.experiment_registry import ExperimentRegistry, ExperimentRec
 from training_field.question_bank.question_bank import QuestionBank
 from training_field.proficiency_model import CurriculumGraph
 from training_field.session_runner import PHASE_CONFIG, SessionConfig
+from training_field.student_profile_deriver import update_derived_profile
 
 app = FastAPI(title="Agent Training Field")
 app.add_middleware(
@@ -176,6 +177,10 @@ class LiveSession:
     # Teacher call as context — never echoed in the chat UI, so a long
     # paste does not blow up the message bubbles.
     scope: str = ""
+    # Real student profile id (stu_xxx) when this session was started by a
+    # logged-in human via /learn. Used to update their derived profile
+    # (#62) on completion. None for anonymous one-off sessions.
+    real_student_id: str | None = None
 
     @property
     def total_turns(self):
@@ -251,6 +256,9 @@ async def live_start(body: dict):
     subject = body.get("subject", "算数")
     lang = body.get("lang", "en")
     student_label = body.get("student_name", "You")
+    # Real student profile id (when a logged-in human starts via /learn).
+    # Threaded through so we can update their derived profile (#62) at end.
+    real_student_id = body.get("student_id")
     run_pre_test = bool(body.get("run_pre_test", True))
     run_post_test = bool(body.get("run_post_test", True))
     # Optional learning scope the student specified (#28). When present we
@@ -283,6 +291,7 @@ async def live_start(body: dict):
         run_pre_test=run_pre_test,
         run_post_test=run_post_test,
         scope=scope or "",
+        real_student_id=real_student_id,
     )
     LIVE_SESSIONS[sid] = session
 
@@ -464,6 +473,7 @@ async def live_respond(session_id: str, body: dict):
                     for t in sorted_turns[:3] if t.get("delta", 0) > 0
                 ]
             _save_live_session(session)
+            _update_real_student_derived(session)
             post_score = sum(1 for r in session.post_test_results if r["correct"])
             pre_score = sum(1 for r in session.pre_test_results if r["correct"])
             return {
@@ -597,6 +607,7 @@ async def live_end(session_id: str):
                 for t in sorted_turns[:3] if t.get("delta", 0) > 0
             ]
         _save_live_session(session)
+        _update_real_student_derived(session)
         pre_score = sum(1 for r in session.pre_test_results if r["correct"])
         farewell = ("Nice work today!" if session.lang == "en"
                     else "今日もよく頑張りました！")
@@ -754,6 +765,31 @@ async def live_status(session_id: str):
         "proficiency": round(session.proficiency, 1),
         "last_teacher_message": session.last_teacher_text,
     }
+
+
+def _update_real_student_derived(session: LiveSession):
+    """Update the real student's derived profile after a Live session.
+
+    No-op when this session wasn't started by a logged-in user (i.e.
+    `real_student_id` is None) or when the profile file is missing.
+    Errors are swallowed — derivation is best-effort and must not block
+    the session-end response. See #62.
+    """
+    sid = session.real_student_id
+    if not sid:
+        return
+    try:
+        update_derived_profile(
+            STUDENT_PROFILES_DIR / f"{sid}.json",
+            turns=session.turns_log,
+            lang=session.lang,
+            topic=session.topic,
+            proficiency_delta=session.proficiency - session.initial_proficiency,
+            teacher_skills=session.teacher.config.selected_skills,
+        )
+    except Exception:
+        # Best-effort. Don't break the user-facing flow on a derivation bug.
+        pass
 
 
 def _save_live_session(session: LiveSession):
