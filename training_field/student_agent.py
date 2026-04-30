@@ -183,6 +183,67 @@ class StudentAgentFactory:
         )
 
     @staticmethod
+    def from_derived_profile(profile_path: Path, *, display_name: str | None = None) -> StudentAgent:
+        """Build a StudentAgent from a real student's derived block (#63).
+
+        `profile_path` is the JSON file at reports/students/{id}.json. The
+        file must already have a `derived` block with the personality +
+        signals fields produced by student_profile_deriver (#62).
+
+        `display_name` overrides the student's real name in the agent
+        (e.g. "Student #4") to avoid leaking PII when the agent is shown
+        to other users.
+        """
+        with open(profile_path, encoding="utf-8") as f:
+            profile = json.load(f)
+        derived = profile.get("derived") or {}
+        personality = dict(derived.get("personality") or {})
+        # Fill defaults so the existing prompt builder doesn't KeyError.
+        personality.setdefault("curiosity", 0.5)
+        personality.setdefault("patience", 0.5)
+        personality.setdefault("confidence", 0.5)
+        personality.setdefault("verbosity", 0.3)
+        personality.setdefault("description", "Auto-derived from real session data.")
+
+        # Proficiency: prefer the per-topic map the user accumulated through
+        # /api/student/{id}/update-proficiency. Fall back to a single 50.
+        topic_profs = dict(profile.get("proficiency") or {})
+        avg_prof = (
+            sum(topic_profs.values()) / len(topic_profs)
+            if topic_profs else 50.0
+        )
+        prof_model = ProficiencyModel(
+            proficiency=avg_prof,
+            topic_proficiencies=topic_profs,
+        )
+
+        signals = derived.get("signals") or {}
+        emotional = EmotionalState(
+            confidence=personality["confidence"],
+            frustration=min(max(signals.get("frustration_rate", 0.1), 0.0), 1.0),
+            engagement=personality["curiosity"],
+        )
+
+        # Misconception strings from #62 surface here as "error patterns" so
+        # the existing on-mistake prompt branch can use them.
+        miscon = list(derived.get("misconceptions") or [])
+        if not miscon:
+            miscon = ["typical kid errors"]
+
+        name = display_name or profile.get("name") or "Student"
+        return StudentAgent(
+            student_id=f"der_{profile['student_id']}",
+            name=name,
+            nickname_ja=name,
+            grade=int(profile.get("grade") or 6),
+            subject=profile.get("subject", "math"),
+            personality=personality,
+            proficiency_model=prof_model,
+            emotional_state=emotional,
+            error_patterns=miscon[:3],
+        )
+
+    @staticmethod
     def create_custom(
         name: str,
         grade: int,

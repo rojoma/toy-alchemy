@@ -25,6 +25,63 @@ from training_field.proficiency_model import CurriculumGraph
 from training_field.session_runner import PHASE_CONFIG, SessionConfig
 from training_field.student_profile_deriver import update_derived_profile
 
+# Derived StudentAgent surfacing (#63):
+# Reuse a real student's personality+signals to power agent-vs-agent
+# Observatory sessions. Eligibility threshold matches the issue spec.
+DERIVED_STUDENT_ID_PREFIX = "der_"
+MIN_SESSIONS_FOR_DERIVED = 3
+EXPOSE_REAL_STUDENT_NAMES = os.environ.get("EXPOSE_REAL_STUDENT_NAMES") == "1"
+
+
+def _build_student_agent(student_id: str):
+    """Resolve a `student_id` (canonical s001-s007 OR der_<stu_id>) to a
+    StudentAgent. Centralizes the dispatch so route handlers don't repeat it.
+    """
+    if student_id.startswith(DERIVED_STUDENT_ID_PREFIX):
+        real_id = student_id[len(DERIVED_STUDENT_ID_PREFIX):]
+        path = STUDENT_PROFILES_DIR / f"{real_id}.json"
+        # Anonymize unless the operator opted in via env var. The agent's
+        # display name is shown in transcripts and on the Observatory page.
+        display = None
+        if not EXPOSE_REAL_STUDENT_NAMES:
+            display = _anonymous_label_for(real_id)
+        return StudentAgentFactory.from_derived_profile(path, display_name=display)
+    return StudentAgentFactory.from_profile(student_id)
+
+
+def _anonymous_label_for(real_id: str) -> str:
+    """Stable, non-identifying label like 'Student #3' for a profile id.
+
+    Order is alphabetical over derived-eligible profile ids so the same
+    user gets the same number across page loads.
+    """
+    eligible = sorted(_eligible_derived_profile_ids())
+    try:
+        idx = eligible.index(real_id) + 1
+    except ValueError:
+        # Profile became ineligible between calls — fall back to a hash-ish
+        # but stable label.
+        idx = (sum(ord(c) for c in real_id) % 99) + 1
+    return f"Student #{idx}"
+
+
+def _eligible_derived_profile_ids() -> list[str]:
+    """Profile ids that have enough observed sessions to be a meaningful
+    Observatory persona. Empty list when the profiles dir is missing."""
+    if not STUDENT_PROFILES_DIR.exists():
+        return []
+    out: list[str] = []
+    for path in STUDENT_PROFILES_DIR.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        derived = data.get("derived") or {}
+        if (derived.get("sessions_observed") or 0) >= MIN_SESSIONS_FOR_DERIVED:
+            out.append(data.get("student_id") or path.stem)
+    return out
+
+
 app = FastAPI(title="Agent Training Field")
 app.add_middleware(
     CORSMiddleware,
@@ -1105,6 +1162,10 @@ async def observatory(request: Request):
         results = reg.query(filter_by={"student_id": sid})
         last_gain = results[0]["learning_gain"] if results else None
         student_data.append({**info, "id": sid, "sessions": len(results), "last_gain": last_gain})
+    # Derived students from real Live sessions (#63). Eligible = enough
+    # observed sessions to have a meaningful personality.
+    derived_data = _list_derived_students_for_observatory(reg)
+    student_data.extend(derived_data)
     return templates.TemplateResponse(request, "dashboard.html", {
         "students": student_data,
         "summary": summary, "recent": reg.query(limit=5),
@@ -1112,9 +1173,56 @@ async def observatory(request: Request):
         "STUDENT_NAMES": {sid: info["name"] for sid, info in STUDENTS.items()},
     })
 
+
+def _list_derived_students_for_observatory(reg) -> list[dict]:
+    """Build dashboard cards for each eligible derived student."""
+    out: list[dict] = []
+    eligible = sorted(_eligible_derived_profile_ids())
+    if not eligible:
+        return out
+    # Predictable colors so each derived agent has a distinguishable card.
+    palette = ["#64748b", "#0f766e", "#9333ea", "#0284c7", "#b45309", "#be185d"]
+    for i, real_id in enumerate(eligible):
+        path = STUDENT_PROFILES_DIR / f"{real_id}.json"
+        try:
+            profile = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        derived = profile.get("derived") or {}
+        agent_id = f"{DERIVED_STUDENT_ID_PREFIX}{real_id}"
+        display = (
+            profile.get("name", real_id) if EXPOSE_REAL_STUDENT_NAMES
+            else _anonymous_label_for(real_id)
+        )
+        # Average proficiency from accumulated topic scores (matches what
+        # _build_student_agent uses as baseline).
+        topic_profs = profile.get("proficiency") or {}
+        prof_baseline = (
+            int(round(sum(topic_profs.values()) / len(topic_profs)))
+            if topic_profs else 50
+        )
+        results = reg.query(filter_by={"student_id": agent_id})
+        last_gain = results[0]["learning_gain"] if results else None
+        personality_desc = (derived.get("personality") or {}).get("description") or "Auto-derived from Live sessions."
+        out.append({
+            "id": agent_id,
+            "name": display,
+            "nickname": display,
+            "prof_baseline": prof_baseline,
+            "personality": personality_desc,
+            "color": palette[i % len(palette)],
+            "sessions": len(results),
+            "last_gain": last_gain,
+            "is_derived": True,
+            "sessions_observed": derived.get("sessions_observed", 0),
+        })
+    return out
+
 @app.get("/session/{student_id}", response_class=HTMLResponse)
 async def session_page(request: Request, student_id: str, grade: str = "小6", subject: str = "算数"):
-    info = STUDENTS.get(student_id, {})
+    info = _resolve_student_info_for_observatory(student_id)
+    if not info:
+        raise HTTPException(404, f"unknown student_id: {student_id}")
     reg = ExperimentRegistry()
     history = reg.query(filter_by={"student_id": student_id}, limit=10)
     gcode = GRADE_CODES.get(grade, 6)
@@ -1126,6 +1234,41 @@ async def session_page(request: Request, student_id: str, grade: str = "小6", s
         "topic_tx_en": TOPIC_TX_EN,
         "teachers": list_teachers(),
     })
+
+
+def _resolve_student_info_for_observatory(student_id: str) -> dict:
+    """Look up the dashboard-style summary for either canonical or derived ids."""
+    if student_id in STUDENTS:
+        return STUDENTS[student_id]
+    if student_id.startswith(DERIVED_STUDENT_ID_PREFIX):
+        real_id = student_id[len(DERIVED_STUDENT_ID_PREFIX):]
+        path = STUDENT_PROFILES_DIR / f"{real_id}.json"
+        if not path.exists():
+            return {}
+        try:
+            profile = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+        derived = profile.get("derived") or {}
+        topic_profs = profile.get("proficiency") or {}
+        prof_baseline = (
+            int(round(sum(topic_profs.values()) / len(topic_profs)))
+            if topic_profs else 50
+        )
+        display = (
+            profile.get("name", real_id) if EXPOSE_REAL_STUDENT_NAMES
+            else _anonymous_label_for(real_id)
+        )
+        return {
+            "name": display,
+            "nickname": display,
+            "prof_baseline": prof_baseline,
+            "personality": (derived.get("personality") or {}).get(
+                "description", "Auto-derived from Live sessions."
+            ),
+            "color": "#64748b",
+        }
+    return {}
 
 @app.get("/api/teachers")
 async def api_teachers():
@@ -1271,7 +1414,7 @@ async def run_session(body: dict):
         run_post_test=body.get("run_post_test",False),
     )
     session_id = f"sess_{uuid.uuid4().hex[:8]}"
-    student = StudentAgentFactory.from_profile(config.student_id)
+    student = _build_student_agent(config.student_id)
     teacher = load_teacher(body.get("teacher_id"))
     principal = PrincipalAgent()
     evaluator = Evaluator()
@@ -1392,7 +1535,7 @@ async def run_session_stream(
             grade=gcode, subject=subject,
             run_pre_test=pre_test, run_post_test=post_test,
         )
-        student = StudentAgentFactory.from_profile(config.student_id)
+        student = _build_student_agent(config.student_id)
         teacher = load_teacher(teacher_id)
         principal = PrincipalAgent()
         evaluator = Evaluator()
