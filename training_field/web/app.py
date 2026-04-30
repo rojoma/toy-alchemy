@@ -1218,6 +1218,10 @@ def _list_derived_students_for_observatory(reg) -> list[dict]:
             "last_gain": last_gain,
             "is_derived": True,
             "sessions_observed": derived.get("sessions_observed", 0),
+            # Embedded so the dashboard JS can match the card to the
+            # signed-in user's localStorage id and show their own name
+            # back, while everyone else stays anonymized.
+            "real_id": real_id,
         })
     return out
 

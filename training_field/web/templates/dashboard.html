@@ -171,6 +171,16 @@ main{max-width:1280px;margin:0 auto;padding:96px 40px 140px}
   background:var(--surface-2);color:var(--text-secondary);
   text-transform:uppercase;
 }
+.student-card.is-self{
+  border-color:var(--success);
+  box-shadow:0 0 0 1px var(--success), var(--shadow-sm);
+}
+.student-card.is-self .you-tag{
+  display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.04em;
+  margin-left:6px;padding:2px 7px;border-radius:8px;
+  background:var(--success);color:#fff;text-transform:uppercase;
+  vertical-align:middle;
+}
 .sc-head{display:flex;align-items:center;gap:14px;margin-bottom:24px}
 .avatar{
   width:44px;height:44px;border-radius:14px;
@@ -354,7 +364,8 @@ tbody tr:hover{background:var(--surface-2)}
     </div>
     <div class="cards-grid">
       {% for s in students %}
-      <a class="student-card stu-card" href="/session/{{ s.id }}" data-sid="{{ s.id }}">
+      <a class="student-card stu-card" href="/session/{{ s.id }}" data-sid="{{ s.id }}"
+         {% if s.is_derived %}data-real-id="{{ s.real_id }}" data-anon-name="{{ s.name }}"{% endif %}>
         {% if s.is_derived %}
         <span class="derived-tag" data-i18n="derived_tag">From real session</span>
         {% endif %}
@@ -527,6 +538,42 @@ function updateCardLinks(){
 gradeSel.addEventListener("change",()=>{localStorage.setItem("tfGrade",gradeSel.value);updateCardLinks();});
 subjSel.addEventListener("change",()=>{localStorage.setItem("tfSubject",subjSel.value);updateCardLinks();});
 updateCardLinks();
+
+// Self-name overlay (#63 follow-up):
+// The Observatory anonymizes derived agents to "Student #N" so other
+// people don't see your real name. But on YOUR own browser the matching
+// card should say YOUR name + a "you" tag — otherwise it's impossible to
+// tell which derived agent is yours.
+(async function highlightOwnDerived(){
+  const myId = localStorage.getItem("tfStudentId");
+  if(!myId) return;
+  const myCard = document.querySelector('.stu-card[data-real-id="'+myId+'"]');
+  if(!myCard) return;
+  let myName = null;
+  try {
+    const r = await fetch("/api/student/"+encodeURIComponent(myId));
+    if(r.ok){
+      const d = await r.json();
+      myName = (d && d.name) || null;
+    }
+  } catch(_){ /* leave anonymized name in place */ }
+  myCard.classList.add("is-self");
+  const nameEl = myCard.querySelector(".sc-name");
+  const avatarEl = myCard.querySelector(".avatar");
+  const youLabel = (curLang === "ja" ? "あなた" : "you");
+  if(nameEl){
+    const display = myName || nameEl.textContent;
+    nameEl.innerHTML = "";
+    nameEl.appendChild(document.createTextNode(display + " "));
+    const tag = document.createElement("span");
+    tag.className = "you-tag";
+    tag.textContent = youLabel;
+    nameEl.appendChild(tag);
+  }
+  if(avatarEl && myName){
+    avatarEl.textContent = myName.slice(0,2).toUpperCase();
+  }
+})();
 
 function applyLang(l){
   document.querySelectorAll("[data-i18n]").forEach(el=>{
