@@ -155,7 +155,7 @@ main{max-width:1280px;margin:0 auto;padding:96px 40px 140px}
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
-  padding:28px;
+  padding:28px;position:relative;
   box-shadow:var(--shadow-sm);
   transition:transform .4s var(--ease),box-shadow .4s var(--ease),border-color .4s var(--ease);
 }
@@ -163,6 +163,13 @@ main{max-width:1280px;margin:0 auto;padding:96px 40px 140px}
   transform:translateY(-4px);
   box-shadow:var(--shadow-lg);
   border-color:var(--border-strong);
+}
+.student-card .derived-tag{
+  position:absolute;top:14px;right:14px;
+  font-size:10px;font-weight:600;letter-spacing:0.04em;
+  padding:3px 8px;border-radius:8px;
+  background:var(--surface-2);color:var(--text-secondary);
+  text-transform:uppercase;
 }
 .sc-head{display:flex;align-items:center;gap:14px;margin-bottom:24px}
 .avatar{
@@ -348,6 +355,9 @@ tbody tr:hover{background:var(--surface-2)}
     <div class="cards-grid">
       {% for s in students %}
       <a class="student-card stu-card" href="/session/{{ s.id }}" data-sid="{{ s.id }}">
+        {% if s.is_derived %}
+        <span class="derived-tag" data-i18n="derived_tag">From real session</span>
+        {% endif %}
         <div class="sc-head">
           <div class="avatar" style="background:{{ s.color }}1a;color:{{ s.color }}">{{ s.name[:2].upper() }}</div>
           <div>
@@ -355,6 +365,7 @@ tbody tr:hover{background:var(--surface-2)}
             <div class="sc-personality">{{ s.personality }}</div>
           </div>
         </div>
+        {% if not s.is_derived %}
         <div class="bars">
           {% for label, val in [("分数",42),("比",38),("速さ",35),("比例",40),("円",41),("場合",35)] %}
           <div class="bar-row">
@@ -364,6 +375,13 @@ tbody tr:hover{background:var(--surface-2)}
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:24px">
+          <span data-i18n="derived_observed">Calibrated from</span>
+          <strong>{{ s.sessions_observed }}</strong>
+          <span data-i18n="derived_observed_suffix">live session(s)</span>
+        </div>
+        {% endif %}
         <div class="sc-foot">
           <span class="sc-foot-meta">{{ s.sessions }} <span data-i18n="sessions_word">sessions</span></span>
           {% if s.last_gain and s.last_gain > 0 %}
@@ -438,6 +456,7 @@ const I18N = {
     th_session:"セッション", th_student:"生徒", th_topic:"単元", th_depth:"深さ",
     th_pre:"事前", th_post:"事後", th_gain:"ゲイン", th_grade:"評価", th_delta:"Δ習熟",
     sessions_word:"セッション", pts:"点", no_test_yet:"テスト未実施", view_all:"すべて見る →",
+    derived_tag:"実セッション由来", derived_observed:"実セッション", derived_observed_suffix:"回から学習中",
     title_main:"AIエージェントが教え方を",
     title_faded:"学び、試し、本質を持ち帰るための静かな場。",
     title_sub:"現在、6種類の生徒ペルソナ、6種類のスキル(教え方)、5つの評価軸を備え、エージェントが成長のためのインサイトを得られます。",
@@ -455,6 +474,7 @@ const I18N = {
     th_session:"Session", th_student:"Student", th_topic:"Topic", th_depth:"Depth",
     th_pre:"Pre", th_post:"Post", th_gain:"Gain", th_grade:"Grade", th_delta:"Δ Prof",
     sessions_word:"sessions", pts:"pts", no_test_yet:"no test yet", view_all:"View all →",
+    derived_tag:"From real session", derived_observed:"Calibrated from", derived_observed_suffix:"live session(s)",
     title_main:"A calm space for AI agents",
     title_faded:"to learn and experiment with how to teach and get key takeaways.",
     title_sub:"Currently, there are six types of student personas, six types of skills (ways to teach), and five pillars of evaluation feedback for agents to gain insights for growth.",
