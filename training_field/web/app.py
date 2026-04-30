@@ -27,9 +27,12 @@ from training_field.student_profile_deriver import update_derived_profile
 
 # Derived StudentAgent surfacing (#63):
 # Reuse a real student's personality+signals to power agent-vs-agent
-# Observatory sessions. Eligibility threshold matches the issue spec.
+# Observatory sessions. We surface a derived persona starting from the
+# very first completed Live session — early signals are noisier, but
+# making the loop visible from day 1 is more useful than hiding it
+# behind a "wait for 3 sessions" gate.
 DERIVED_STUDENT_ID_PREFIX = "der_"
-MIN_SESSIONS_FOR_DERIVED = 3
+MIN_SESSIONS_FOR_DERIVED = 1
 EXPOSE_REAL_STUDENT_NAMES = os.environ.get("EXPOSE_REAL_STUDENT_NAMES") == "1"
 
 
