@@ -134,6 +134,43 @@ async def llm_test(role: str = "question_bank", prompt: str = "Generate a math p
         import traceback
         return {"role": role, "provider": provider, "model": model, "error": str(e)[:500], "trace": traceback.format_exc()[:1000], "ok": False}
 
+@app.get("/api/llm-debug-gemini")
+async def llm_debug_gemini(model: str = "gemini-2.5-pro", prompt: str = "What is 1/2 + 1/3? Reply briefly."):
+    """Direct Gemini call that returns the FULL response object structure
+    so we can see safety blocks, finish reasons, etc."""
+    if not os.environ.get("GOOGLE_API_KEY"):
+        return {"error": "GOOGLE_API_KEY not set"}
+    try:
+        from google import genai
+        from google.genai import types as gtypes
+        client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+        response = client.models.generate_content(
+            model=model,
+            contents=[{"role": "user", "parts": [{"text": prompt}]}],
+            config=gtypes.GenerateContentConfig(max_output_tokens=300, temperature=0.3),
+        )
+        # Probe the structure
+        info: dict = {"model": model, "prompt": prompt}
+        info["response_text"] = getattr(response, "text", None)
+        info["candidates_count"] = len(getattr(response, "candidates", []) or [])
+        cand_summaries = []
+        for i, cand in enumerate(getattr(response, "candidates", []) or []):
+            cs: dict = {"index": i}
+            cs["finish_reason"] = str(getattr(cand, "finish_reason", None))
+            content_obj = getattr(cand, "content", None)
+            cs["content_role"] = getattr(content_obj, "role", None)
+            parts = getattr(content_obj, "parts", []) or []
+            cs["parts_count"] = len(parts)
+            cs["parts_text"] = [getattr(p, "text", None) for p in parts]
+            cs["safety_ratings"] = [str(s) for s in (getattr(cand, "safety_ratings", []) or [])]
+            cand_summaries.append(cs)
+        info["candidates"] = cand_summaries
+        info["prompt_feedback"] = str(getattr(response, "prompt_feedback", None))
+        return info
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()[:1500]}
+
 @app.get("/api/llm-config")
 async def llm_config():
     """Diagnostic: which LLM provider+model is routed for each role.
