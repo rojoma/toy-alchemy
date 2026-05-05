@@ -1,5 +1,6 @@
 # Railway / Nixpacks build config — installs only the lean training_field deps,
 # avoiding the broader toy-alchemy sibling-project dependencies.
+# Build cache buster: 2026-04-09-c (force rebuild of pip layer)
 [phases.setup]
 nixPkgs = ["python311", "gcc"]
 
