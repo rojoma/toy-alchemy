@@ -4,7 +4,14 @@
 nixPkgs = ["python311", "gcc"]
 
 [phases.install]
-cmds = ["pip install --upgrade pip && pip install -r training_field/requirements.txt"]
+# Explicitly install google-genai because the bundled requirements.txt entry
+# was sometimes skipped by build caching. Listed first so it's clearly visible
+# in build logs.
+cmds = [
+    "pip install --upgrade pip",
+    "pip install --no-cache-dir 'google-genai>=1.0.0'",
+    "pip install --no-cache-dir -r training_field/requirements.txt",
+]
 
 [start]
 cmd = "uvicorn training_field.web.app:app --host 0.0.0.0 --port $PORT"
