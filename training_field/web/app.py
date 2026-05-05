@@ -115,6 +115,25 @@ def require_field_key(x_field_key: str | None = Header(default=None)):
 async def health():
     return {"status": "ok", "service": "training-field", "agent_api": bool(os.environ.get("FIELD_API_KEY"))}
 
+@app.get("/api/llm-test")
+async def llm_test(role: str = "question_bank"):
+    """Make a 1-shot LLM call for the given role and report success/error.
+    Use this to verify provider routing is actually working."""
+    from training_field.llm import resolve_model_for_role, chat_complete
+    try:
+        provider, model = resolve_model_for_role(role)
+    except Exception as e:
+        return {"role": role, "error": f"resolve failed: {e}"}
+    try:
+        out = chat_complete(
+            [{"role": "system", "content": "Reply with exactly: OK"},
+             {"role": "user", "content": "ping"}],
+            role=role, max_tokens=10, temperature=0.0,
+        )
+        return {"role": role, "provider": provider, "model": model, "response": out[:200], "ok": True}
+    except Exception as e:
+        return {"role": role, "provider": provider, "model": model, "error": str(e)[:500], "ok": False}
+
 @app.get("/api/llm-config")
 async def llm_config():
     """Diagnostic: which LLM provider+model is routed for each role.
