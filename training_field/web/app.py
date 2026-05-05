@@ -115,6 +115,23 @@ def require_field_key(x_field_key: str | None = Header(default=None)):
 async def health():
     return {"status": "ok", "service": "training-field", "agent_api": bool(os.environ.get("FIELD_API_KEY"))}
 
+@app.get("/api/llm-config")
+async def llm_config():
+    """Diagnostic: which LLM provider+model is routed for each role.
+    Lets you verify env-var routing (e.g. that question_bank → gemini)."""
+    from training_field.llm import resolve_model_for_role
+    roles = ["teacher", "student", "referee", "judge", "question_bank", "translator", "vision"]
+    out = {}
+    for r in roles:
+        try:
+            provider, model = resolve_model_for_role(r)
+            out[r] = f"{provider}:{model}"
+        except Exception as e:
+            out[r] = f"error: {e}"
+    out["GOOGLE_API_KEY_set"] = bool(os.environ.get("GOOGLE_API_KEY"))
+    out["OPENAI_API_KEY_set"] = bool(os.environ.get("OPENAI_API_KEY"))
+    return out
+
 @app.get("/skill.md")
 async def serve_skill_md(request: Request):
     """Serve SKILL.md so external agents can fetch it directly via the deploy URL.

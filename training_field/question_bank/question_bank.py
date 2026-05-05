@@ -85,32 +85,39 @@ class QuestionBank:
         difficulty_b_map = {"基本": -1.0, "応用": 0.0, "発展": 1.2}
         bloom_map = {"基本": 2, "応用": 3, "発展": 5}
 
-        style_instructions = {
-            "nakatsu": """全国学力・学習状況調査のスタイルを参考に以下の原則で作成:
-- 知識・技能と思考・判断・表現を一体的に問う
-- 実生活場面への応用を含める
-- 問題文はオリジナルで作成（既存問題の転載は絶対にしない）
-- 選択肢問題か記述問題で構成""",
-            "pisa": """OECDのPISA数学的リテラシー形式を参考に以下の原則で作成:
-- 現実世界のコンテキスト設定（80〜120字）を冒頭に置く
-- 定式化→数学的処理→解釈の3段階を意識する
-- 問題文はオリジナルで作成（既存問題の転載は絶対にしない）"""
+        # Subject lock: tells the LLM exactly what content domain is acceptable.
+        subject_lock = {
+            "算数": "MUST be a mathematics problem (numbers, calculation, geometry, fractions, decimals, ratios, etc). The student must perform a mathematical operation. NEVER make a reading-comprehension, science-observation, or general-knowledge question.",
+            "数学": "MUST be a mathematics problem. NEVER make a reading-comprehension or science question.",
+            "国語": "MUST be a Japanese-language problem (reading comprehension, kanji, vocabulary, grammar). NEVER make a math or science question.",
+            "理科": "MUST be a science problem (observation, experiment, natural phenomena). NEVER make a math or reading-comprehension question.",
+            "社会": "MUST be a social-studies problem (geography, history, civics). NEVER make a math or science question.",
+            "英語": "MUST be an English-language problem (vocabulary, grammar, reading). NEVER make a math or science question."
+        }
+        lock = subject_lock.get(subject, f"MUST be a {subject} problem.")
+
+        # Style flavor (optional dressing — content domain is enforced by `lock`).
+        style_flavor = {
+            "nakatsu": "Format inspired by 全国学力・学習状況調査: combine knowledge with thinking/judgment, allow real-life context as the WRAPPER for the subject content, mix multiple-choice and short-answer forms.",
+            "pisa": "Format inspired by PISA: brief real-world context (80-120 chars) wrapping the subject content, then a clear question."
         }
 
-        system = f"""あなたは「{subject}」の単元「{unit}」を専門とする、グレード{grade}向け問題作成の専門家です。
+        system = f"""You generate ONE original test question for grade {grade}, subject "{subject}", unit "{unit}".
 
-【厳守ルール】
-1. 必ず教科「{subject}」の単元「{unit}」に直結した問題を作成すること。
-2. {subject}が「算数」「数学」なら、必ず数式・計算・図形・データなどの数学的内容を含むこと。
-   学習方法・読書・一般教養に関する問題は絶対に作らないこと。
-3. {subject}が「国語」なら、文章読解・語彙・文法・漢字など国語的内容に限定すること。
-4. {subject}が「理科」なら、観察・実験・自然現象に関する内容に限定すること。
-5. 既存の試験問題を転載してはいけない。NAKATSU/PISAの「形式」のみを参考にオリジナル問題を作成すること。
+CRITICAL CONTENT RULE (do not violate, do not interpret loosely):
+{lock}
+The unit name "{unit}" is the specific content focus — every question must directly require the student to apply knowledge from this unit.
 
-{style_instructions.get(style, style_instructions['nakatsu'])}
+STYLE:
+{style_flavor.get(style, style_flavor['nakatsu'])}
+Real-world contexts are allowed ONLY as a wrapper for the subject content; the core question must still be solvable using "{unit}" knowledge.
 
-【出力形式】以下のJSONのみで返答（コードブロックなし、説明文なし）:
-{{"question_text":"問題文（必ず単元「{unit}」の内容）","correct_answer":"正解","explanation":"解説","question_type":"選択|記述|複合","estimated_cognitive_level":2}}"""
+ANTI-EXAMPLES (do NOT generate questions like these):
+- A passage about studying methods or rice paddies, even framed as 全国学力 style — that violates the subject lock.
+- A question that could be answered without using "{unit}" content.
+
+Reply with ONE valid JSON object only (no code fence, no prose before/after):
+{{"question_text":"the question (must require {unit} knowledge)","correct_answer":"correct answer","explanation":"why","question_type":"選択|記述|複合","estimated_cognitive_level":2}}"""
 
         # Default fallback question in case of API errors
         fallback_data = {
@@ -125,10 +132,11 @@ class QuestionBank:
             raw = chat_complete(
                 [
                     {"role": "system", "content": system},
-                    {"role": "user", "content": f"教科「{subject}」の単元「{unit}」（グレード{grade}）の{difficulty}レベルの問題を1問だけ作成してください。問題は必ず「{unit}」の数学的・教科的内容を直接問うものにすること。"},
+                    {"role": "user", "content": f"Generate one {difficulty}-level test question for subject \"{subject}\", unit \"{unit}\", grade {grade}. The question must be answerable only by using {unit} knowledge."},
                 ],
                 role="question_bank",
                 max_tokens=600,
+                temperature=0.3,
             ).strip()
             
             # Try to parse JSON, handling potential code blocks
