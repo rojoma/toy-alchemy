@@ -116,9 +116,8 @@ async def health():
     return {"status": "ok", "service": "training-field", "agent_api": bool(os.environ.get("FIELD_API_KEY"))}
 
 @app.get("/api/llm-test")
-async def llm_test(role: str = "question_bank"):
-    """Make a 1-shot LLM call for the given role and report success/error.
-    Use this to verify provider routing is actually working."""
+async def llm_test(role: str = "question_bank", prompt: str = "Generate a math problem about fractions for grade 6. Reply with one short sentence."):
+    """Make a 1-shot LLM call for the given role and report success/error."""
     from training_field.llm import resolve_model_for_role, chat_complete
     try:
         provider, model = resolve_model_for_role(role)
@@ -126,13 +125,14 @@ async def llm_test(role: str = "question_bank"):
         return {"role": role, "error": f"resolve failed: {e}"}
     try:
         out = chat_complete(
-            [{"role": "system", "content": "Reply with exactly: OK"},
-             {"role": "user", "content": "ping"}],
-            role=role, max_tokens=10, temperature=0.0,
+            [{"role": "system", "content": "You are a helpful assistant. Reply only with the requested content."},
+             {"role": "user", "content": prompt}],
+            role=role, max_tokens=300, temperature=0.3,
         )
-        return {"role": role, "provider": provider, "model": model, "response": out[:200], "ok": True}
+        return {"role": role, "provider": provider, "model": model, "response_len": len(out), "response": out[:500], "ok": True}
     except Exception as e:
-        return {"role": role, "provider": provider, "model": model, "error": str(e)[:500], "ok": False}
+        import traceback
+        return {"role": role, "provider": provider, "model": model, "error": str(e)[:500], "trace": traceback.format_exc()[:1000], "ok": False}
 
 @app.get("/api/llm-config")
 async def llm_config():
