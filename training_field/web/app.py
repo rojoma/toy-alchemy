@@ -134,6 +134,24 @@ async def llm_test(role: str = "question_bank", prompt: str = "Generate a math p
         import traceback
         return {"role": role, "provider": provider, "model": model, "error": str(e)[:500], "trace": traceback.format_exc()[:1000], "ok": False}
 
+@app.get("/api/llm-list-gemini")
+async def llm_list_gemini():
+    """List Gemini models actually available with this GOOGLE_API_KEY."""
+    if not os.environ.get("GOOGLE_API_KEY"):
+        return {"error": "GOOGLE_API_KEY not set"}
+    try:
+        from google import genai
+        client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+        models = []
+        for m in client.models.list():
+            mname = getattr(m, "name", str(m))
+            methods = list(getattr(m, "supported_actions", []) or [])
+            models.append({"name": mname, "actions": methods})
+        return {"count": len(models), "models": models}
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()[:1500]}
+
 @app.get("/api/llm-debug-gemini")
 async def llm_debug_gemini(model: str = "gemini-2.5-pro", prompt: str = "What is 1/2 + 1/3? Reply briefly."):
     """Direct Gemini call that returns the FULL response object structure
