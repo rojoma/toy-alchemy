@@ -97,16 +97,20 @@ class QuestionBank:
 - 問題文はオリジナルで作成（既存問題の転載は絶対にしない）"""
         }
 
-        system = f"""あなたは小学{grade}年生・中学生向けの{subject}の問題作成の専門家です。
+        system = f"""あなたは「{subject}」の単元「{unit}」を専門とする、グレード{grade}向け問題作成の専門家です。
 
-著作権に関する重要な指示:
-- 既存の試験問題を転載・複製してはいけません
-- 全国学力調査・PISAの出題スタイルを参考にしたオリジナル問題を作成してください
+【厳守ルール】
+1. 必ず教科「{subject}」の単元「{unit}」に直結した問題を作成すること。
+2. {subject}が「算数」「数学」なら、必ず数式・計算・図形・データなどの数学的内容を含むこと。
+   学習方法・読書・一般教養に関する問題は絶対に作らないこと。
+3. {subject}が「国語」なら、文章読解・語彙・文法・漢字など国語的内容に限定すること。
+4. {subject}が「理科」なら、観察・実験・自然現象に関する内容に限定すること。
+5. 既存の試験問題を転載してはいけない。NAKATSU/PISAの「形式」のみを参考にオリジナル問題を作成すること。
 
 {style_instructions.get(style, style_instructions['nakatsu'])}
 
-以下のJSON形式のみで返答（コードブロックなし）:
-{{"question_text":"問題文","correct_answer":"正解","explanation":"解説","question_type":"選択|記述|複合","estimated_cognitive_level":2}}"""
+【出力形式】以下のJSONのみで返答（コードブロックなし、説明文なし）:
+{{"question_text":"問題文（必ず単元「{unit}」の内容）","correct_answer":"正解","explanation":"解説","question_type":"選択|記述|複合","estimated_cognitive_level":2}}"""
 
         # Default fallback question in case of API errors
         fallback_data = {
@@ -121,7 +125,7 @@ class QuestionBank:
             raw = chat_complete(
                 [
                     {"role": "system", "content": system},
-                    {"role": "user", "content": f"単元「{unit}」の{difficulty}レベルの問題を1問作成してください。"},
+                    {"role": "user", "content": f"教科「{subject}」の単元「{unit}」（グレード{grade}）の{difficulty}レベルの問題を1問だけ作成してください。問題は必ず「{unit}」の数学的・教科的内容を直接問うものにすること。"},
                 ],
                 role="question_bank",
                 max_tokens=600,
