@@ -138,21 +138,50 @@ Reply with ONE valid JSON object only (no code fence, no prose before/after):
                 max_tokens=600,
                 temperature=0.3,
             ).strip()
-            
-            # Try to parse JSON, handling potential code blocks
-            if raw.startswith("```"):
-                # Extract JSON from code block
-                lines = raw.split("\n")
-                json_lines = [l for l in lines if not l.startswith("```")]
-                raw = "\n".join(json_lines)
-            
-            data = json.loads(raw)
-            
+            print(f"[QuestionBank] raw response (first 300 chars): {raw[:300]!r}")
+
+            # Strip code fences if present (```json ... ``` or just ``` ... ```)
+            cleaned = raw
+            if cleaned.startswith("```"):
+                # Drop the first line (```json or ```) and any trailing ```
+                lines = cleaned.split("\n")
+                lines = [l for l in lines if not l.strip().startswith("```")]
+                cleaned = "\n".join(lines).strip()
+
+            # Robust extraction: find the first {...} block. Helps when the model
+            # adds a preamble like "Here's the question:" before the JSON.
+            data = None
+            try:
+                data = json.loads(cleaned)
+            except json.JSONDecodeError:
+                # Find the largest balanced {...} substring
+                import re
+                start_idx = cleaned.find("{")
+                if start_idx >= 0:
+                    depth = 0
+                    end_idx = -1
+                    for i, ch in enumerate(cleaned[start_idx:], start=start_idx):
+                        if ch == "{":
+                            depth += 1
+                        elif ch == "}":
+                            depth -= 1
+                            if depth == 0:
+                                end_idx = i + 1
+                                break
+                    if end_idx > start_idx:
+                        candidate = cleaned[start_idx:end_idx]
+                        try:
+                            data = json.loads(candidate)
+                        except json.JSONDecodeError as e2:
+                            print(f"[QuestionBank] JSON extract still failed: {e2}")
+            if data is None:
+                raise json.JSONDecodeError("no parseable JSON in response", cleaned, 0)
+
             # Validate required fields exist
             if not data.get("question_text") or not data.get("correct_answer"):
                 print(f"[QuestionBank] Generated question missing required fields, using fallback")
                 data = fallback_data
-                
+
         except json.JSONDecodeError as e:
             print(f"[QuestionBank] JSON parse error: {e}, using fallback question")
             data = fallback_data
