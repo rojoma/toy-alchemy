@@ -135,7 +135,7 @@ Reply with ONE valid JSON object only (no code fence, no prose before/after):
                     {"role": "user", "content": f"Generate one {difficulty}-level test question for subject \"{subject}\", unit \"{unit}\", grade {grade}. The question must be answerable only by using {unit} knowledge."},
                 ],
                 role="question_bank",
-                max_tokens=600,
+                max_tokens=2000,
                 temperature=0.3,
             ).strip()
             print(f"[QuestionBank] raw response (first 300 chars): {raw[:300]!r}")
