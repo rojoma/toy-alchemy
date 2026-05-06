@@ -127,8 +127,8 @@ Current phase: {phase} - Goal: {phase_goal}
 Student emotional state: confidence={student_emotional.get('confidence', 0.5):.2f}, frustration={frustration:.2f}
 
 === RESPONSE FORMAT ===
-Reply in {"English" if lang == "en" else "Japanese"}, max 3 sentences. Be direct, warm, and concise.
-End with ONE question or practice problem on its own line, prefixed with ▶ (e.g. "▶ 2/3 × 4/5 はいくつ？").
+Reply in {"English" if lang == "en" else "Japanese"}, max 3 sentences. Be direct, warm, and concise. NEVER mix languages — if English, use English ONLY (no Japanese characters); if Japanese, use Japanese ONLY.
+End with ONE question or practice problem on its own line, prefixed with ▶ ({'e.g. "▶ What is 2/3 × 4/5?"' if lang == "en" else 'e.g. "▶ 2/3 × 4/5 はいくつ？"'}).
 Use plain text for math (e.g. 2/3 × 4/5 = 8/15). NEVER use LaTeX (no \\frac, \\times, \\div).
 Then output this JSON on a new line (no code block):
 {{"phase":"{phase}","scaffolding_level":1,"question_asked":true,"strategy_used":"skill name","emotional_read":{frustration:.2f}}}"""
@@ -207,13 +207,33 @@ Then output this JSON on a new line (no code block):
             else f'Student responded: "{student_last_response}"\nThis is turn {turn_number} of the {phase} phase.'
         )
 
+        # Track student's response in turn_history so it persists across turns.
+        # This is essential for sub-question state: without it, the model loses
+        # track of what it just asked, and may misjudge correct intermediate
+        # answers as wrong (e.g., student says "20" to "What's 15+5?", but
+        # model evaluates 20 against the original problem 15+16=31).
+        if student_last_response is not None:
+            self._turn_history.append({"role": "student", "text": student_last_response})
+
         # Adult learners (grade 13) get longer responses — child topics fit
         # in 300 tokens but business / tech / academic explanations rarely
         # do. Routing goes through chat_complete() so the role can be
         # swapped to a cheaper provider via LLM_MODEL_TEACHER.
         max_tokens = 600 if grade == 13 else 300
+
+        # Build messages with recent history so the teacher remembers what
+        # sub-question it just asked. Limit to last 6 turns (3 exchanges)
+        # to keep context tight and costs reasonable.
+        messages = [{"role": "system", "content": system}]
+        for h in self._turn_history[-6:]:
+            if h["role"] == "teacher":
+                messages.append({"role": "assistant", "content": h["text"]})
+            elif h["role"] == "student":
+                messages.append({"role": "user", "content": h["text"]})
+        messages.append({"role": "user", "content": user_content})
+
         raw = chat_complete(
-            [{"role": "system", "content": system}, {"role": "user", "content": user_content}],
+            messages,
             role="teacher",
             max_tokens=max_tokens,
         )
