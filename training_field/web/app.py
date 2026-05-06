@@ -134,6 +134,33 @@ async def llm_test(role: str = "question_bank", prompt: str = "Generate a math p
         import traceback
         return {"role": role, "provider": provider, "model": model, "error": str(e)[:500], "trace": traceback.format_exc()[:1000], "ok": False}
 
+@app.get("/api/qbank-debug")
+async def qbank_debug(grade: int = 6, subject: str = "算数", unit: str = "分数のかけ算とわり算", difficulty: str = "基本"):
+    """Run question_bank.generate_question directly and return both the raw
+    LLM response (captured via stdout monkey-patch) and the parsed Question."""
+    import io, contextlib
+    from training_field.question_bank.question_bank import QuestionBank
+    qbank = QuestionBank()
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            q = await qbank.generate_question(grade, subject, unit, difficulty, style="nakatsu")
+        return {
+            "ok": True,
+            "captured_stdout": buf.getvalue()[:2000],
+            "question": {
+                "id": q.id,
+                "text": q.question_text,
+                "answer": q.correct_answer,
+                "explanation": q.explanation,
+                "type": q.question_type,
+                "is_fallback": q.question_text.endswith("この単元の基本的な計算問題を解いてください。"),
+            },
+        }
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "captured_stdout": buf.getvalue()[:2000], "trace": traceback.format_exc()[:1500]}
+
 @app.get("/api/llm-list-gemini")
 async def llm_list_gemini():
     """List Gemini models actually available with this GOOGLE_API_KEY."""
