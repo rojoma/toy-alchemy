@@ -5,20 +5,20 @@
       "subjects": {
         "算数": {
           "ja": [
-            "10までのかず",
-            "いくつといくつ",
+            "数の認識",
+            "数の比較",
+            "欠けた数",
             "たしざん",
             "ひきざん",
-            "20までのかず",
-            "とけい"
+            "文章題"
           ],
           "en": [
-            "Numbers to 10",
-            "Number Composition",
+            "Number Identification",
+            "Number Discrimination",
+            "Missing Number",
             "Addition",
             "Subtraction",
-            "Numbers to 20",
-            "Telling Time"
+            "Word Problems"
           ]
         },
         "国語": {
